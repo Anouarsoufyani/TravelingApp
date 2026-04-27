@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background_color">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="12dp"
+        android:background="@color/teal">
+
+        <TextView
+            android:id="@+id/btn_pref_back"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:gravity="center"
+            android:text="←"
+            android:textColor="@color/default_white"
+            android:textSize="18sp"
+            android:layout_marginEnd="12dp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Mes alertes"
+            android:textColor="@color/default_white"
+            android:textSize="17sp"
+            android:fontFamily="serif" />
+    </LinearLayout>
+
+    <!-- Ajouter une alerte -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:background="@color/default_white"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="AJOUTER UNE ALERTE"
+            android:textSize="10sp"
+            android:textColor="@color/ink_faint"
+            android:letterSpacing="0.1"
+            android:layout_marginBottom="10dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Spinner
+                android:id="@+id/spinner_pref_type"
+                android:layout_width="110dp"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_input"
+                android:layout_marginEnd="8dp" />
+
+            <EditText
+                android:id="@+id/et_pref_value"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="44dp"
+                android:hint="Valeur (ex: Paris, Marco...)"
+                android:paddingHorizontal="12dp"
+                android:background="@drawable/bg_input"
+                android:textColor="@color/ink"
+                android:textSize="13sp"
+                android:inputType="text"
+                android:layout_marginEnd="8dp" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_add_pref"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:text="+"
+                android:textColor="@color/default_white"
+                android:background="@drawable/bg_pill_solid"
+                android:textSize="18sp"
+                android:padding="0dp" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Auteur : notifié quand cet auteur publie  •  Lieu : notifié quand une photo est publiée dans ce lieu  •  Tag : notifié quand ce tag apparaît"
+            android:textColor="@color/ink_faint"
+            android:textSize="10sp"
+            android:layout_marginTop="8dp" />
+    </LinearLayout>
+
+    <!-- Liste des alertes -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="ALERTES ACTIVES"
+        android:textSize="10sp"
+        android:textColor="@color/ink_faint"
+        android:letterSpacing="0.1"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="10dp" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_prefs"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingHorizontal="16dp"
+        android:clipToPadding="false" />
+
+</LinearLayout>

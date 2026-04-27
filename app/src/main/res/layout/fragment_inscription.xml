@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_color"
+    android:padding="24dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Créer un compte"
+
+            android:textColor="@color/navy"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="24dp" />
+
+        <EditText
+            android:id="@+id/edit_login"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:paddingHorizontal="16dp"
+            android:background="@drawable/bg_input"
+
+            android:hint="Login (Max 10 lettres)"
+            android:textColor="@color/ink"
+            android:layout_marginBottom="12dp"/>
+
+        <EditText
+            android:id="@+id/edit_password"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:paddingHorizontal="16dp"
+            android:background="@drawable/bg_input"
+
+            android:hint="Mot de passe (Min 6 car.)"
+            android:inputType="textPassword"
+            android:textColor="@color/ink"
+            android:layout_marginBottom="12dp"/>
+
+        <EditText
+            android:id="@+id/edit_nom"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:paddingHorizontal="16dp"
+            android:background="@drawable/bg_input"
+
+            android:hint="Nom"
+            android:textColor="@color/ink"
+            android:layout_marginBottom="12dp"/>
+
+        <EditText
+            android:id="@+id/edit_prenom"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:paddingHorizontal="16dp"
+            android:background="@drawable/bg_input"
+
+            android:hint="Prénom"
+            android:textColor="@color/ink"
+            android:layout_marginBottom="12dp"/>
+
+        <EditText
+            android:id="@+id/edit_date_naissance"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:paddingHorizontal="16dp"
+            android:background="@drawable/bg_input"
+
+            android:hint="Date de naissance"
+            android:textColor="@color/ink"
+            android:layout_marginBottom="12dp"/>
+
+        <EditText
+            android:id="@+id/edit_telephone"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:paddingHorizontal="16dp"
+            android:background="@drawable/bg_input"
+
+            android:hint="Téléphone"
+            android:inputType="phone"
+            android:textColor="@color/ink"
+            android:layout_marginBottom="12dp"/>
+
+        <EditText
+            android:id="@+id/edit_email"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:paddingHorizontal="16dp"
+            android:background="@drawable/bg_input"
+
+            android:hint="Email"
+            android:inputType="textEmailAddress"
+            android:textColor="@color/ink"
+            android:layout_marginBottom="12dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Centres d'intérêt :"
+
+            android:textColor="@color/ink"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp" />
+
+        <CheckBox
+            android:id="@+id/check_voyage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+
+            android:buttonTint="@color/teal"
+            android:textColor="@color/ink_muted"
+            android:text="Voyage" />
+
+        <CheckBox
+            android:id="@+id/check_sport"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+
+            android:buttonTint="@color/teal"
+            android:textColor="@color/ink_muted"
+            android:text="Sport" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_valider_inscription"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="S'enregistrer"
+            android:textColor="@color/default_white"
+            android:background="@drawable/bg_pill_solid"
+
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:layout_marginTop="24dp"/>
+    </LinearLayout>
+</ScrollView>

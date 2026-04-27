@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand Colors -->
+    <color name="navy">#1B3A5C</color>
+    <color name="navy_light">#2D5480</color>
+    <color name="teal">#2A7D6F</color>
+    <color name="teal_light">#3FA090</color>
+    <color name="sand">#F5F0E8</color>
+    <color name="warm_white">#FAFAF7</color>
+    
+    <!-- Ink / Text Colors -->
+    <color name="ink">#1A1A18</color>
+    <color name="ink_muted">#6B6860</color>
+    <color name="ink_faint">#B0ADA6</color>
+    
+    <!-- Accent Colors -->
+    <color name="terracotta">#C4603A</color>
+    <color name="gold">#A87C3E</color>
+    <color name="sage">#4A7C59</color>
+    <color name="plum">#7A3E6B</color>
+
+    <!-- UI Helpers -->
+    <color name="background_color">#EDEAE3</color>
+    <color name="border_light">#1A1A1A18</color> <!-- approx rgba(26,26,24,0.1) -->
+    <color name="border_strong">#331A1A18</color> <!-- approx rgba(26,26,24,0.2) -->
+
+    <color name="default_black">#FF000000</color>
+    <color name="default_white">#FFFFFFFF</color>
+</resources>

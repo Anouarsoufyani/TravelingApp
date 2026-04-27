@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_color"
+    android:padding="24dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Préférences de parcours"
+            android:textColor="@color/navy"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="24dp" />
+
+        <EditText
+            android:id="@+id/et_path_budget"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:hint="Budget maximum (€)"
+            android:inputType="number"
+            android:paddingHorizontal="16dp"
+            android:background="@drawable/bg_input"
+            android:textColor="@color/ink"
+            android:layout_marginBottom="12dp" />
+
+        <EditText
+            android:id="@+id/et_path_duration"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:hint="Durée disponible (minutes)"
+            android:inputType="number"
+            android:paddingHorizontal="16dp"
+            android:background="@drawable/bg_input"
+            android:textColor="@color/ink"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Niveau d'effort"
+            android:textColor="@color/ink"
+            android:textSize="14sp"
+            android:layout_marginBottom="8dp" />
+
+        <SeekBar
+            android:id="@+id/seek_path_effort"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="4"
+            android:progress="2"
+            android:layout_marginBottom="24dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Type d'activités"
+            android:textColor="@color/ink"
+            android:textSize="14sp"
+            android:layout_marginBottom="8dp" />
+
+        <CheckBox
+            android:id="@+id/check_indoor_only"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="À l'abri (intérieur uniquement)"
+            android:textColor="@color/ink"
+            android:layout_marginBottom="8dp" />
+
+        <CheckBox
+            android:id="@+id/check_activity_culture"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Culture (musées, monuments)"
+            android:textColor="@color/ink"
+            android:layout_marginBottom="8dp" />
+
+        <CheckBox
+            android:id="@+id/check_activity_resto"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Restauration"
+            android:textColor="@color/ink"
+            android:layout_marginBottom="8dp" />
+
+        <CheckBox
+            android:id="@+id/check_activity_loisirs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Loisirs et activités"
+            android:textColor="@color/ink"
+            android:layout_marginBottom="32dp" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_generate_path"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Générer mon parcours"
+            android:textAllCaps="false"
+            android:textColor="@color/default_white"
+            android:background="@drawable/bg_pill_solid"
+            android:textSize="16sp" />
+
+    </LinearLayout>
+</ScrollView>

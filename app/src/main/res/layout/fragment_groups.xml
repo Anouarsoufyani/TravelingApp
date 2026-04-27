@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background_color">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:background="@color/teal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Groupes"
+            android:textColor="@color/default_white"
+            android:textSize="18sp"
+            android:fontFamily="serif" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_create_group"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="+ Créer"
+            android:textAllCaps="false"
+            android:textColor="@color/teal"
+            android:background="@color/default_white"
+            android:paddingHorizontal="14dp"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <!-- Onglets -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:orientation="horizontal"
+        android:background="@color/default_white">
+
+        <TextView
+            android:id="@+id/tab_my_groups"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="Mes groupes"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="@color/teal" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="@color/border_light" />
+
+        <TextView
+            android:id="@+id/tab_discover"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="Découvrir"
+            android:textSize="13sp"
+            android:textColor="@color/ink_muted" />
+    </LinearLayout>
+
+    <!-- Indicateur d'onglet actif -->
+    <View
+        android:id="@+id/tab_indicator"
+        android:layout_width="0dp"
+        android:layout_height="3dp"
+        android:background="@color/teal" />
+
+    <!-- Barre de recherche (Découvrir uniquement) -->
+    <LinearLayout
+        android:id="@+id/layout_search"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+        android:background="@color/default_white"
+        android:visibility="gone">
+
+        <EditText
+            android:id="@+id/et_search_groups"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:hint="Rechercher un groupe..."
+            android:paddingHorizontal="14dp"
+            android:background="@drawable/bg_input"
+            android:textColor="@color/ink"
+            android:textSize="13sp"
+            android:inputType="text"
+            android:drawableStart="@android:drawable/ic_menu_search"
+            android:drawablePadding="8dp" />
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_groups"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="12dp"
+        android:clipToPadding="false"
+        android:paddingBottom="80dp" />
+
+</LinearLayout>

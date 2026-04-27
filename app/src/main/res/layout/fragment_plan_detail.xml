@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background_color">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="12dp"
+        android:background="@color/navy">
+
+        <TextView
+            android:id="@+id/btn_pd_back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="←"
+            android:textColor="@color/default_white"
+            android:textSize="20sp"
+            android:padding="4dp"
+            android:layout_marginEnd="10dp" />
+
+        <TextView
+            android:id="@+id/tv_pd_title"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:textColor="@color/default_white"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="24dp">
+
+            <!-- Métriques -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:background="@color/default_white"
+                android:layout_marginBottom="8dp">
+
+                <LinearLayout android:layout_width="0dp" android:layout_weight="1"
+                    android:layout_height="wrap_content" android:orientation="vertical"
+                    android:background="@color/sand" android:padding="10dp" android:layout_marginEnd="6dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="BUDGET" android:textSize="9sp" android:textColor="@color/ink_faint" android:letterSpacing="0.08"/>
+                    <TextView android:id="@+id/tv_pd_budget"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:textSize="14sp" android:textColor="@color/ink" android:textStyle="bold"/>
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="0dp" android:layout_weight="1"
+                    android:layout_height="wrap_content" android:orientation="vertical"
+                    android:background="@color/sand" android:padding="10dp" android:layout_marginEnd="6dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="DURÉE" android:textSize="9sp" android:textColor="@color/ink_faint" android:letterSpacing="0.08"/>
+                    <TextView android:id="@+id/tv_pd_duration"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:textSize="14sp" android:textColor="@color/ink" android:textStyle="bold"/>
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="0dp" android:layout_weight="1"
+                    android:layout_height="wrap_content" android:orientation="vertical"
+                    android:background="@color/sand" android:padding="10dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="EFFORT" android:textSize="9sp" android:textColor="@color/ink_faint" android:letterSpacing="0.08"/>
+                    <TextView android:id="@+id/tv_pd_effort"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:textSize="14sp" android:textColor="@color/ink" android:textStyle="bold"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Météo -->
+            <LinearLayout
+                android:id="@+id/layout_weather"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@color/navy_light"
+                android:padding="12dp"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginBottom="12dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tv_weather_icon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="28sp"
+                    android:layout_marginEnd="10dp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <TextView
+                        android:id="@+id/tv_weather_desc"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/default_white"
+                        android:textSize="13sp"
+                        android:textStyle="bold"/>
+                    <TextView
+                        android:id="@+id/tv_weather_advice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="#CCDDFF"
+                        android:textSize="11sp"/>
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tv_weather_temp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/default_white"
+                    android:textSize="22sp"
+                    android:textStyle="bold"/>
+            </LinearLayout>
+
+            <!-- Carte OSMDroid -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CARTE DU PARCOURS"
+                android:textSize="10sp"
+                android:textColor="@color/ink_faint"
+                android:letterSpacing="0.1"
+                android:paddingHorizontal="16dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="8dp" />
+
+            <org.osmdroid.views.MapView
+                android:id="@+id/map_plan"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Étapes -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ÉTAPES DU PARCOURS"
+                android:textSize="10sp"
+                android:textColor="@color/ink_faint"
+                android:letterSpacing="0.1"
+                android:paddingHorizontal="16dp"
+                android:paddingBottom="8dp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_plan_steps"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false" />
+
+            <!-- Like / Sauvegarder -->
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_pd_like"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="♡ J'aime et sauvegarder"
+                android:textAllCaps="false"
+                android:textColor="@color/terracotta"
+                android:background="@drawable/bg_pill_outline"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="12dp"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <!-- Export PDF -->
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_pd_export_pdf"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="Exporter en PDF"
+                android:textAllCaps="false"
+                android:textColor="@color/default_white"
+                android:background="@drawable/bg_pill_solid"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="12dp"
+                android:textSize="14sp" />
+
+            <!-- Bouton Partager -->
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_pd_share"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="Partager ce parcours"
+                android:textAllCaps="false"
+                android:textColor="@color/teal"
+                android:background="@android:color/transparent"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="12dp"
+                android:textSize="14sp" />
+
+            <!-- Regénérer -->
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_pd_regenerate"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="Modifier et regénérer"
+                android:textAllCaps="false"
+                android:textColor="@color/default_white"
+                android:background="@drawable/bg_pill_solid"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</LinearLayout>

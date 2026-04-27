@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.Travelshare" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">@color/teal</item>
+        <item name="colorPrimaryVariant">@color/teal_light</item>
+        <item name="colorOnPrimary">@color/default_white</item>
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">@color/navy</item>
+        <item name="colorSecondaryVariant">@color/navy_light</item>
+        <item name="colorOnSecondary">@color/default_white</item>
+        <!-- Custom colors -->
+        <item name="android:windowBackground">@color/background_color</item>
+        <item name="android:textColor">@color/ink</item>
+    </style>
+</resources>

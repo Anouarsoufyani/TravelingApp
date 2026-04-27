@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_color"
+    android:padding="24dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Publier un souvenir"
+            android:fontFamily="serif"
+            android:textColor="@color/navy"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Upload Zone -->
+        <FrameLayout
+            android:id="@+id/layout_photo_picker"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:background="@drawable/bg_input"
+            android:layout_marginBottom="24dp">
+
+            <!-- Placeholder (masqué quand image sélectionnée) -->
+            <LinearLayout
+                android:id="@+id/layout_photo_placeholder"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@android:drawable/ic_menu_camera"
+                    android:tint="@color/teal"
+                    android:layout_marginBottom="8dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/teal"
+                    android:text="Appuyez pour ajouter une photo"/>
+            </LinearLayout>
+
+            <!-- Aperçu de la photo sélectionnée -->
+            <ImageView
+                android:id="@+id/iv_photo_preview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:visibility="gone" />
+
+        </FrameLayout>
+
+        <EditText
+            android:id="@+id/et_pub_title"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:paddingHorizontal="16dp"
+            android:background="@drawable/bg_input"
+            android:fontFamily="sans-serif"
+            android:textColor="@color/ink"
+            android:hint="Titre de la photo"
+            android:layout_marginBottom="12dp"/>
+
+        <EditText
+            android:id="@+id/et_pub_location"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:paddingHorizontal="16dp"
+            android:background="@drawable/bg_input"
+            android:fontFamily="sans-serif"
+            android:textColor="@color/ink"
+            android:hint="Lieu (ex: Paris, Musée)"
+            android:layout_marginBottom="12dp"/>
+
+        <Spinner
+            android:id="@+id/spinner_pub_category"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:background="@drawable/bg_input"
+            android:paddingHorizontal="16dp"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- Simulated AI & Voice interactions -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_record_voice"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="44dp"
+                android:layout_marginEnd="8dp"
+                android:text="Message Vocal"
+                android:textAllCaps="false"
+                android:fontFamily="sans-serif"
+                android:textColor="@color/ink_muted"
+                android:background="@drawable/bg_pill_outline"/>
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_auto_tags"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="44dp"
+                android:text="✨ IA : Auto-Tags"
+                android:textAllCaps="false"
+                android:fontFamily="sans-serif"
+                android:textColor="@color/default_white"
+                android:background="@drawable/bg_pill_solid"
+                android:backgroundTint="@color/terracotta"/>
+        </LinearLayout>
+
+        <EditText
+            android:id="@+id/et_pub_tags"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:paddingHorizontal="16dp"
+            android:background="@drawable/bg_input"
+            android:fontFamily="sans-serif"
+            android:textColor="@color/ink"
+            android:hint="Tags générés ou manuels (#voyage...)"
+            android:layout_marginBottom="16dp"/>
+
+        <Switch
+            android:id="@+id/switch_visibility"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Mode Privé (Groupe uniquement)"
+            android:fontFamily="sans-serif"
+            android:textColor="@color/ink"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- Sélecteur de groupe (visible si switch activé) -->
+        <LinearLayout
+            android:id="@+id/layout_group_selector"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            android:layout_marginBottom="24dp">
+
+            <Spinner
+                android:id="@+id/spinner_groups"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="52dp"
+                android:background="@drawable/bg_input"
+                android:paddingHorizontal="12dp"
+                android:layout_marginEnd="8dp"/>
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_new_group"
+                android:layout_width="wrap_content"
+                android:layout_height="52dp"
+                android:text="+ Groupe"
+                android:textAllCaps="false"
+                android:textColor="@color/default_white"
+                android:background="@drawable/bg_pill_solid"
+                android:paddingHorizontal="12dp"/>
+        </LinearLayout>
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_publish_photo"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Publier ma photo"
+            android:textColor="@color/default_white"
+            android:background="@drawable/bg_pill_solid"
+            android:backgroundTint="@color/teal"
+            android:fontFamily="sans-serif"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:layout_marginBottom="80dp"/> <!-- Padding for bottom nav -->
+
+    </LinearLayout>
+</ScrollView>
