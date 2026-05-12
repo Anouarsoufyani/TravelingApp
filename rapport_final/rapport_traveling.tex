@@ -284,7 +284,7 @@ interdépendants.
   Les deux
     & Architecture
     & Base de données Room, ViewModels partagés, modèles de données, intégration
-      générale \\
+      Firebase (Auth + Firestore), intégration générale \\
   \bottomrule
 \end{tabularx}
 
@@ -306,7 +306,8 @@ l'application.
 \small
 \textbf{Compte \& Session}
 \begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]
-  \item Inscription / connexion avec session persistante
+  \item Inscription / connexion via \textbf{Firebase Auth}
+  \item Session persistante (Firebase + SharedPreferences)
   \item Mode anonyme (consultation des photos publiques)
   \item Profil public cliquable (style Instagram)
   \item Photo de profil + bio utilisateur
@@ -335,7 +336,8 @@ l'application.
 
 \textbf{Fiche photo}
 \begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]
-  \item Likes persistés, commentaires, signalement
+  \item Likes + commentaires synchronisés Firestore (temps réel)
+  \item Signalement
   \item Temps de marche via OSRM (profil piéton)
   \item Photos similaires par tags
   \item Partage externe (WhatsApp, SMS…)
@@ -869,12 +871,17 @@ la date, la catégorie, les tags et les coordonnées GPS.
 Depuis cet écran, l'utilisateur peut :
 \begin{itemize}
   \item \textbf{Liker / Unliker} : incrémente ou décrémente le compteur de likes
-    via \ic{viewModel.updateLikes(photoId, newCount)}. Le bouton se met à jour
-    immédiatement sans rechargement.
+    via \ic{viewModel.updateLikes(photoId, newCount)} (Room) et met à jour
+    simultanément le champ \ic{likes} dans Firestore (\ic{photos/\{photoId\}}).
+    Un \ic{addSnapshotListener} sur le document Firestore rafraîchit le compteur
+    en temps réel : si un autre utilisateur like, le chiffre se met à jour sans
+    aucune action.
   \item \textbf{Commenter} : un \ic{EditText} + bouton "Envoyer" insère un
-    \ic{Comment} en base via \ic{viewModel.insertComment(comment)}. La liste
-    des commentaires, chargée depuis \ic{getCommentsForPhoto(photoId)} en
-    LiveData, se met à jour automatiquement.
+    \ic{Comment} dans Room via \ic{viewModel.insertComment()} et le sauvegarde
+    simultanément dans Firestore (collection \ic{comments}). Un
+    \ic{addSnapshotListener} sur la collection Firestore filtrée par \ic{photoId}
+    synchronise en temps réel les commentaires vers Room : les nouveaux commentaires
+    d'autres utilisateurs apparaissent instantanément dans la liste.
   \item \textbf{Signaler} : insère un \ic{Report} en base via
     \ic{viewModel.insertReport(report)}. Le bouton est désactivé après
     l'envoi pour éviter les doublons.
@@ -1029,6 +1036,12 @@ de photos géolocalisées. Il observe \ic{viewModel.getPublicPhotos()} et
 place un marqueur pour chaque photo dont lat et lng sont non nuls.
 Un clic sur un marqueur affiche une info-bulle avec le titre et le lieu,
 et un second clic ouvre le détail de la photo.
+
+OSMDroid est initialisé une seule fois au démarrage dans la classe \ic{TravelingApp}
+(\ic{extends Application}) via \ic{Configuration.getInstance().setOsmdroidBasePath()}
+pointant vers le répertoire de cache de l'application. Cette approche évite les
+problèmes de cache sur Android 10+ et garantit que les tuiles sont disponibles
+avant le chargement de tout fragment.
 
 \screenshot{screen_map.png}
 
