@@ -18,4 +18,7 @@ public interface UserDao {
 
     @Query("SELECT * FROM users WHERE login =:login AND password =:password")
     User login(String login, String password);
+
+    @Query("UPDATE users SET avatarUri = :avatarUri, bio = :bio WHERE id = :userId")
+    void updateUserProfile(long userId, String avatarUri, String bio);
 }

@@ -16,4 +16,6 @@ public class User {
     public String telephone;
     public String email;
     public String centresInteret;
+    public String avatarUri;
+    public String bio;
 }

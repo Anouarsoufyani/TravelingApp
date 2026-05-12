@@ -2,11 +2,15 @@ package com.example.travelshare.ui.theme.fragments;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationManager;
-import android.content.Context;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.text.Editable;
@@ -27,7 +31,9 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.travelshare.R;
 import com.example.travelshare.data.models.Photo;
@@ -37,17 +43,33 @@ import com.example.travelshare.viewmodels.SharedViewModel;
 import java.util.List;
 import java.util.Locale;
 
-public class ExplorerFragment extends Fragment {
+public class ExplorerFragment extends Fragment implements SensorEventListener {
 
     public static final String ARG_SEARCH_QUERY = "search_query";
     private static final int REQUEST_VOICE = 101;
+    private static final int PAGE_SIZE = 20;
+
+    // ── Capteur accéléromètre (détection du shake) ─────────────────────────
+    private SensorManager sensorManager;
+    private Sensor accelerometer;
+    private float lastX, lastY, lastZ;
+    private long lastShakeTime = 0;
+    private static final float SHAKE_THRESHOLD = 12f;
+    private static final long SHAKE_COOLDOWN_MS = 1500;
 
     private SharedViewModel viewModel;
     private PhotoAdapter adapter;
     private LiveData<List<Photo>> currentSource;
+    private boolean isGridView = true;
+
+    // ── Pagination ─────────────────────────────────────────────────────────
+    private int currentOffset = 0;
+    private boolean isPaginationMode = false;
+    private boolean isLoadingMore = false;
+    private SwipeRefreshLayout swipeRefresh;
 
     // Chips
-    private final int[] CHIP_IDS = {R.id.chip_all, R.id.chip_nature, R.id.chip_urbain, R.id.chip_culture, R.id.chip_magasin, R.id.chip_nearby};
+    private final int[] CHIP_IDS = {R.id.chip_all, R.id.chip_nature, R.id.chip_urbain, R.id.chip_culture, R.id.chip_magasin, R.id.chip_nearby, R.id.chip_likes};
     private View chipRoot;
 
     private ActivityResultLauncher<String> locationPermLauncher;
@@ -55,6 +77,12 @@ public class ExplorerFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        sensorManager = (SensorManager) requireContext().getSystemService(Context.SENSOR_SERVICE);
+        if (sensorManager != null) {
+            accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        }
+
         locationPermLauncher = registerForActivityResult(
                 new ActivityResultContracts.RequestPermission(),
                 granted -> {
@@ -62,6 +90,58 @@ public class ExplorerFragment extends Fragment {
                     else Toast.makeText(getContext(), "Permission GPS refusée", Toast.LENGTH_SHORT).show();
                 }
         );
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (sensorManager != null && accelerometer != null) {
+            sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI);
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (sensorManager != null) {
+            sensorManager.unregisterListener(this);
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() != Sensor.TYPE_ACCELEROMETER) return;
+
+        float x = event.values[0];
+        float y = event.values[1];
+        float z = event.values[2];
+
+        float deltaX = Math.abs(x - lastX);
+        float deltaY = Math.abs(y - lastY);
+        float deltaZ = Math.abs(z - lastZ);
+
+        lastX = x; lastY = y; lastZ = z;
+
+        if ((deltaX > SHAKE_THRESHOLD && deltaY > SHAKE_THRESHOLD)
+                || (deltaX > SHAKE_THRESHOLD && deltaZ > SHAKE_THRESHOLD)
+                || (deltaY > SHAKE_THRESHOLD && deltaZ > SHAKE_THRESHOLD)) {
+
+            long now = System.currentTimeMillis();
+            if (now - lastShakeTime > SHAKE_COOLDOWN_MS) {
+                lastShakeTime = now;
+                onShakeDetected();
+            }
+        }
+    }
+
+    private void onShakeDetected() {
+        if (viewModel == null || !isAdded()) return;
+        setActiveChip(-1);
+        observeSource(viewModel.getRandomPhotos(10));
+        Toast.makeText(getContext(), "🔀 Photos aléatoires !", Toast.LENGTH_SHORT).show();
     }
 
     @Nullable
@@ -75,17 +155,60 @@ public class ExplorerFragment extends Fragment {
         adapter = new PhotoAdapter();
         recyclerView.setAdapter(adapter);
 
+        // ── Pull-to-refresh ────────────────────────────────────────────────
+        swipeRefresh = view.findViewById(R.id.swipe_refresh);
+        swipeRefresh.setOnRefreshListener(() -> {
+            if (isPaginationMode) {
+                currentOffset = 0;
+                isLoadingMore = false;
+                loadPage(0, true);
+            } else {
+                swipeRefresh.setRefreshing(false);
+            }
+        });
+
+        // ── Infinite scroll ────────────────────────────────────────────────
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
+                if (!isPaginationMode || dy <= 0 || isLoadingMore) return;
+                RecyclerView.LayoutManager lm = rv.getLayoutManager();
+                int lastVisible;
+                if (lm instanceof GridLayoutManager) {
+                    lastVisible = ((GridLayoutManager) lm).findLastVisibleItemPosition();
+                } else {
+                    lastVisible = ((LinearLayoutManager) lm).findLastVisibleItemPosition();
+                }
+                if (lastVisible >= adapter.getItemCount() - 4) {
+                    loadPage(currentOffset, false);
+                }
+            }
+        });
+
+        // ── Toggle liste / grille ──────────────────────────────────────────
+        TextView btnToggle = view.findViewById(R.id.btn_toggle_view);
+        btnToggle.setOnClickListener(v -> {
+            isGridView = !isGridView;
+            if (isGridView) {
+                recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
+                btnToggle.setText("☰ Liste");
+            } else {
+                recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+                btnToggle.setText("⊞ Grille");
+            }
+        });
+
         viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
         chipRoot = view;
 
-        // Chargement initial : photos publiques (ou filtré si query passée via passerelle)
+        // Chargement initial
         String prefillQuery = getArguments() != null ? getArguments().getString(ARG_SEARCH_QUERY, "") : "";
         if (!prefillQuery.isEmpty()) {
             EditText etSearch = view.findViewById(R.id.et_search_query);
             etSearch.setText(prefillQuery);
             observeSource(viewModel.searchPhotos(prefillQuery));
         } else {
-            observeSource(viewModel.getPublicPhotos());
+            enterPaginationMode();
         }
         setActiveChip(R.id.chip_all);
 
@@ -96,7 +219,8 @@ public class ExplorerFragment extends Fragment {
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
                 String q = s.toString().trim();
                 if (q.isEmpty()) {
-                    observeSource(viewModel.getPublicPhotos());
+                    setActiveChip(R.id.chip_all);
+                    enterPaginationMode();
                 } else {
                     observeSource(viewModel.searchPhotos(q));
                 }
@@ -126,7 +250,8 @@ public class ExplorerFragment extends Fragment {
                 if (!author.isEmpty()) {
                     observeSource(viewModel.getPublicPhotosByAuthor(author));
                 } else {
-                    observeSource(viewModel.getPublicPhotos());
+                    setActiveChip(R.id.chip_all);
+                    enterPaginationMode();
                 }
             }
             @Override public void afterTextChanged(Editable s) {}
@@ -148,7 +273,10 @@ public class ExplorerFragment extends Fragment {
         etDateEnd.setOnFocusChangeListener(dateListener);
 
         // ── Chips de catégorie ─────────────────────────────────────────────
-        setupChip(view, R.id.chip_all, null);
+        view.findViewById(R.id.chip_all).setOnClickListener(v -> {
+            setActiveChip(R.id.chip_all);
+            enterPaginationMode();
+        });
         setupChip(view, R.id.chip_nature,  "Nature");
         setupChip(view, R.id.chip_urbain,  "Urbain");
         setupChip(view, R.id.chip_culture, "Culture");
@@ -165,9 +293,21 @@ public class ExplorerFragment extends Fragment {
             }
         });
 
+        // ── Mes Likes ──────────────────────────────────────────────────────
+        view.findViewById(R.id.chip_likes).setOnClickListener(v -> {
+            setActiveChip(R.id.chip_likes);
+            List<Integer> likedIds = getLikedPhotoIds();
+            if (likedIds.isEmpty()) {
+                adapter.setPhotos(new java.util.ArrayList<>());
+                Toast.makeText(getContext(), "Vous n'avez pas encore liké de photos", Toast.LENGTH_SHORT).show();
+            } else {
+                observeSource(viewModel.getPhotosByIds(likedIds));
+            }
+        });
+
         // ── Flux aléatoire ─────────────────────────────────────────────────
         view.findViewById(R.id.btn_random_feed).setOnClickListener(v -> {
-            setActiveChip(-1); // aucun chip sélectionné
+            setActiveChip(-1);
             observeSource(viewModel.getRandomPhotos(10));
         });
 
@@ -183,19 +323,44 @@ public class ExplorerFragment extends Fragment {
         return view;
     }
 
-    /** Branche un chip sur une requête (null = toutes les photos publiques) */
-    private void setupChip(View root, int chipId, @Nullable String category) {
-        TextView chip = root.findViewById(chipId);
-        chip.setOnClickListener(v -> {
-            setActiveChip(chipId);
-            LiveData<List<Photo>> source = (category == null)
-                    ? viewModel.getPublicPhotos()
-                    : viewModel.getPhotosByCategory(category);
-            observeSource(source);
+    // ── Pagination ─────────────────────────────────────────────────────────
+
+    private void enterPaginationMode() {
+        isPaginationMode = true;
+        currentOffset = 0;
+        isLoadingMore = false;
+        if (currentSource != null) {
+            currentSource.removeObservers(getViewLifecycleOwner());
+            currentSource = null;
+        }
+        loadPage(0, true);
+    }
+
+    private void loadPage(int offset, boolean replace) {
+        if (isLoadingMore && !replace) return;
+        isLoadingMore = true;
+        viewModel.loadMorePublicPhotos(offset, PAGE_SIZE, photos -> {
+            if (!isAdded()) return;
+            requireActivity().runOnUiThread(() -> {
+                if (!isAdded()) return;
+                if (replace) adapter.setPhotos(photos);
+                else adapter.appendPhotos(photos);
+                currentOffset = offset + (photos != null ? photos.size() : 0);
+                isLoadingMore = false;
+                if (swipeRefresh != null) swipeRefresh.setRefreshing(false);
+            });
         });
     }
 
-    /** Met le chip sélectionné en noir (bg_pill_solid) et réinitialise les autres */
+    // ── Sources LiveData (filtres) ──────────────────────────────────────────
+
+    private void setupChip(View root, int chipId, @Nullable String category) {
+        root.findViewById(chipId).setOnClickListener(v -> {
+            setActiveChip(chipId);
+            observeSource(viewModel.getPhotosByCategory(category));
+        });
+    }
+
     private void setActiveChip(int activeId) {
         if (chipRoot == null) return;
         for (int id : CHIP_IDS) {
@@ -211,7 +376,6 @@ public class ExplorerFragment extends Fragment {
         }
     }
 
-    /** Récupère la position GPS et filtre les photos à moins de 50 km */
     private void fetchNearbyPhotos() {
         try {
             LocationManager lm = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
@@ -222,16 +386,28 @@ public class ExplorerFragment extends Fragment {
                 Toast.makeText(getContext(), "Photos à moins de 50 km", Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(getContext(), "Position introuvable, activez le GPS", Toast.LENGTH_SHORT).show();
-                observeSource(viewModel.getPublicPhotos());
                 setActiveChip(R.id.chip_all);
+                enterPaginationMode();
             }
         } catch (SecurityException e) {
             Toast.makeText(getContext(), "Permission GPS manquante", Toast.LENGTH_SHORT).show();
         }
     }
 
-    /** Détache l'ancienne source et observe la nouvelle */
+    public static List<Integer> getLikedPhotoIdsStatic(android.content.Context ctx) {
+        android.content.SharedPreferences prefs = ctx.getSharedPreferences("likes", android.content.Context.MODE_PRIVATE);
+        java.util.Set<String> set = prefs.getStringSet("liked_ids", new java.util.HashSet<>());
+        List<Integer> ids = new java.util.ArrayList<>();
+        for (String s : set) { try { ids.add(Integer.parseInt(s)); } catch (Exception ignored) {} }
+        return ids;
+    }
+
+    private List<Integer> getLikedPhotoIds() {
+        return getLikedPhotoIdsStatic(requireContext());
+    }
+
     private void observeSource(LiveData<List<Photo>> newSource) {
+        isPaginationMode = false;
         if (currentSource != null) currentSource.removeObservers(getViewLifecycleOwner());
         currentSource = newSource;
         currentSource.observe(getViewLifecycleOwner(), adapter::setPhotos);
@@ -245,7 +421,7 @@ public class ExplorerFragment extends Fragment {
             if (results != null && !results.isEmpty()) {
                 String query = results.get(0);
                 EditText etSearch = requireView().findViewById(R.id.et_search_query);
-                etSearch.setText(query); // déclenche le TextWatcher → recherche automatique
+                etSearch.setText(query);
                 Toast.makeText(getContext(), "Recherche : " + query, Toast.LENGTH_SHORT).show();
             }
         }

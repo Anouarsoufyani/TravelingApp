@@ -1,13 +1,19 @@
 package com.example.travelshare.ui.theme.fragments;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -15,6 +21,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.travelshare.R;
 import com.example.travelshare.data.models.Group;
 import com.example.travelshare.data.models.NotificationPreference;
@@ -28,19 +35,49 @@ import java.util.List;
 
 public class ProfileFragment extends Fragment {
 
+    private ActivityResultLauncher<String> avatarPickerLauncher;
+    private String currentAvatarUri = "";
+    private ImageView ivAvatar;
+    private EditText etBio;
+    private SessionManager session;
+    private SharedViewModel viewModel;
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        avatarPickerLauncher = registerForActivityResult(
+                new ActivityResultContracts.GetContent(),
+                uri -> {
+                    if (uri == null || ivAvatar == null) return;
+                    try {
+                        requireContext().getContentResolver().takePersistableUriPermission(
+                                uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    } catch (SecurityException ignored) {}
+                    currentAvatarUri = uri.toString();
+                    ivAvatar.setVisibility(View.VISIBLE);
+                    Glide.with(this).load(uri).centerCrop().into(ivAvatar);
+                    // Auto-save avatar
+                    String bio = etBio != null ? etBio.getText().toString().trim() : "";
+                    viewModel.updateUserProfile(session.getUserId(), currentAvatarUri, bio);
+                }
+        );
+    }
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_profile, container, false);
 
-        SessionManager session = new SessionManager(requireContext());
-        SharedViewModel viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+        session = new SessionManager(requireContext());
+        viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
 
         // ── Infos utilisateur ──────────────────────────────────────────────
         TextView tvName   = view.findViewById(R.id.tv_profile_name);
         TextView tvHandle = view.findViewById(R.id.tv_profile_handle);
         TextView tvAvatar = view.findViewById(R.id.tv_profile_avatar);
+        ivAvatar          = view.findViewById(R.id.iv_profile_avatar);
+        etBio             = view.findViewById(R.id.et_bio);
 
         if (session.isLoggedIn()) {
             String username = session.getUsername();
@@ -48,11 +85,43 @@ public class ProfileFragment extends Fragment {
             tvHandle.setText("@" + username.toLowerCase().replace(" ", "_"));
             tvAvatar.setText(username.length() > 0
                     ? String.valueOf(username.charAt(0)).toUpperCase() : "?");
+
+            // Charger avatar + bio depuis la DB
+            viewModel.getUserByLogin(username, user -> {
+                if (user == null || !isAdded()) return;
+                requireActivity().runOnUiThread(() -> {
+                    if (!isAdded()) return;
+                    if (user.avatarUri != null && !user.avatarUri.isEmpty()) {
+                        currentAvatarUri = user.avatarUri;
+                        ivAvatar.setVisibility(View.VISIBLE);
+                        Glide.with(this).load(Uri.parse(user.avatarUri)).centerCrop().into(ivAvatar);
+                    }
+                    if (user.bio != null && !user.bio.isEmpty() && etBio != null) {
+                        etBio.setText(user.bio);
+                    }
+                });
+            });
         } else {
             tvName.setText("Anonyme");
             tvHandle.setText("Mode anonyme");
             tvAvatar.setText("?");
+            etBio.setEnabled(false);
+            etBio.setHint("Connectez-vous pour rédiger une bio");
         }
+
+        // ── Avatar — clic pour changer la photo ───────────────────────────
+        view.findViewById(R.id.frame_avatar).setOnClickListener(v -> {
+            if (!session.isLoggedIn()) return;
+            avatarPickerLauncher.launch("image/*");
+        });
+
+        // ── Sauvegarde bio ────────────────────────────────────────────────
+        view.findViewById(R.id.btn_save_bio).setOnClickListener(v -> {
+            if (!session.isLoggedIn()) return;
+            String bio = etBio.getText().toString().trim();
+            viewModel.updateUserProfile(session.getUserId(), currentAvatarUri, bio);
+            Toast.makeText(getContext(), "Profil mis à jour ✓", Toast.LENGTH_SHORT).show();
+        });
 
         // ── Stats : photos publiées ────────────────────────────────────────
         TextView tvStatPhotos = view.findViewById(R.id.tv_stat_photos);
@@ -62,8 +131,8 @@ public class ProfileFragment extends Fragment {
         viewModel.getAllPhotos().observe(getViewLifecycleOwner(), photos -> {
             if (photos == null) return;
             int myPhotos = 0, myLikes = 0;
-            for (com.example.travelshare.data.models.Photo p : photos) {
-                if (session.getUsername().equals(p.getAuthor())) {
+            for (Photo p : photos) {
+                if (session.getUsername() != null && session.getUsername().equals(p.getAuthor())) {
                     myPhotos++;
                     myLikes += p.getLikes();
                 }
@@ -82,7 +151,7 @@ public class ProfileFragment extends Fragment {
                     .observe(getViewLifecycleOwner(), myPhotosAdapter::setPhotos);
         }
 
-        // ── Stats groupes + liste preview (filtrés par user) ──────────────
+        // ── Stats groupes + liste preview ──────────────────────────────────
         RecyclerView rvGroups = view.findViewById(R.id.rv_profile_groups);
         rvGroups.setLayoutManager(new LinearLayoutManager(getContext()));
         ProfileGroupAdapter groupAdapter = new ProfileGroupAdapter();
@@ -113,7 +182,6 @@ public class ProfileFragment extends Fragment {
                     });
         }
 
-        // Clic sur "Gérer mes alertes" → écran de gestion des préférences
         view.findViewById(R.id.layout_alerts_preview).setOnClickListener(v -> {
             if (getActivity() != null)
                 getActivity().getSupportFragmentManager()
@@ -123,7 +191,6 @@ public class ProfileFragment extends Fragment {
                         .commit();
         });
 
-        // ── Bouton Mes groupes ─────────────────────────────────────────────
         view.findViewById(R.id.btn_groups).setOnClickListener(v ->
             requireActivity().getSupportFragmentManager()
                 .beginTransaction()
@@ -132,7 +199,6 @@ public class ProfileFragment extends Fragment {
                 .commit()
         );
 
-        // ── Déconnexion ────────────────────────────────────────────────────
         view.findViewById(R.id.btn_logout).setOnClickListener(v -> {
             session.logoutUser();
             Intent intent = new Intent(getActivity(), LoginActivity.class);
@@ -178,7 +244,7 @@ public class ProfileFragment extends Fragment {
 
         @Override public int getItemCount() { return photos.size(); }
 
-        void setPhotos(List<Photo> list) { this.photos = list; notifyDataSetChanged(); }
+        void setPhotos(List<Photo> list) { this.photos = list != null ? list : new ArrayList<>(); notifyDataSetChanged(); }
     }
 
     // ── Adapter mini groupes ───────────────────────────────────────────────
@@ -208,8 +274,8 @@ public class ProfileFragment extends Fragment {
             h.tvCount.setText(g.description != null && !g.description.isEmpty() ? g.description : "Groupe");
         }
 
-        @Override public int getItemCount() { return Math.min(groups.size(), 3); } // max 3 en aperçu
+        @Override public int getItemCount() { return Math.min(groups.size(), 3); }
 
-        void setGroups(List<Group> g) { this.groups = g; notifyDataSetChanged(); }
+        void setGroups(List<Group> g) { this.groups = g != null ? g : new ArrayList<>(); notifyDataSetChanged(); }
     }
 }

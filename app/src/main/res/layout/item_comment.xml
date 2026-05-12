@@ -27,7 +27,18 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/ink_faint"
-            android:textSize="11sp" />
+            android:textSize="11sp"
+            android:layout_marginEnd="6dp" />
+
+        <TextView
+            android:id="@+id/btn_delete_comment"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:gravity="center"
+            android:text="×"
+            android:textSize="16sp"
+            android:textColor="@color/terracotta"
+            android:visibility="gone" />
     </LinearLayout>
 
     <TextView

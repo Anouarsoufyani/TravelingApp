@@ -143,7 +143,9 @@ public class GroupsFragment extends Fragment {
             if (currentTab == TAB_DISC && session.isLoggedIn() && groups != null) {
                 for (Group g : groups) {
                     viewModel.getMembership(session.getUserId(), g.id, m -> {
-                        adapter.putMembership(g.id, m != null ? m.status : null);
+                        if (!isAdded()) return;
+                        requireActivity().runOnUiThread(() ->
+                                adapter.putMembership(g.id, m != null ? m.status : null));
                     });
                 }
             }
@@ -219,15 +221,15 @@ public class GroupsFragment extends Fragment {
         }
 
         static class GVH extends RecyclerView.ViewHolder {
-            TextView tvAvatar, tvName, tvDesc, tvAction, tvChat;
+            TextView tvAvatar, tvName, tvDesc, tvAction, tvChat, tvUnreadBadge;
             GVH(View v) {
                 super(v);
-                tvAvatar = v.findViewById(R.id.tv_group_avatar);
-                tvName   = v.findViewById(R.id.tv_group_name);
-                tvDesc   = v.findViewById(R.id.tv_group_desc);
-                tvAction = v.findViewById(R.id.tv_group_action);
-                tvChat   = v.findViewById(R.id.tv_group_chat);
-                // Le badge pending n'est plus utilisé dans l'adapter (géré dans le chat)
+                tvAvatar      = v.findViewById(R.id.tv_group_avatar);
+                tvName        = v.findViewById(R.id.tv_group_name);
+                tvDesc        = v.findViewById(R.id.tv_group_desc);
+                tvAction      = v.findViewById(R.id.tv_group_action);
+                tvChat        = v.findViewById(R.id.tv_group_chat);
+                tvUnreadBadge = v.findViewById(R.id.tv_unread_badge);
                 View badge = v.findViewById(R.id.tv_pending_badge);
                 if (badge != null) badge.setVisibility(View.GONE);
             }
@@ -266,7 +268,24 @@ public class GroupsFragment extends Fragment {
             h.tvAction.setOnClickListener(null);
 
             h.tvChat.setVisibility(View.VISIBLE);
-            h.tvChat.setOnClickListener(v -> openChat(v, g));
+            h.tvChat.setOnClickListener(v -> {
+                viewModel.markGroupMessagesRead(session.getUserId(), g.id);
+                h.tvUnreadBadge.setVisibility(View.GONE);
+                openChat(v, g);
+            });
+
+            // Badge messages non lus
+            if (session.isLoggedIn()) {
+                viewModel.getUnreadCountForGroup(session.getUserId(), g.id)
+                        .observe((androidx.lifecycle.LifecycleOwner) fragment, count -> {
+                    if (count != null && count > 0) {
+                        h.tvUnreadBadge.setVisibility(View.VISIBLE);
+                        h.tvUnreadBadge.setText(count > 9 ? "9+" : String.valueOf(count));
+                    } else {
+                        h.tvUnreadBadge.setVisibility(View.GONE);
+                    }
+                });
+            }
         }
 
         private void bindDiscoverGroup(GVH h, Group g, boolean isCreator) {

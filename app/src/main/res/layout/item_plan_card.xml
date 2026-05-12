@@ -4,9 +4,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="16dp"
-    android:layout_marginVertical="8dp"
+    android:layout_marginVertical="6dp"
     app:cardCornerRadius="16dp"
-    app:cardElevation="3dp"
+    app:cardElevation="4dp"
     app:cardBackgroundColor="@color/default_white">
 
     <LinearLayout
@@ -14,36 +14,32 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Bande colorée type plan -->
-        <View
-            android:id="@+id/v_plan_color"
+        <!-- Bande colorée + badge type -->
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="6dp"
-            android:background="@color/teal" />
+            android:layout_height="48dp">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            <View
+                android:id="@+id/v_plan_color"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
 
-            <!-- Type badge + ville -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="8dp">
+                android:paddingHorizontal="16dp">
 
                 <TextView
                     android:id="@+id/tv_plan_type_badge"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/bg_pill_solid"
+                    android:background="#33FFFFFF"
                     android:paddingHorizontal="12dp"
                     android:paddingVertical="4dp"
                     android:textColor="@color/default_white"
-                    android:textSize="11sp"
+                    android:textSize="12sp"
                     android:textStyle="bold"
                     android:layout_marginEnd="10dp" />
 
@@ -52,28 +48,46 @@
                     android:layout_width="0dp"
                     android:layout_weight="1"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/ink"
-                    android:textSize="15sp"
+                    android:textColor="@color/default_white"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
-            </LinearLayout>
 
-            <!-- Métriques -->
+                <TextView
+                    android:id="@+id/tv_plan_liked"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="♡"
+                    android:textSize="22sp"
+                    android:textColor="@color/default_white"
+                    android:padding="4dp" />
+            </LinearLayout>
+        </FrameLayout>
+
+        <!-- Corps -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <!-- 3 métriques -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginBottom="12dp">
+                android:layout_marginBottom="10dp">
 
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_weight="1"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
                     android:background="@color/sand"
                     android:padding="8dp"
-                    android:layout_marginEnd="6dp">
+                    android:layout_marginEnd="5dp">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="BUDGET" android:textSize="9sp" android:textColor="@color/ink_faint" android:letterSpacing="0.08"/>
+                        android:text="💰 " android:textSize="13sp"/>
                     <TextView android:id="@+id/tv_plan_budget"
                         android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:textSize="13sp" android:textColor="@color/ink" android:textStyle="bold"/>
@@ -83,12 +97,13 @@
                     android:layout_width="0dp"
                     android:layout_weight="1"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
                     android:background="@color/sand"
                     android:padding="8dp"
-                    android:layout_marginEnd="6dp">
+                    android:layout_marginEnd="5dp">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="DURÉE" android:textSize="9sp" android:textColor="@color/ink_faint" android:letterSpacing="0.08"/>
+                        android:text="⏱ " android:textSize="13sp"/>
                     <TextView android:id="@+id/tv_plan_duration"
                         android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:textSize="13sp" android:textColor="@color/ink" android:textStyle="bold"/>
@@ -98,14 +113,15 @@
                     android:layout_width="0dp"
                     android:layout_weight="1"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
                     android:background="@color/sand"
                     android:padding="8dp">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="EFFORT" android:textSize="9sp" android:textColor="@color/ink_faint" android:letterSpacing="0.08"/>
+                        android:text="🏃 " android:textSize="13sp"/>
                     <TextView android:id="@+id/tv_plan_effort"
                         android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:textSize="13sp" android:textColor="@color/ink" android:textStyle="bold"/>
+                        android:textSize="12sp" android:textColor="@color/ink" android:textStyle="bold"/>
                 </LinearLayout>
             </LinearLayout>
 
@@ -114,26 +130,15 @@
                 android:id="@+id/tv_plan_activities"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/ink_muted"
+                android:textColor="@color/teal"
                 android:textSize="12sp"
                 android:layout_marginBottom="12dp"/>
 
-            <!-- Like + Bouton Voir le parcours -->
+            <!-- Boutons action -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <TextView
-                    android:id="@+id/tv_plan_liked"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="♡"
-                    android:textSize="24sp"
-                    android:textColor="@color/terracotta"
-                    android:padding="4dp"
-                    android:layout_marginEnd="8dp" />
+                android:orientation="horizontal">
 
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/btn_plan_detail"
@@ -144,7 +149,18 @@
                     android:textAllCaps="false"
                     android:textColor="@color/default_white"
                     android:background="@drawable/bg_pill_solid"
-                    android:textSize="13sp" />
+                    android:textSize="13sp"
+                    android:layout_marginEnd="8dp" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btn_plan_delete"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:text="🗑"
+                    android:textSize="16sp"
+                    android:textAllCaps="false"
+                    android:background="@color/sand"
+                    android:padding="0dp" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

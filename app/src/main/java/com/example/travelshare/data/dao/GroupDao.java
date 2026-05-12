@@ -28,4 +28,10 @@ public interface GroupDao {
            "WHERE g.creatorId = :userId OR (gm.userId = :userId AND gm.status = 'MEMBER') " +
            "ORDER BY g.id DESC")
     LiveData<List<Group>> getGroupsForUser(long userId);
+
+    @Query("SELECT DISTINCT g.* FROM `groups` g " +
+           "LEFT JOIN group_members gm ON g.id = gm.groupId " +
+           "WHERE g.creatorId = :userId OR (gm.userId = :userId AND gm.status = 'MEMBER') " +
+           "ORDER BY g.id DESC")
+    List<Group> getGroupsForUserSync(long userId);
 }

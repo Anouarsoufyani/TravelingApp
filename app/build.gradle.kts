@@ -53,9 +53,20 @@ dependencies {
     // Carte OpenStreetMap (sans clé API)
     implementation("org.osmdroid:osmdroid-android:6.1.18")
 
+    // CardView (utilisé dans le chat groupe)
+    implementation("androidx.cardview:cardview:1.0.0")
+
+    // Pull-to-refresh
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+
+    // ML Kit — reconnaissance d'image on-device (gratuit, pas de clé API)
+    implementation("com.google.mlkit:image-labeling:17.0.8")
+
     // Chargement d'images
     implementation("com.github.bumptech.glide:glide:4.16.0")
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+
+
 
     // Tests par défaut
     testImplementation("junit:junit:4.13.2")

@@ -1,0 +1,1813 @@
+% ================================================================
+%  Rapport — Application Traveling (TravelShare + TravelPath)
+%  Compilateur : pdfLaTeX — Overleaf
+% ================================================================
+\documentclass[a4paper,12pt,openany]{report}
+
+% ── Encodage & langue ──────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage{inconsolata}
+
+% ── Mise en page ───────────────────────────────────────────────
+\usepackage[top=2.5cm, bottom=2.5cm, left=2.8cm, right=2.8cm]{geometry}
+\usepackage{parskip}
+\usepackage{microtype}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+
+% ── Couleurs (palette sobre) ────────────────────────────────────
+\usepackage[dvipsnames,table]{xcolor}
+\definecolor{navy}{HTML}{2C4A6E}
+\definecolor{teal}{HTML}{2C7873}
+\definecolor{terra}{HTML}{B85C38}
+\definecolor{codebg}{HTML}{F3F4F6}
+\definecolor{codetext}{HTML}{1F2937}
+\definecolor{lightbg}{HTML}{EEF2F7}
+\definecolor{greentxt}{HTML}{276749}
+\definecolor{warnbg}{HTML}{FEFCE8}
+\definecolor{okbg}{HTML}{F0FDF4}
+\definecolor{infobg}{HTML}{EFF6FF}
+\definecolor{errbg}{HTML}{FEF2F2}
+\definecolor{rowalt}{HTML}{F9FAFB}
+\definecolor{bord}{HTML}{D1D5DB}
+
+% ── Titres (sobres et lisibles) ─────────────────────────────────
+\usepackage{titlesec}
+\titleformat{\chapter}[block]
+  {\normalfont\Large\bfseries\color{navy}}
+  {\thechapter.\enspace}{0pt}{}
+  [\vspace{3pt}{\color{bord}\rule{\textwidth}{0.8pt}}\vspace{2pt}]
+\titlespacing*{\chapter}{0pt}{18pt}{12pt}
+
+\titleformat{\section}
+  {\normalfont\large\bfseries\color{navy}}
+  {\thesection\enspace}{0pt}{}
+\titlespacing*{\section}{0pt}{14pt}{4pt}
+
+\titleformat{\subsection}
+  {\normalfont\normalsize\bfseries\color{black}}
+  {\thesubsection\enspace}{0pt}{}
+\titlespacing*{\subsection}{0pt}{10pt}{2pt}
+
+% ── En-têtes ───────────────────────────────────────────────────
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small\color{gray!80}Traveling — TravelShare \& TravelPath}
+\fancyhead[R]{\small\color{gray!80}Hammar · Soufyani — M1 2025-2026}
+\fancyfoot[C]{\small\color{gray}\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+% ── Liens ──────────────────────────────────────────────────────
+\usepackage[colorlinks=true, linkcolor=navy, urlcolor=teal]{hyperref}
+
+% ── Tableaux ───────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+\renewcommand{\arraystretch}{1.35}
+
+% ── Code source (fond clair, lisible) ──────────────────────────
+\usepackage{listings}
+\lstdefinestyle{java}{
+  backgroundcolor  = \color{codebg},
+  basicstyle       = \ttfamily\footnotesize\color{codetext},
+  keywordstyle     = \color{navy}\bfseries,
+  stringstyle      = \color{teal!80!black},
+  commentstyle     = \color{gray}\itshape,
+  numberstyle      = \tiny\color{gray!60},
+  language         = Java,
+  breaklines       = true,
+  showstringspaces = false,
+  frame            = single, framerule = 0.4pt,
+  rulecolor        = \color{bord},
+  xleftmargin = 8pt, xrightmargin = 6pt,
+  aboveskip = 8pt, belowskip = 6pt,
+  tabsize = 4, numbers = left, numbersep = 10pt,
+  morekeywords = {LiveData,MediatorLiveData,AndroidViewModel,
+    AppDatabase,ExecutorService,SensorManager,MediaRecorder,
+    MediaPlayer,ActivityResultLauncher,TravelPlan,PlanStep,
+    GeoPoint,Polyline,BoundingBox,SharedViewModel,TravelPathViewModel},
+}
+\lstset{style=java}
+
+% ── Boîtes simples ─────────────────────────────────────────────
+\usepackage[most]{tcolorbox}
+\tcbset{mybox/.style={
+  enhanced, arc=3pt, boxrule=0.5pt,
+  left=8pt, right=8pt, top=5pt, bottom=5pt,
+  fonttitle=\bfseries\small}}
+
+\newenvironment{infobox}[1][Note]{%
+  \begin{tcolorbox}[mybox, colback=infobg, colframe=navy!30,
+    title=\textcolor{navy}{#1}]\small\color{navy!80}}
+  {\end{tcolorbox}}
+
+\newenvironment{okbox}[1][]{%
+  \begin{tcolorbox}[mybox, colback=okbg, colframe=teal!40,
+    title=\textcolor{greentxt}{#1}]\small\color{greentxt!80!black}}
+  {\end{tcolorbox}}
+
+\newenvironment{warnbox}[1][Attention]{%
+  \begin{tcolorbox}[mybox, colback=warnbg, colframe=Goldenrod!60,
+    title=\textcolor{brown!80}{#1}]\small\color{brown!70!black}}
+  {\end{tcolorbox}}
+
+\newenvironment{errbox}[1][Problème]{%
+  \begin{tcolorbox}[mybox, colback=errbg, colframe=terra!50,
+    title=\textcolor{terra}{#1}]\small\color{terra!80!black}}
+  {\end{tcolorbox}}
+
+% ── Commandes utiles ───────────────────────────────────────────
+\newcommand{\ic}[1]{\texttt{\small\colorbox{lightbg}{\color{navy!90} #1}}}
+\newcommand{\cyes}{\textcolor{greentxt}{\bfseries\checkmark}}
+\newcommand{\cno}{\textcolor{terra}{\bfseries$\times$}}
+
+% ── Captures d'écran réelles ───────────────────────────────────
+\usepackage{graphicx}
+\newcommand{\screenshot}[2][0.38\textwidth]{%
+  \begin{center}
+  \vspace{4pt}
+  \includegraphics[width=#1,keepaspectratio]{#2}
+  \vspace{4pt}
+  \end{center}
+}
+
+% ── Enumération ────────────────────────────────────────────────
+\usepackage{enumitem}
+\usepackage{multicol}
+\setlist[itemize]{noitemsep, topsep=3pt, leftmargin=1.3em}
+\setlist[enumerate]{noitemsep, topsep=3pt}
+
+% ==============================================================
+\begin{document}
+\pagestyle{empty}
+
+% ──────────────────────────────────────────────────────────────
+%  PAGE DE GARDE
+% ──────────────────────────────────────────────────────────────
+\begin{titlepage}
+\centering
+\vspace*{2cm}
+
+{\color{navy}\rule{\textwidth}{1.5pt}}
+\vspace{1cm}
+
+{\fontsize{42}{50}\selectfont\bfseries\color{navy} Traveling\par}
+\vspace{0.3cm}
+{\large\color{teal} TravelShare \& TravelPath\par}
+\vspace{0.2cm}
+{\normalsize\color{gray} Application Android — Java\par}
+
+\vspace{1cm}
+{\color{navy}\rule{\textwidth}{0.5pt}}
+
+\vspace{2.5cm}
+
+\begin{tabular}{ll}
+  \textbf{Étudiants} & Sofiane Hammar \quad — \quad TravelShare + Passerelle \\[4pt]
+                     & Anouar Soufyani \quad — \quad TravelPath \\[14pt]
+  \textbf{Formation} & Master 1 Programmation Mobile \\[4pt]
+  \textbf{Année}     & 2025-2026 \\[14pt]
+  \textbf{Dépôt Git} & \texttt{github.com/Soof2/Travelshare}
+\end{tabular}
+
+\vfill
+{\color{bord}\rule{\textwidth}{0.5pt}}\\[4pt]
+{\small\color{gray} Rapport de projet — Module Programmation Mobile}
+\end{titlepage}
+
+\nopagecolor
+\pagestyle{fancy}
+\tableofcontents
+\clearpage
+
+% ──────────────────────────────────────────────────────────────
+%  RÉSUMÉ
+% ──────────────────────────────────────────────────────────────
+\begin{tcolorbox}[mybox, colback=lightbg, colframe=bord,
+  left=14pt, right=14pt, top=12pt, bottom=12pt,
+  title=\large\bfseries\color{navy}Résumé]
+
+Dans le cadre du module Programmation Mobile (Master 1, 2025-2026), nous avons
+conçu et développé \textbf{Traveling}, une application Android complète dédiée
+au voyage, réalisée en binôme en Java.
+
+L'idée de départ était de proposer deux services complémentaires autour du voyage.
+\textbf{TravelShare} permet de partager et de découvrir des photos de voyages :
+on peut publier une photo depuis sa galerie ou son appareil photo, la géolocaliser,
+y associer une note vocale, et la partager avec un groupe ou en public. Les autres
+utilisateurs peuvent la retrouver grâce à une recherche textuelle ou vocale, par
+catégorie, par auteur, par période, ou même en secouant simplement leur téléphone
+pour obtenir des suggestions aléatoires.
+
+\textbf{TravelPath} complète cette expérience en générant des itinéraires personnalisés.
+L'utilisateur renseigne une ville, ses activités préférées, son budget et sa disponibilité,
+et l'application lui propose jusqu'à trois parcours adaptés — économique, équilibré ou confort —
+avec de vrais lieux issus d'OpenStreetMap, un tracé routier réel, la météo du jour
+et les adresses de chaque étape.
+
+Sur le plan technique, tout repose sur le pattern MVVM avec une base de données Room,
+et uniquement des services gratuits et open-source (Nominatim, OSRM, Overpass, Open-Meteo,
+ML Kit). Aucune clé API payante n'est utilisée.
+
+\vspace{6pt}
+\begin{tabular}{ll}
+  \textbf{Mots-clés :} &
+  Android, Java, MVVM, Room, OSMDroid, OSRM, Nominatim, Overpass, \\
+  & Open-Meteo, ML Kit, MediaRecorder, SensorManager, LiveData
+\end{tabular}
+\end{tcolorbox}
+
+\clearpage
+
+% ==============================================================
+\chapter{Introduction}
+% ==============================================================
+
+\section{Contexte du projet}
+
+Ce rapport présente l'application \textbf{Traveling}, développée dans le cadre du module
+\textbf{Programmation Mobile} en Master 1, année 2025-2026. Le projet a été réalisé en
+binôme par \textbf{Sofiane Hammar} et \textbf{Anouar Soufyani}.
+
+L'objectif était de concevoir une application Android complète, en mettant en pratique
+les concepts vus en cours : base de données locale, architecture MVVM, capteurs matériels,
+notifications, cartographie et communication entre composants. Le projet devait également
+démontrer une capacité à réaliser une application cohérente avec plusieurs modules
+interdépendants.
+
+\section{Ce que fait l'application}
+
+\textbf{Traveling} est organisée autour de trois parties qui fonctionnent ensemble :
+
+\begin{itemize}
+  \item \textbf{TravelShare} est le côté réseau social de l'application. On y publie des
+    photos de voyages, on les explore par catégorie, lieu, auteur ou période, on rejoint
+    des groupes privés pour partager des albums, et on reçoit des notifications quand
+    un lieu ou un auteur qu'on suit publie une nouvelle photo.
+
+  \item \textbf{TravelPath} est le générateur d'itinéraires. On entre une ville et ses
+    préférences (activités souhaitées, budget, durée, niveau d'effort), et l'application
+    propose jusqu'à trois parcours avec de vrais restaurants, musées et parcs issus
+    d'OpenStreetMap, un itinéraire tracé sur une carte, la météo du jour et les adresses
+    de chaque étape.
+
+  \item \textbf{La passerelle} relie les deux modules. Depuis une photo TravelShare, on
+    peut générer un itinéraire vers ce lieu en un clic. Et depuis un parcours TravelPath,
+    on peut voir les photos TravelShare associées à chaque étape.
+\end{itemize}
+
+\section{Répartition du travail}
+
+\begin{tabularx}{\textwidth}{>{\bfseries}l >{\bfseries}l X}
+  \toprule
+  Étudiant & Partie & Fonctionnalités développées \\
+  \midrule
+  Sofiane Hammar
+    & TravelShare
+    & Authentification, publication de photos, explorateur multi-filtres,
+      pull-to-refresh + pagination, accéléromètre (shake), note vocale,
+      ML Kit tags IA, photo de profil + bio, partage/modifier/supprimer posts,
+      groupes, chat, badges, notifications, carte, passerelle TS$\to$TP \\[4pt]
+  Anouar Soufyani
+    & TravelPath
+    & Formulaire de génération, vrais lieux Overpass API, algorithme de parcours
+      (durée/effort/budget dynamiques), géocodage Nominatim + Haversine,
+      adresses réelles des étapes, tracé GPS OSRM, météo Open-Meteo,
+      export PDF, régénération, suppression parcours, passerelle TP$\to$TS \\[4pt]
+  Les deux
+    & Architecture
+    & Base de données Room, ViewModels partagés, modèles de données, intégration
+      générale \\
+  \bottomrule
+\end{tabularx}
+
+
+\section{Fonctionnalités implémentées}
+
+Le tableau suivant récapitule l'ensemble des fonctionnalités réalisées dans
+l'application.
+
+% ── TravelShare ──────────────────────────────────────────────────
+\vspace{6pt}
+\begin{tcolorbox}[enhanced, colback=infobg, colframe=teal, arc=4pt,
+  boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt,
+  title={\textbf{TravelShare — Réseau social de voyages}},
+  fonttitle=\bfseries\small\color{white},
+  colbacktitle=teal]
+
+\begin{multicols}{2}
+\small
+\textbf{Compte \& Session}
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]
+  \item Inscription / connexion avec session persistante
+  \item Mode anonyme (consultation des photos publiques)
+  \item Profil public cliquable (style Instagram)
+  \item Photo de profil + bio utilisateur
+\end{itemize}
+
+\textbf{Publication}
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]
+  \item Photo depuis galerie ou caméra
+  \item Géocodage automatique via Nominatim
+  \item Note vocale AAC (enregistrement + lecture)
+  \item Tags auto + IA ML Kit Image Labeling (seuil 70\,\%)
+  \item Localisation approximative (±11 km)
+  \item Visibilité PUBLIC ou GROUP (groupe privé)
+\end{itemize}
+
+\textbf{Exploration \& Recherche}
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]
+  \item Recherche texte temps réel + recherche vocale
+  \item 8 filtres : catégorie, auteur, période, GPS, likes, aléatoire
+  \item Chips en 2 rangées fixes (pas de défilement)
+  \item Pull-to-refresh + pagination infinite scroll
+  \item Shake pour flux aléatoire (accéléromètre)
+\end{itemize}
+
+\columnbreak
+
+\textbf{Fiche photo}
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]
+  \item Likes persistés, commentaires, signalement
+  \item Temps de marche via OSRM (profil piéton)
+  \item Photos similaires par tags
+  \item Partage externe (WhatsApp, SMS…)
+  \item Partage dans un groupe (carte cliquable dans le chat)
+  \item Modifier / supprimer sa photo ou ses commentaires
+\end{itemize}
+
+\textbf{Groupes \& Chat}
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]
+  \item Groupes privés : création, demande PENDING→MEMBER
+  \item Chat temps réel (LiveData Room) — 3 types de messages
+  \item Badges non lus dynamiques par groupe
+\end{itemize}
+
+\textbf{Notifications}
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]
+  \item Notifications système Android
+  \item Notifications in-app + badge cloche
+  \item Préférences configurables (AUTEUR / LIEU / TAG / GROUPE)
+\end{itemize}
+
+\textbf{Carte}
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]
+  \item Carte OSMDroid avec tous les points géolocalisés
+\end{itemize}
+\end{multicols}
+\end{tcolorbox}
+
+\vspace{8pt}
+
+% ── TravelPath ───────────────────────────────────────────────────
+\begin{tcolorbox}[enhanced, colback=lightbg, colframe=navy, arc=4pt,
+  boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt,
+  title={\textbf{TravelPath — Générateur d'itinéraires}},
+  fonttitle=\bfseries\small\color{white},
+  colbacktitle=navy]
+
+\begin{multicols}{2}
+\small
+\textbf{Formulaire de génération}
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]
+  \item Ville, 5 activités, budget, durée, effort, météo
+  \item Lieux obligatoires à intégrer dans le parcours
+  \item Génération de 3 parcours : Éco / Équilibré / Confort
+\end{itemize}
+
+\textbf{Vrais lieux OSM}
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]
+  \item Overpass API — lieux nommés uniquement
+  \item 5 requêtes parallèles (1 par activité)
+  \item Fallback Nominatim si Overpass indisponible
+  \item Déduplication des lieux identiques
+  \item Adresse réelle de chaque étape
+\end{itemize}
+
+\textbf{Cartographie}
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]
+  \item Carte OSMDroid avec marqueurs par étape
+  \item Tracé routier réel OSRM + temps de trajet
+  \item Géocodage Nominatim + validation Haversine
+  \item Zoom / déplacement libres sur la carte
+\end{itemize}
+
+\columnbreak
+
+\textbf{Métriques dynamiques}
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]
+  \item Budget, durée et effort pris en compte
+  \item Coûts proportionnels (25\,\% / 60\,\% / 90\,\%)
+  \item Météo temps réel Open-Meteo
+  \item Horaires d'ouverture typiques par type
+\end{itemize}
+
+\textbf{Gestion des parcours}
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]
+  \item Onglets Mes parcours / Sauvegardés
+  \item Suppression individuelle ou globale
+  \item Régénération avec paramètres pré-remplis
+  \item Export PDF natif (Canvas A4)
+  \item Partage texte du parcours
+  \item Mode hors-ligne (plans sauvegardés Room)
+\end{itemize}
+
+\textbf{Détail des étapes}
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]
+  \item Icône, créneau horaire, durée, coût
+  \item Bouton vidéo YouTube par étape
+\end{itemize}
+\end{multicols}
+\end{tcolorbox}
+
+\vspace{8pt}
+
+% ── Passerelle ───────────────────────────────────────────────────
+\begin{tcolorbox}[enhanced, colback=okbg, colframe=greentxt, arc=4pt,
+  boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt,
+  title={\textbf{Passerelle — Intégration bidirectionnelle}},
+  fonttitle=\bfseries\small\color{white},
+  colbacktitle=greentxt]
+\small
+\begin{multicols}{2}
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]
+  \item TravelShare → TravelPath : ville transmise automatiquement
+  \item TravelPath → TravelShare : bouton "Voir des photos" par étape
+\end{itemize}
+\columnbreak
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]
+  \item Navigation unifiée (BottomNavigationView + back stack)
+  \item Session partagée entre les deux modules
+\end{itemize}
+\end{multicols}
+\end{tcolorbox}
+
+% ==============================================================
+\chapter{Présentation générale de l'application}
+% ==============================================================
+
+\section{Architecture globale : le pattern MVVM}
+
+Toute l'application est construite sur le pattern \textbf{MVVM
+(Model-View-ViewModel)}, le standard recommandé par Google pour Android.
+
+L'idée est simple : la couche d'affichage (les Fragments et Activities) ne
+sait pas d'où viennent les données. Elle se contente d'\emph{observer} des
+\ic{LiveData} que lui fournissent les ViewModels. Quand les données changent
+dans la base, l'écran se met à jour automatiquement, sans qu'il faille écrire
+de code de synchronisation.
+
+\begin{tcolorbox}[mybox,colback=codebg,colframe=bord,
+  left=10pt,right=10pt,top=8pt,bottom=8pt]
+{\ttfamily\footnotesize\color{navy!80}
+\begin{verbatim}
+ ┌─────────────── COUCHE VUE (Fragments / Activities) ──────────────┐
+ │  MainActivity · ExplorerFragment · PublishFragment               │
+ │  GroupsFragment · GroupChatFragment · MapFragment                │
+ │  TravelPathFragment · PlanDetailFragment · ...                   │
+ └────────────────────────┬─────────────────────────────────────────┘
+                          │  observe(LiveData)  /  appel méthode VM
+                          ▼
+ ┌─────────────── COUCHE VIEWMODEL ─────────────────────────────────┐
+ │  SharedViewModel              TravelPathViewModel                │
+ │  (photos, groupes, notifs)    (parcours, étapes, APIs)           │
+ └────────────────────────┬─────────────────────────────────────────┘
+                          │  appels DAO sur thread background
+                          ▼
+ ┌─────────────── COUCHE MODÈLE (Room v19) ──────────────────────────┐
+ │  AppDatabase · 12 entités · pool de 4 threads                    │
+ │  PhotoDao · GroupDao · TravelPlanDao · PlanStepDao · ...         │
+ └────────────────────────┬─────────────────────────────────────────┘
+                          │  requêtes HTTP (thread background)
+                          ▼
+ ┌─────────────── APIs EXTERNES (gratuites) ─────────────────────────┐
+ │  Nominatim (géocodage)  ·  OSRM (routage)  ·  Open-Meteo (météo) │
+ └───────────────────────────────────────────────────────────────────┘
+\end{verbatim}}
+\end{tcolorbox}
+
+
+\section{La base de données : Room v19}
+
+Room est la librairie officielle Android pour gérer une base SQLite de façon
+sûre et structurée. Notre base s'appelle \ic{tp3\_database} et contient
+\textbf{12 entités} (tables). Chaque entité est une classe Java annotée avec
+\ic{@Entity}, et chaque DAO (Data Access Object) est une interface annotée avec
+\ic{@Dao} qui définit les requêtes SQL.
+
+\begin{tcolorbox}[enhanced,colback=lightbg,colframe=bord,arc=5pt,boxrule=0.5pt,
+  left=8pt,right=8pt,top=8pt,bottom=8pt]
+\textbf{Exemple concret :} quand l'utilisateur tape dans la barre de recherche,
+un \ic{TextWatcher} appelle \ic{viewModel.searchPhotos("paris")}. Le ViewModel
+appelle \ic{photoDao.searchPhotos("paris")} qui exécute une requête SQL
+\ic{LIKE '\%paris\%'} et retourne un \ic{LiveData<List<Photo>>}. Room notifie
+automatiquement l'UI, qui met à jour la liste de photos.
+\end{tcolorbox}
+
+Toutes les opérations de base de données s'exécutent sur un pool de \textbf{4 threads background} (\ic{ExecutorService}), jamais sur le thread principal.
+
+\section{Navigation et structure de l'application}
+
+La navigation principale utilise une \ic{BottomNavigationView} avec 5 onglets :
+Explorateur, Carte, Publier, Groupes, Profil. Chaque onglet charge un Fragment
+dans un conteneur central. Les sous-écrans (détail d'un parcours, chat de groupe...)
+s'empilent par-dessus via \ic{addToBackStack()}, permettant de revenir en arrière.
+
+\screenshot{screen_main.png}
+
+\section{Choix techniques justifiés}
+
+\begin{tabularx}{\textwidth}{>{\bfseries}l X}
+  \toprule
+  Choix & Pourquoi ce choix \\
+  \midrule
+  Room (SQLite local)
+    & Les données de l'utilisateur (photos, groupes, parcours) sont stockées
+      localement. Room offre la sécurité de type (requêtes vérifiées à la compilation),
+      les LiveData automatiques, et fonctionne sans connexion réseau. \\
+  OSMDroid (cartographie)
+    & Alternative open-source à Google Maps, sans clé API ni facturation.
+      Supporte les marqueurs, les polylines et le zoom automatique. \\
+  Nominatim + OSRM + Open-Meteo + Overpass
+    & Quatre services entièrement gratuits et sans clé. Nominatim géocode les
+      adresses et fait le reverse geocoding, OSRM calcule les itinéraires routiers,
+      Open-Meteo fournit la météo, Overpass retourne les vrais POIs OSM
+      (restaurants, musées, parcs…) avec leur nom et coordonnées exactes. \\
+  ActivityResultLauncher
+    & API moderne (remplace \ic{onActivityResult} deprecated depuis API 30)
+      pour la caméra, la galerie et les permissions runtime. \\
+  FileProvider
+    & Obligatoire depuis Android 7 pour partager des fichiers entre applications.
+      Utilisé pour la caméra, les enregistrements audio et l'export PDF. \\
+  ML Kit Image Labeling
+    & SDK Google on-device (gratuit, sans clé API). Analyse les photos sélectionnées
+      et retourne des labels visuels (ex. "Mountain", "Sky") avec un score de
+      confiance. Seuil fixé à 70\,\% pour éviter les faux positifs. \\
+  SwipeRefreshLayout
+    & Composant Jetpack ajouté dans l'explorateur. Détecte le geste "tirer vers le bas"
+      et déclenche un rechargement de la première page de photos publiques. \\
+  \bottomrule
+\end{tabularx}
+
+
+% ==============================================================
+\chapter{Module TravelShare — Partage de photos}
+% ==============================================================
+
+\section{Présentation et modes d'utilisation}
+
+TravelShare est le module de réseau social de l'application. Il est organisé
+autour de deux niveaux d'accès distincts selon que l'utilisateur dispose ou
+non d'un compte.
+
+\textbf{Mode anonyme} : l'utilisateur peut parcourir et filtrer toutes les
+photos publiques, consulter le détail d'une photo (lieu, date, commentaires,
+coordonnées GPS). Il peut liker et signaler un contenu, mais toute action
+d'écriture est bloquée avec un message d'invite à la connexion.
+
+\textbf{Mode connecté} : toutes les fonctionnalités sont disponibles.
+L'utilisateur publie des photos, ajoute une note vocale, rejoint des groupes
+privés, discute en chat, reçoit des notifications personnalisées et configure
+ses préférences d'alerte.
+
+La session est gérée par \ic{SessionManager}, qui lit et écrit dans
+\ic{SharedPreferences}. Elle stocke l'\ic{userId} et le \ic{username}
+de l'utilisateur connecté. Chaque fragment interroge \ic{session.isLoggedIn()}
+pour décider des actions autorisées.
+
+\section{Authentification (LoginActivity et InscriptionFragment)}
+
+\ic{LoginActivity} est l'activité de lancement de l'application. Elle affiche
+directement l'écran de connexion sous le titre \textbf{Traveling}, avec trois
+actions possibles : se connecter, créer un compte, ou continuer en mode anonyme.
+Aucune page d'accueil intermédiaire n'existe — l'utilisateur arrive immédiatement
+sur cet écran au démarrage.
+
+La connexion vérifie les identifiants avec \ic{userDao.getUserByLogin()}. Une
+fois connecté, \ic{SessionManager.createLoginSession()} enregistre l'\ic{userId}
+et le \ic{username} en \ic{SharedPreferences}. Si l'utilisateur était déjà
+connecté lors du lancement, \ic{LoginActivity} le redirige directement vers
+\ic{MainActivity} sans afficher le formulaire.
+
+Depuis \ic{MainActivity}, si l'Intent contient \ic{OPEN\_FRAGMENT = "INSCRIPTION"},
+la \ic{BottomNavigationView} est masquée et \ic{InscriptionFragment} est chargé
+directement. Quand l'inscription réussit, le callback \ic{onInscriptionReussie()}
+de l'interface \ic{OnInscriptionListener} est déclenché, la session est créée
+et l'utilisateur est redirigé vers l'explorateur.
+
+\section{L'explorateur de photos (ExplorerFragment)}
+
+L'explorateur est le fragment principal chargé au démarrage. Il affiche un
+\ic{RecyclerView} en grille à 2 colonnes via \ic{GridLayoutManager}, alimenté
+par un \ic{PhotoAdapter} qui charge les images avec Glide. Il propose huit
+façons distinctes de filtrer les photos publiques, toutes gérées par la même
+méthode \ic{observeSource()} qui garantit qu'une seule source LiveData est
+active à la fois.
+
+\begin{lstlisting}
+private LiveData<List<Photo>> currentSource;
+
+private void observeSource(LiveData<List<Photo>> newSource) {
+    if (currentSource != null)
+        currentSource.removeObservers(getViewLifecycleOwner());
+    currentSource = newSource;
+    currentSource.observe(getViewLifecycleOwner(), adapter::setPhotos);
+}
+\end{lstlisting}
+
+\begin{tabularx}{\textwidth}{>{\bfseries}l X}
+  \toprule
+  Filtre & Implémentation \\
+  \midrule
+  Recherche texte
+    & \ic{TextWatcher} sur un \ic{EditText}. À chaque modification de texte,
+      appelle \ic{viewModel.searchPhotos(q)} qui exécute une requête SQL
+      \ic{LIKE '\%q\%'} sur le titre, le lieu et les tags.
+      Si le champ est vide, revient sur \ic{getPublicPhotos()}. \\
+  Recherche vocale
+    & Bouton micro qui lance un \ic{RecognizerIntent.ACTION\_RECOGNIZE\_SPEECH}.
+      Le résultat texte est récupéré dans \ic{onActivityResult(REQUEST\_VOICE)}
+      et injecté directement dans l'\ic{EditText} de recherche, ce qui
+      déclenche automatiquement le \ic{TextWatcher}. \\
+  Filtre par auteur
+    & Second \ic{EditText} avec son propre \ic{TextWatcher}. Appelle
+      \ic{getPublicPhotosByAuthor(author)}. Si vide, revient sur toutes
+      les photos publiques. \\
+  Filtre par période
+    & Deux \ic{EditText} (date début, date fin). Un \ic{OnFocusChangeListener}
+      commun se déclenche quand l'utilisateur quitte l'un des deux champs.
+      Si les deux sont renseignés, appelle \ic{getPhotosByDateRange(start, end)}. \\
+  Chips de catégorie
+    & Huit \ic{TextView} stylés en pill, disposés en \textbf{deux rangées fixes
+      de quatre} (pas de défilement horizontal). Chaque chip occupe la même
+      largeur via \ic{layout\_weight="1"}. Le chip actif passe en fond solide
+      et texte blanc via \ic{setActiveChip(chipId)}.
+      Appelle \ic{getPhotosByCategory(category)} ou \ic{getPublicPhotos()} pour "Tous". \\
+  Autour de moi (GPS)
+    & Vérifie la permission \ic{ACCESS\_FINE\_LOCATION} via
+      \ic{ActivityResultLauncher}. Récupère la position avec
+      \ic{LocationManager.getLastKnownLocation()} (GPS puis réseau en fallback).
+      Appelle \ic{getPhotosByLocation(lat, lng, delta)} où \ic{delta = 50/111}
+      correspond à un rayon de 50 km. \\
+  ❤️ Mes Likes
+    & Affiche toutes les photos que l'utilisateur a likées, dans n'importe
+      quelle session. Les IDs likés sont persistés en \ic{SharedPreferences}
+      (clé \ic{liked\_ids}). Le chip appelle \ic{viewModel.getPhotosByIds(ids)}
+      qui exécute un \ic{SELECT ... WHERE id IN (:ids)} en Room. Si la liste
+      est vide, un toast invite à liker des photos. \\
+  Flux aléatoire
+    & Bouton dédié et détection de shake (accéléromètre). Appelle
+      \ic{getRandomPhotos(10)} qui exécute un \ic{SELECT ... ORDER BY RANDOM() LIMIT 10}. \\
+  \bottomrule
+\end{tabularx}
+
+\subsection{Pull-to-refresh et pagination}
+
+L'explorateur intègre un \ic{SwipeRefreshLayout} encapsulant le \ic{RecyclerView}.
+Tirer vers le bas recharge la première page de photos publiques et réinitialise
+le curseur de pagination.
+
+La liste principale (chip "Tous") fonctionne en mode paginé : 20 photos sont
+chargées initialement via \ic{photoDao.getPublicPhotosPage(offset, limit)}.
+Un \ic{RecyclerView.OnScrollListener} surveille la position du dernier élément visible.
+Quand il atteint les 4 derniers items, la page suivante est chargée en background
+et ajoutée à l'adapter via \ic{appendPhotos()} sans \ic{notifyDataSetChanged()}.
+
+\begin{lstlisting}
+recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+    @Override
+    public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
+        if (!isPaginationMode || dy <= 0 || isLoadingMore) return;
+        int lastVisible = layoutManager.findLastVisibleItemPosition();
+        if (lastVisible >= adapter.getItemCount() - 4)
+            loadPage(currentOffset, false); // false = append
+    }
+});
+\end{lstlisting}
+
+Les vues filtrées (recherche, catégorie, GPS…) utilisent toujours \ic{LiveData}
+directement — la pagination n'est active que sur le flux public non filtré.
+
+\screenshot{screen_explorer.png}
+
+\section{Capteur accéléromètre : détection du shake}
+
+\ic{ExplorerFragment} implémente \ic{SensorEventListener}. En secouant le
+téléphone, un flux de 10 photos aléatoires s'affiche. L'enregistrement du
+capteur se fait dans \ic{onResume()} et le désenregistrement dans \ic{onPause()}
+pour économiser la batterie.
+
+Le shake est détecté en calculant la variation d'accélération sur les trois axes
+entre deux mesures consécutives. Si la variation dépasse \ic{SHAKE\_THRESHOLD}
+sur au moins deux axes simultanément, et que le cooldown de 1500 ms est écoulé,
+le shake est validé.
+
+\begin{lstlisting}
+private static final float SHAKE_THRESHOLD   = 12f;
+private static final long  SHAKE_COOLDOWN_MS = 1500;
+
+@Override
+public void onSensorChanged(SensorEvent event) {
+    float deltaX = Math.abs(event.values[0] - lastX);
+    float deltaY = Math.abs(event.values[1] - lastY);
+    float deltaZ = Math.abs(event.values[2] - lastZ);
+    lastX = event.values[0]; lastY = event.values[1]; lastZ = event.values[2];
+
+    boolean shook = (deltaX > SHAKE_THRESHOLD && deltaY > SHAKE_THRESHOLD)
+                 || (deltaX > SHAKE_THRESHOLD && deltaZ > SHAKE_THRESHOLD)
+                 || (deltaY > SHAKE_THRESHOLD && deltaZ > SHAKE_THRESHOLD);
+
+    if (shook) {
+        long now = System.currentTimeMillis();
+        if (now - lastShakeTime > SHAKE_COOLDOWN_MS) {
+            lastShakeTime = now;
+            setActiveChip(-1); // aucun chip selectionne
+            observeSource(viewModel.getRandomPhotos(10));
+        }
+    }
+}
+\end{lstlisting}
+
+\section{Publication de photos (PublishFragment)}
+
+\ic{PublishFragment} permet à un utilisateur connecté de publier une photo avec
+l'ensemble de ses métadonnées. Le formulaire comprend :
+
+\begin{itemize}
+  \item \textbf{Sélection de l'image} : un clic sur la zone d'aperçu ouvre un
+    \ic{AlertDialog} proposant "Galerie" ou "Appareil photo". La galerie utilise
+    \ic{galleryLauncher.launch("image/*")} (\ic{ActivityResultContracts.GetContent}).
+    La caméra crée d'abord un fichier dans \ic{externalCacheDir/images/} via
+    \ic{FileProvider}, puis lance \ic{cameraLauncher.launch(uri)}
+    (\ic{ActivityResultContracts.TakePicture}). L'URI résultante est stockée
+    dans \ic{selectedPhotoUri} et affichée dans \ic{ImageView}.
+
+  \item \textbf{Titre et lieu} : deux \ic{EditText} obligatoires. Le lieu est
+    géocodé en arrière-plan via Nominatim au moment de la publication, ce qui
+    permet d'afficher la photo sur la carte avec les bonnes coordonnées GPS.
+
+  \item \textbf{Catégorie} : un \ic{Spinner} avec quatre valeurs (Nature,
+    Urbain, Culture, Magasin), alimenté par un \ic{ArrayAdapter}.
+
+  \item \textbf{Tags automatiques + IA (ML Kit)} : dès qu'une photo est
+    sélectionnée (galerie ou caméra), \ic{runMlKit(uri)} analyse l'image en
+    arrière-plan avec \ic{ImageLabeling.getClient()} (seuil 70\,\%). Quand
+    l'utilisateur clique ensuite sur "Tags auto", les hashtags mots-clés
+    (lieu, catégorie, titre) sont fusionnés avec les labels ML Kit
+    (\ic{\#Mountain}, \ic{\#Sky}…). Un toast "✨ X tags IA ajoutés"
+    confirme l'enrichissement IA.
+
+  \item \textbf{Note vocale} : décrit en détail ci-dessous.
+
+  \item \textbf{Localisation approximative} : une \ic{CheckBox}
+    "📍 Lieu approximatif" permet de masquer la position exacte. Si cochée,
+    les coordonnées issues de Nominatim sont arrondies à 1 décimale
+    (\texttt{Math.round(lat * 10.0) / 10.0}), ce qui correspond à une
+    précision de ±11 km. La fiche photo affichera alors "≈ XX.X° N"
+    au lieu de la latitude exacte.
+
+  \item \textbf{Visibilité} : un \ic{Switch} bascule entre PUBLIC et GROUP.
+    En mode GROUP, un \ic{Spinner} chargé depuis \ic{viewModel.getGroupsForUser()}
+    permet de sélectionner le groupe destinataire. L'utilisateur peut aussi
+    créer un nouveau groupe directement depuis ce formulaire.
+\end{itemize}
+
+Au moment de la publication, un \ic{Photo} est créé avec toutes les
+métadonnées (y compris \ic{voiceUri} si une note vocale a été enregistrée),
+inséré en base via \ic{viewModel.insert(photo)}, puis
+\ic{triggerNotificationsForPublish()} est appelé pour envoyer les
+notifications aux utilisateurs abonnés correspondants.
+
+\screenshot{screen_publish.png}
+
+\subsection{La note vocale (MediaRecorder)}
+
+Le bouton de note vocale fonctionne selon une machine d'état à trois états.
+Le même bouton change de rôle à chaque appui.
+
+\begin{lstlisting}
+private enum VoiceState { IDLE, RECORDING, RECORDED }
+// IDLE    -> appui -> demande permission RECORD_AUDIO -> RECORDING
+// RECORDING -> appui -> stopVoiceRecording() -> RECORDED
+// RECORDED  -> appui -> playVoiceNote() via MediaPlayer -> reste RECORDED
+\end{lstlisting}
+
+L'enregistrement utilise \ic{MediaRecorder} en format MPEG\_4 / codec AAC,
+44100 Hz, 128 kbps, mono. Le fichier est sauvegardé dans
+\ic{externalCacheDir/voice/voice\_TIMESTAMP.m4a}. En fin d'enregistrement,
+\ic{voiceNotePath} est associé à la photo lors de la publication.
+Dans \ic{onDestroyView()}, le \ic{MediaRecorder} et le \ic{MediaPlayer} sont
+libérés pour éviter les fuites de ressources.
+
+\begin{lstlisting}
+private void startVoiceRecording(Button btn) {
+    mediaRecorder = new MediaRecorder();
+    mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+    mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+    mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+    mediaRecorder.setAudioSamplingRate(44100);
+    mediaRecorder.setAudioEncodingBitRate(128000);
+    mediaRecorder.setAudioChannels(1);
+    mediaRecorder.setOutputFile(voiceNotePath);
+    mediaRecorder.prepare();
+    mediaRecorder.start();
+    voiceState = VoiceState.RECORDING;
+}
+\end{lstlisting}
+
+La permission \ic{RECORD\_AUDIO} est demandée via \ic{ActivityResultLauncher}
+au premier appui. Si l'utilisateur accepte, \ic{startVoiceRecording()} est
+appelé immédiatement depuis le callback de la permission.
+
+\section{Consultation d'une photo (PhotoDetailActivity)}
+
+En cliquant sur une photo dans la grille, \ic{PhotoDetailActivity} s'ouvre.
+Elle affiche l'image en grand (chargée via Glide), le titre, le lieu, l'auteur,
+la date, la catégorie, les tags et les coordonnées GPS.
+
+Depuis cet écran, l'utilisateur peut :
+\begin{itemize}
+  \item \textbf{Liker / Unliker} : incrémente ou décrémente le compteur de likes
+    via \ic{viewModel.updateLikes(photoId, newCount)}. Le bouton se met à jour
+    immédiatement sans rechargement.
+  \item \textbf{Commenter} : un \ic{EditText} + bouton "Envoyer" insère un
+    \ic{Comment} en base via \ic{viewModel.insertComment(comment)}. La liste
+    des commentaires, chargée depuis \ic{getCommentsForPhoto(photoId)} en
+    LiveData, se met à jour automatiquement.
+  \item \textbf{Signaler} : insère un \ic{Report} en base via
+    \ic{viewModel.insertReport(report)}. Le bouton est désactivé après
+    l'envoi pour éviter les doublons.
+  \item \textbf{Naviguer vers le lieu} : un bouton lance un \ic{Intent} avec
+    l'URI \ic{geo:LAT,LNG?q=NOM\_DU\_LIEU}, qui ouvre Google Maps (ou toute
+    application de navigation installée).
+  \item \textbf{Partager} : le bouton "↗ Partager" construit un résumé texte
+    (titre, lieu, catégorie, tags) et le propose via \ic{Intent.ACTION\_SEND}
+    à n'importe quelle application (WhatsApp, SMS, e-mail…).
+  \item \textbf{Partager dans un groupe} : le bouton "👥 Partager dans un groupe"
+    charge en arrière-plan la liste des groupes dont l'utilisateur est créateur
+    ou membre admis (\ic{groupDao.getGroupsForUserSync(userId)}). Un
+    \ic{AlertDialog} permet de choisir le groupe cible. Un \ic{GroupMessage}
+    est inséré avec le champ \ic{photoId} renseigné, ce qui permet au chat
+    du groupe d'afficher une carte "🔗 Photo partagée" cliquable distincte
+    des messages texte et des posts publiés directement dans le groupe.
+  \item \textbf{Modifier le titre} (si auteur) : si l'utilisateur connecté est
+    l'auteur de la photo, un bloc "Actions propriétaire" apparaît. Le bouton
+    "✏ Modifier le titre" ouvre un \ic{AlertDialog} avec un \ic{EditText}
+    pré-rempli. La validation appelle \ic{viewModel.updatePhotoTitle(photoId, newTitle)}.
+  \item \textbf{Supprimer sa photo} (si auteur) : le bouton "🗑 Supprimer" ouvre
+    une boîte de confirmation. Si confirmé, \ic{viewModel.deletePhoto(photoId)} est
+    appelé et l'activité se ferme.
+  \item \textbf{Supprimer ses commentaires} : le \ic{CommentAdapter} reçoit
+    l'\ic{userId} courant. Si \ic{comment.userId == currentUserId}, un bouton "×"
+    terracotta apparaît sur le commentaire ; son clic appelle
+    \ic{viewModel.deleteComment(id)}.
+\end{itemize}
+
+\subsection{Note vocale attachée à la photo}
+
+Si la photo possède un \ic{voiceUri} (enregistrement M4A sauvegardé lors de la
+publication), un bloc "🎙 Note vocale" apparaît avec un bouton ▶/⏸. La lecture
+utilise \ic{MediaPlayer} avec gestion d'état (\ic{isPlaying}) et libération des
+ressources dans \ic{onDestroy()} pour éviter les fuites mémoire.
+
+\subsection{Temps de marche vers la photo}
+
+Le bloc ACCÈS affiche dynamiquement le temps de marche depuis la position actuelle
+de l'utilisateur. Au chargement, la permission \ic{ACCESS\_FINE\_LOCATION} est
+vérifiée via \ic{ActivityResultLauncher}. Si accordée, \ic{LocationManager.getLastKnownLocation()}
+récupère la position GPS, puis une requête HTTP appelle OSRM avec le profil
+\ic{foot} (marche à pied) :
+
+\begin{lstlisting}
+// Format : .../route/v1/foot/{userLng},{userLat};{photoLng},{photoLat}
+// Reponse : duration (secondes) + distance (metres)
+// Affichage : "🚶 12 min (950 m)" ou "🚶 1h05 (5.2 km)"
+\end{lstlisting}
+
+En cas d'échec réseau ou de coordonnées manquantes, le libellé revient à "Maps →".
+
+\screenshot{screen_photo_detail.png}
+
+\subsection{Photos similaires par tags}
+
+La section "PHOTOS SIMILAIRES" recherche d'abord les photos partageant le
+\textbf{premier tag} de la photo courante via \ic{viewModel.getPhotosByTag(tag)}.
+La méthode \ic{extractFirstTag()} parse la chaîne de tags (\ic{\#Paris \#Voyage …})
+et extrait le premier mot de plus de 2 caractères. Si aucun résultat par tag,
+la recherche retombe sur \ic{getPhotosByCategory(category)}.
+
+\section{Les groupes (GroupsFragment)}
+
+\ic{GroupsFragment} est organisé en deux onglets gérés manuellement :
+
+\textbf{Onglet "Mes groupes"} : affiche uniquement les groupes dont l'utilisateur
+est créateur ou membre accepté, via \ic{viewModel.getGroupsForUser(userId)}.
+Si l'utilisateur n'est pas connecté, la liste est vide (pas d'appel à
+\ic{getAllGroups()}).
+
+\textbf{Onglet "Découvrir"} : affiche tous les groupes via
+\ic{viewModel.getAllGroups()}, avec une barre de recherche qui filtre via
+\ic{viewModel.searchGroups(query)}. Pour chaque groupe affiché, le statut
+de l'utilisateur courant (null, PENDING, MEMBER) est résolu en parallèle
+par un appel \ic{viewModel.getMembership()} sur le
+\ic{databaseWriteExecutor}, puis mis à jour sur l'UI via \ic{runOnUiThread()}.
+
+Le \ic{GroupAdapter} gère trois états d'affichage pour le bouton d'action :
+\begin{itemize}
+  \item \textbf{null} (non membre) : bouton "Demander →" — appelle
+    \ic{requestJoinGroup()} qui insère un \ic{GroupMember} avec statut
+    \ic{PENDING}, et envoie une \ic{AppNotification} au créateur.
+  \item \textbf{PENDING} : bouton "⏳ En attente" non cliquable.
+  \item \textbf{MEMBER} : bouton "Membre ✓" — clic propose de quitter le groupe
+    via \ic{rejectOrLeaveGroup()}.
+\end{itemize}
+
+Pour créer un groupe, un \ic{AlertDialog} demande nom + description, puis
+appelle \ic{viewModel.insertGroup(group)} et bascule automatiquement sur
+l'onglet "Mes groupes".
+
+\screenshot{screen_groups.png}
+
+\subsection{Chat de groupe (GroupChatFragment)}
+
+\ic{GroupChatFragment} est ouvert depuis l'onglet "Mes groupes" en cliquant
+sur "Chat". Il reçoit le \ic{groupId}, le \ic{groupName} et le
+\ic{creatorId} en arguments.
+
+Le chat fusionne trois types d'éléments dans un seul flux trié par date,
+via un \ic{MediatorLiveData} combinant messages et posts :
+
+\begin{tabularx}{\textwidth}{>{\bfseries}l X}
+  \toprule
+  Type & Affichage \\
+  \midrule
+  Message texte (\ic{TYPE\_MESSAGE})
+    & Bulle teal (messages envoyés par l'utilisateur) ou sable (autres).
+      Alignée à droite ou à gauche selon l'auteur. \\
+  Post publié dans le groupe (\ic{TYPE\_POST})
+    & Carte blanche avec barre teal, miniature de la photo si disponible,
+      titre et lieu. Cliquable vers \ic{PhotoDetailActivity}. \\
+  Photo partagée (\ic{TYPE\_SHARED})
+    & Carte distincte avec bandeau \textbf{terracotta} "🔗 Photo partagée",
+      miniature chargée depuis la base via \ic{photoId}, mention "Voir la photo →".
+      Détectée via \ic{GroupMessage.photoId > 0}. Cliquable vers \ic{PhotoDetailActivity}. \\
+  \bottomrule
+\end{tabularx}
+
+L'envoi d'un message texte crée un \ic{GroupMessage} (champ \ic{photoId = 0})
+et appelle \ic{viewModel.sendGroupMessage(msg)}.
+
+\screenshot{screen_chat.png}
+
+\subsection{Badges de messages non lus}
+
+Dans l'onglet "Mes groupes", chaque item affiche un badge rouge circulaire
+superposé à l'avatar du groupe. Ce badge est alimenté par une requête
+\ic{COUNT} sur la table \ic{AppNotification} :
+
+\begin{lstlisting}
+viewModel.getUnreadCountForGroup(session.getUserId(), g.id)
+    .observe((LifecycleOwner) fragment, count -> {
+        if (count != null && count > 0) {
+            h.tvUnreadBadge.setVisibility(View.VISIBLE);
+            h.tvUnreadBadge.setText(count > 9 ? "9+" : count.toString());
+        } else {
+            h.tvUnreadBadge.setVisibility(View.GONE);
+        }
+    });
+\end{lstlisting}
+
+Quand l'utilisateur ouvre le chat, \ic{markGroupMessagesRead(userId, groupId)}
+met à jour \ic{isRead = 1} pour toutes les notifications de ce groupe,
+et le badge disparaît immédiatement via la LiveData.
+
+\section{Carte interactive (MapFragment)}
+
+\ic{MapFragment} utilise OSMDroid pour afficher sur une carte tous les points
+de photos géolocalisées. Il observe \ic{viewModel.getPublicPhotos()} et
+place un marqueur pour chaque photo dont lat et lng sont non nuls.
+Un clic sur un marqueur affiche une info-bulle avec le titre et le lieu,
+et un second clic ouvre le détail de la photo.
+
+\screenshot{screen_map.png}
+
+\section{Système de notifications}
+
+Le système de notifications fonctionne sur deux niveaux indépendants et
+complémentaires.
+
+\textbf{Notifications système Android} : après chaque publication,
+\ic{triggerNotificationsForPublish()} charge les préférences de l'utilisateur
+(\ic{prefDao.getPreferencesForUserSync(userId)}) et vérifie si chaque
+préférence correspond à la publication. Si oui, \ic{NotificationUtil.showNotification()}
+crée une notification dans le canal \ic{TravelShare} qui apparaît dans la
+barre de statut Android.
+
+\textbf{Notifications in-app} : stockées dans la table \ic{AppNotification}.
+Chaque type d'événement (JOIN\_REQUEST, GROUP\_MESSAGE, etc.) insère une entrée
+via \ic{viewModel.insertAppNotification(notif)}. \ic{NotificationsFragment}
+observe \ic{getAppNotificationsForUser(userId)} et les affiche dans une liste.
+L'utilisateur peut marquer une notification comme lue individuellement, ou
+tout effacer. Un badge rouge sur la cloche de \ic{MainActivity} compte les
+non-lues via \ic{getUnreadNotificationCount(userId)}.
+
+\textbf{Préférences configurables} : dans \ic{NotificationPreferencesFragment},
+l'utilisateur définit sur quels événements il veut être alerté via quatre types :
+\ic{AUTEUR} (auteur spécifique), \ic{LIEU} (lieu contenant la valeur),
+\ic{TAG} (tag correspondant) et \ic{GROUPE} (catégorie correspondante).
+
+
+\section{Photo de profil et bio (ProfileFragment)}
+
+\ic{ProfileFragment} a été enrichi d'un avatar photo et d'une biographie
+utilisateur, stockés dans la table \ic{User} (champs \ic{avatarUri} et \ic{bio}).
+
+L'avatar est un \ic{FrameLayout} superposant un \ic{TextView} (initiale de
+l'utilisateur, fallback) et un \ic{ImageView} (photo chargée avec Glide).
+Un clic sur ce bloc ouvre le sélecteur d'images système via
+\ic{ActivityResultContracts.GetContent("image/*")}. L'URI retournée est persistée
+dans la base via \ic{userDao.updateUserProfile(userId, avatarUri, bio)}.
+
+La biographie est un \ic{EditText} pré-rempli depuis la base au chargement du
+fragment. Un bouton "OK" déclenche la sauvegarde. Le chargement initial se fait
+en background (thread pool) avec retour sur l'UI via \ic{runOnUiThread()}.
+
+\section{Profil public d'un utilisateur (UserProfileActivity)}
+
+En cliquant sur le nom d'un auteur dans l'explorateur ou sur la fiche d'une
+photo, l'utilisateur accède au profil public de cet auteur via
+\ic{UserProfileActivity}. Cette vue, inspirée du modèle Instagram, présente :
+
+\begin{itemize}
+  \item Un avatar (initiale ou photo de profil chargée via Glide), le nom
+    d'utilisateur, et le compteur de publications.
+  \item La biographie si elle a été renseignée.
+  \item Une grille à 3 colonnes (\ic{GridLayoutManager}) de toutes les photos
+    publiques de cet auteur, chargées via \ic{getPublicPhotosByAuthor(username)}
+    (LiveData Room). Cliquer sur une photo ouvre \ic{PhotoDetailActivity}.
+\end{itemize}
+
+Le déclenchement depuis \ic{PhotoAdapter} s'effectue par un \ic{setOnClickListener}
+sur le \ic{TextView} \ic{@auteur} de chaque carte. Depuis \ic{PhotoDetailActivity},
+c'est la ligne "date · par @auteur" qui est cliquable. Dans les deux cas,
+un \ic{Intent} est lancé avec \ic{EXTRA\_USERNAME} pour ouvrir le bon profil.
+
+\screenshot{screen_user_profile.png}
+
+% ==============================================================
+\chapter{Module TravelPath — Générateur d'itinéraires}
+% ==============================================================
+
+\section{Présentation}
+
+TravelPath génère des itinéraires de visite personnalisés à partir des
+préférences de l'utilisateur. Il produit jusqu'à 3 parcours thématiques
+(économique, équilibré, confort), les géolocalise via Nominatim, les affiche
+sur une carte OSMDroid avec tracé routier OSRM, et les enrichit de données
+météo Open-Meteo. Ce module a été développé par \textbf{Anouar Soufyani}.
+
+\section{Le formulaire de génération (TravelPathFragment)}
+
+\ic{TravelPathFragment} présente un formulaire de génération suivi d'une liste
+de parcours. Les deux parties coexistent dans le même fragment, séparées
+visuellement. Le formulaire comprend sept champs :
+
+\begin{tabularx}{\textwidth}{>{\bfseries}l X}
+  \toprule
+  Champ & Composant et comportement \\
+  \midrule
+  Destination
+    & \ic{EditText}. Peut être pré-rempli depuis TravelShare via l'argument
+      \ic{ARG\_CITY}. En cas de régénération, restauré depuis
+      \ic{ARG\_REGEN\_ACTS}. \\
+  Activités
+    & Cinq \ic{CheckBox} : Culture, Restauration, Loisirs, Découverte,
+      Shopping. Assemblées dans un \ic{LinkedHashSet} pour préserver l'ordre
+      de sélection, qui détermine l'ordre des étapes. \\
+  Budget max
+    & \ic{SeekBar} de 10 à 300 €. Un \ic{OnSeekBarChangeListener} met à
+      jour un \ic{TextView} en temps réel : "XX €". La valeur est lue avec
+      \ic{Math.max(10, sbBudget.getProgress())}. \\
+  Durée
+    & \ic{SeekBar} de 1 à 12 h. Détermine le nombre d'étapes via \ic{maxStepsFor()} :
+      2 h → 2 étapes, 4 h → 3, 6 h → 4, 8 h → 5 (ajusté ±1 selon l'effort). \\
+  Effort
+    & \ic{RadioGroup} : Facile (40 min/étape), Modéré (60 min), Intense (90 min).
+      Influence aussi le nombre d'étapes (Facile = base−1, Intense = base+1). \\
+  Lieux obligatoires
+    & \ic{EditText} de saisie libre. Nominatim géocode chaque lieu et détecte
+      son type OSM (\ic{class}/\ic{type}) pour estimer durée et coût adaptés. \\
+  Tolérance météo
+    & Trois \ic{CheckBox} : FROID, CHALEUR, HUMIDITE. Si au moins une est
+      cochée (\ic{sensitiveWeather = true}), les loisirs proposés basculent
+      vers des activités en intérieur. \\
+  \bottomrule
+\end{tabularx}
+
+À l'appui sur "Générer", le bouton est désactivé, un Toast indique "Génération
+en cours…", et \ic{viewModel.generatePlans()} est appelé. Le callback \ic{onDone}
+réactive le bouton et bascule sur l'onglet "Mes parcours".
+
+\screenshot{screen_travelpath_form.png}
+
+\section{Affichage des parcours et onglets (TravelPathFragment)}
+
+La liste des parcours est un \ic{RecyclerView} avec \ic{LinearLayoutManager}
+alimenté par un \ic{PlanAdapter}. Chaque carte de parcours affiche : un bandeau
+coloré selon le type (teal = économique, navy = équilibré, terracotta = confort),
+le badge du type, la ville, le cœur like, les métriques (budget, durée, effort)
+et les activités en format "Culture · Restauration · …".
+
+Les deux onglets ("Mes parcours" / "Sauvegardés ❤️") sont implémentés via
+\ic{MediatorLiveData}. Deux sources Room sont observées simultanément, mais
+seule celle de l'onglet actif est propagée vers l'adapter.
+
+\begin{lstlisting}
+MediatorLiveData<List<TravelPlan>> merged = new MediatorLiveData<>();
+LiveData<List<TravelPlan>> allPlans   = viewModel.getPlansForUser(userId);
+LiveData<List<TravelPlan>> savedPlans = viewModel.getSavedPlansForUser(userId);
+
+merged.addSource(allPlans,   list -> { if (!showSaved) merged.setValue(list); });
+merged.addSource(savedPlans, list -> { if (showSaved)  merged.setValue(list); });
+merged.observe(getViewLifecycleOwner(), adapter::setPlans);
+\end{lstlisting}
+
+En cliquant sur un onglet, \ic{showSaved} est inversé et
+\ic{merged.setValue(source.getValue())} force le rafraîchissement immédiat
+sans attendre un changement en base.
+
+\screenshot[0.7\textwidth]{screen_travelpath_plans.png}
+
+\section{Algorithme de génération (TravelPathViewModel)}
+
+Toute la génération s'exécute sur le \ic{databaseWriteExecutor} pour ne pas
+bloquer l'UI. Elle produit jusqu'à 3 objets \ic{TravelPlan} avec leurs
+\ic{PlanStep} associés, composés de \textbf{vrais lieux existants} issus
+d'OpenStreetMap.
+
+\begin{lstlisting}
+databaseWriteExecutor.execute(() -> {
+    double[] cityCenter = geocode(city); // 1 appel Nominatim
+
+    // 1. Overpass en parallele : 1 requete par activite
+    //    Chaque requete retourne plusieurs lieux reels nommes
+    //    Un lieu different est assigne a chaque type de plan
+    ExecutorService pool = Executors.newFixedThreadPool(min(activities.size(), 5));
+    for (String activity : activities) {
+        pool.submit(() -> {
+            // Recupere des lieux reels (restaurant, musee, parc...) via Overpass
+            fetchRealPlaces(lat, lng, activity, sensitiveWeather);
+            // Chaque type de plan (eco/equilibre/confort) obtient un lieu distinct
+        });
+    }
+    pool.awaitTermination(25s);
+
+    // 2. Construire et inserer les 3 plans
+    for (String type : new String[]{"economique","equilibre","confort"}) {
+        int maxSteps = maxStepsFor(durationHours, effort); // adapte au temps
+        int stepDur  = stepDurationFor(effort);            // 40/60/90 min
+        int budget   = (int)(budgetMax * ratio(type));     // 25/60/90 %
+        List<PlanStep> steps = buildSteps(..., maxSteps, stepDur, budget, cache);
+        steps = deduplicateSteps(steps); // supprime les doublons de lieux
+        if (estimateBudget(steps) > budgetMax && !"economique".equals(type)) continue;
+        geocodeStepsWithCenter(steps, city, cityCenter); // fallback si 0,0
+        long planId = planDao.insertPlan(plan);
+        for (PlanStep s : steps) stepDao.insertStep(s);
+    }
+    onDone.run();
+});
+\end{lstlisting}
+
+\subsection{Lieux obligatoires : recherche par nom exact}
+
+Quand l'utilisateur saisit un nom de lieu — restaurant, magasin, monument,
+musée, ou tout autre établissement — dans le champ lieux obligatoires,
+la méthode \ic{searchPlaceByName()} interroge Overpass avec un filtre regex
+insensible à la casse (\ic{["name"{\raise.17ex\hbox{$\scriptstyle\sim$}}"...",i]}) dans un rayon de 16 km
+autour du centre de la ville saisie.
+
+Contrairement à un géocodage Nominatim classique qui retourne souvent
+le centre-ville pour les enseignes, \textbf{Overpass retrouve la position GPS
+exacte de l'établissement réel}, quelle que soit sa nature (restaurant,
+boutique, musée, etc.). Ces coordonnées sont directement utilisées pour
+placer le marqueur OSMDroid sur la carte — chaque lieu obligatoire
+apparaît donc à son emplacement précis sur la carte, et deux lieux distincts
+produisent deux pins à des emplacements différents.
+Si Overpass échoue, Nominatim prend le relais.
+
+\begin{lstlisting}
+// Exemples de recherche par nom dans Paris (rayon 16 km)
+node["name"~"McDonald.s",i](bbox); // → restaurant exact, lat/lon précis
+node["name"~"Zara",i](bbox);       // → magasin exact
+node["name"~"Louvre",i](bbox);     // → musée exact
+// Chaque recherche retourne les coordonnées GPS du vrai établissement
+\end{lstlisting}
+
+\subsection{Adresses des étapes}
+
+Chaque étape affiche son adresse réelle sous son nom. L'adresse est obtenue
+de deux façons, dans cet ordre de priorité :
+
+\begin{enumerate}
+  \item \textbf{Tags OSM dans Overpass} : si le lieu a des tags \ic{addr:housenumber},
+    \ic{addr:street}, \ic{addr:postcode} dans OSM, l'adresse est extraite
+    directement depuis la réponse Overpass, sans appel réseau supplémentaire.
+  \item \textbf{Reverse geocoding Nominatim} : si aucun tag d'adresse n'est
+    disponible, la méthode statique \ic{reverseGeocode(lat, lng)} est appelée
+    en arrière-plan depuis le \ic{databaseWriteExecutor} de l'adapter.
+    L'adresse est persistée en base (\ic{planStepDao.updateAddress()}) pour
+    fonctionner hors-ligne lors des consultations suivantes.
+\end{enumerate}
+
+\subsection{Déplacement sur la carte}
+
+La carte OSMDroid est encapsulée dans un \ic{NestedScrollView}, qui interceptait
+par défaut tous les événements tactiles, rendant impossible le déplacement
+et le zoom. Un \ic{OnTouchListener} sur la \ic{MapView} appelle
+\ic{requestDisallowInterceptTouchEvent(true)} dès qu'un doigt touche la carte,
+puis relâche à \ic{ACTION\_UP}. La carte est ainsi pleinement interactive.
+
+\subsection{Vrais lieux via Overpass API}
+
+La méthode \ic{fetchRealPlaces()} interroge l'API Overpass (OpenStreetMap)
+pour trouver des lieux réels nommés autour de la ville. Le filtre \ic{["name"]}
+garantit que seuls les établissements avec un nom officiel sont retournés.
+
+\begin{lstlisting}
+// Exemple pour "Restauration" a Paris :
+node["amenity"="restaurant"]["name"](48.74,2.20,48.97,2.46);
+node["amenity"="cafe"]["name"](48.74,2.20,48.97,2.46);
+// Retourne : "Le Procope", "Cafe de Flore", "Brasserie Lipp"...
+\end{lstlisting}
+
+Pour chaque activité, Overpass retourne plusieurs lieux nommés réels.
+L'application en sélectionne un différent selon le type de plan —
+ainsi le parcours économique, équilibré et confort n'affichent pas
+le même établissement. Si Overpass ne répond pas, Nominatim prend le relais.
+
+La méthode \ic{deduplicateSteps()} parcourt ensuite les étapes du plan et remplace
+tout doublon (même nom) par le résultat alternatif disponible dans le cache.
+
+\subsection{Budget, durée et effort réellement pris en compte}
+
+Contrairement à une approche statique, les trois paramètres influencent
+réellement la structure de chaque plan :
+
+\begin{tabularx}{\textwidth}{>{\bfseries}l X}
+  \toprule
+  Paramètre & Impact concret \\
+  \midrule
+  Durée
+    & \ic{maxStepsFor(durationHours, effort)} calcule le nombre d'étapes :
+      de 2 (2 h Facile) à 6 (8 h Intense). \\
+  Effort
+    & \ic{stepDurationFor(effort)} fixe la durée de chaque étape :
+      40 min (Facile), 60 min (Modéré), 90 min (Intense). \\
+  Budget
+    & Le coût de chaque étape est proportionnel au budget saisi :
+      25 \% pour l'économique, 60 \% pour l'équilibré, 90 \% pour le confort. \\
+  \bottomrule
+\end{tabularx}
+
+\subsection{Construction des étapes (buildSteps)}
+
+La méthode \ic{buildSteps()} itère sur les activités sélectionnées et crée
+une étape par activité, dans la limite de \ic{maxSteps}. Chaque étape est
+d'abord remplie avec le vrai lieu OSM du cache Overpass, puis complétée
+avec la durée et le coût calculés dynamiquement :
+
+\begin{tabularx}{\textwidth}{>{\bfseries}l l X}
+  \toprule
+  Activité & Plan & Lieu réel trouvé + durée et coût estimés \\
+  \midrule
+  Culture & Économique & Monument ou musée gratuit — courte durée \\
+  Culture & Équilibré  & Musée de la ville — durée normale \\
+  Culture & Confort    & Galerie d'art ou musée premium — longue visite \\
+  Restauration & Économique & Café ou restauration rapide \\
+  Restauration & Équilibré  & Restaurant de la ville \\
+  Restauration & Confort    & Restaurant (autre établissement) \\
+  Loisirs & Météo sensible & Cinéma ou théâtre (activité couverte) \\
+  Loisirs & Économique & Parc ou jardin public — gratuit \\
+  Loisirs & Confort    & Spa ou centre de bien-être \\
+  Découverte & Économique & Point de vue ou attraction gratuite \\
+  Découverte & Confort   & Site touristique majeur \\
+  Shopping & Économique & Marché local \\
+  Shopping & Confort    & Boutique ou centre commercial \\
+  \multicolumn{3}{l}{\small Durée et coût calculés dynamiquement selon le budget saisi et le niveau d'effort.}
+  \bottomrule
+\end{tabularx}
+
+Si la durée dépasse 3 h et que "Restauration" n'est pas dans les activités
+sélectionnées, une étape restauration est ajoutée automatiquement.
+
+\section{Géocodage précis : Nominatim + viewbox + Haversine}
+
+Nominatim retourne par défaut le résultat mondial le plus populaire. Sans
+contrainte, "restaurant Paris" peut retourner un résultat à Paris, Texas.
+La solution est un double filtre.
+
+\textbf{Viewbox} : la ville est géocodée une fois en début de génération.
+Ses coordonnées servent de centre pour construire un viewbox de ±0.4°
+(≈44 km). Tous les appels suivants passent ce paramètre avec \ic{bounded=1}.
+
+\textbf{Validation Haversine} : même avec le viewbox, un résultat peut
+dépasser la zone. La formule de Haversine calcule la distance sphérique exacte
+entre le résultat et le centre. Si elle dépasse 80 km, les coordonnées sont
+rejetées (retour à 0, 0 — le point ne s'affiche pas sur la carte).
+
+\begin{lstlisting}
+private double[] geocodeNear(String query,
+                              double centerLat, double centerLng) {
+    double d = 0.4;
+    String viewbox = String.format(Locale.US,
+        "&viewbox=%.4f,%.4f,%.4f,%.4f&bounded=1",
+        centerLng-d, centerLat-d, centerLng+d, centerLat+d);
+    // Appel HTTP Nominatim + parse JSON manuel
+    if (distanceKm(lat, lon, centerLat, centerLng) > 80)
+        return new double[]{0, 0};
+    return new double[]{lat, lon};
+}
+
+private double distanceKm(double lat1, double lng1,
+                           double lat2, double lng2) {
+    double dLat = Math.toRadians(lat2 - lat1);
+    double dLng = Math.toRadians(lng2 - lng1);
+    double a = Math.sin(dLat/2)*Math.sin(dLat/2)
+             + Math.cos(Math.toRadians(lat1))
+             * Math.cos(Math.toRadians(lat2))
+             * Math.sin(dLng/2)*Math.sin(dLng/2);
+    return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+\end{lstlisting}
+
+\begin{warnbox}[Délai inter-appels Nominatim]
+Les CGU Nominatim imposent 1 req/s maximum. Un \ic{Thread.sleep(1100)} est
+placé entre chaque appel de géocodage. Ce délai s'exécute sur le thread
+background, l'interface reste réactive.
+\end{warnbox}
+
+\section{Affichage du parcours (PlanDetailFragment)}
+
+\ic{PlanDetailFragment} est ouvert depuis le bouton "Voir le parcours" d'une
+carte de plan. Il reçoit le \ic{planId} en argument et charge le plan et ses
+étapes depuis Room.
+
+\subsection{La carte OSMDroid et le tracé OSRM}
+
+La carte est initialisée avec \ic{TileSourceFactory.MAPNIK} et le
+multi-touch activé. Pour chaque étape valide (lat et lng non nuls), un
+\ic{Marker} OSMDroid est créé avec titre et snippet, et ajouté aux overlays.
+
+Le zoom est calculé manuellement car \ic{BoundingBox.fromGeoPoints()} n'existe
+pas en OSMDroid 6.1.18. On parcourt tous les points pour calculer min/max des
+latitudes et longitudes, puis on appelle \ic{mapView.zoomToBoundingBox()}.
+
+Simultanément, si au moins 2 étapes sont valides et que la route n'a pas encore
+été calculée, \ic{fetchOsrmRoute()} est lancé sur le \ic{databaseWriteExecutor}.
+
+\begin{lstlisting}
+private void fetchOsrmRoute(List<PlanStep> steps) {
+    databaseWriteExecutor.execute(() -> {
+        StringBuilder coords = new StringBuilder();
+        for (PlanStep s : steps)
+            coords.append(String.format(Locale.US,"%.6f,%.6f;",s.lng,s.lat));
+        // URL OSRM : /route/v1/driving/...?overview=full&geometries=geojson
+        // Reponse JSON -> routes[0].geometry.coordinates (GeoJSON)
+        // GeoJSON : [lng, lat] -> GeoPoint(lat, lng)
+        // Fallback si echec : lignes droites entre les etapes
+        requireActivity().runOnUiThread(() -> drawRoutePolyline(routePoints));
+    });
+}
+
+private void drawRoutePolyline(List<GeoPoint> points) {
+    routeOverlay = new Polyline(mapView);
+    routeOverlay.setPoints(points);
+    routeOverlay.getOutlinePaint().setColor(0xFF1B3A5C);
+    routeOverlay.getOutlinePaint().setStrokeWidth(9f);
+    routeOverlay.getOutlinePaint().setStrokeCap(Paint.Cap.ROUND);
+    mapView.getOverlays().add(0, routeOverlay); // Sous les marqueurs
+    mapView.invalidate();
+}
+\end{lstlisting}
+
+La polyline est stockée dans \ic{routeOverlay} comme champ du fragment. Ainsi,
+si les étapes sont rechargées par LiveData (ce qui re-déclenche
+\ic{addMarkersAndRoute()}), la route déjà calculée est réinsérée directement
+sans refaire l'appel OSRM.
+
+La réponse OSRM contient également \ic{routes[0].duration} (en secondes).
+Ce temps est formaté (ex. "42 min" ou "1h05") et affiché dans un bloc
+"TRAJET" dans la barre de métriques, rendu visible uniquement quand la route
+est disponible.
+
+\begin{lstlisting}
+private String formatRouteDuration(double seconds) {
+    int totalMin = (int) Math.round(seconds / 60.0);
+    if (totalMin < 60) return totalMin + " min";
+    int h = totalMin / 60, m = totalMin % 60;
+    return m > 0 ? h + "h" + String.format("%02d", m) : h + "h";
+}
+\end{lstlisting}
+
+\screenshot{screen_plan_detail.png}
+
+\subsection{Liste des étapes (StepAdapter)}
+
+Chaque étape est affichée avec une icône selon son type (🏛 Culture, 🍽
+Restauration, 🎡 Loisirs, 🗺 Découverte, 🛍 Shopping, 📍 autre), le
+créneau horaire, la durée, le nom, la description, le coût (ou "Gratuit"),
+et les horaires d'ouverture typiques calculés statiquement selon le type.
+
+\subsection{Mini-galerie TravelShare et vidéo dans les étapes}
+
+Pour chaque étape, une requête \ic{photoDao.searchPhotosSync(keyword)} est
+exécutée en background où \ic{keyword} est le type de l'étape (ex. "Culture").
+Si des photos existent en base, un \ic{RecyclerView} horizontal avec Glide
+les affiche. Si aucune photo ne correspond, un lien "Voir des photos" est
+affiché. Ce lien ouvre \ic{ExplorerFragment} avec le nom de l'étape en
+argument de recherche — c'est la passerelle TP$\to$TS.
+
+Chaque étape dispose également d'un bouton "▶ Vidéo" qui ouvre YouTube via un
+\ic{Intent.ACTION\_VIEW} avec l'URL de recherche construite dynamiquement
+(\texttt{youtube.com/results?search\_query=NomÉtape+Type}). Cette approche
+fournit du contenu vidéo pertinent sans aucune clé API ni hébergement.
+
+\screenshot{screen_plan_detail.png}
+
+\subsection{Mode hors-ligne}
+
+Au chargement de \ic{TravelPathFragment}, \ic{ConnectivityManager} vérifie
+l'état réseau. Si aucune connexion n'est active, une bannière terracotta
+"📴 Hors-ligne — génération indisponible" s'affiche. Si l'utilisateur clique
+sur "Générer" hors-ligne, un toast l'invite à consulter ses plans sauvegardés
+et l'onglet "Sauvegardés ❤️" est activé automatiquement.
+
+Les plans déjà générés restent entièrement consultables hors-ligne car ils sont
+stockés dans Room. Seule la génération de nouveaux plans nécessite une
+connexion (appels Nominatim pour le géocodage).
+
+\subsection{La météo (Open-Meteo)}
+
+Dès le chargement du détail, \ic{fetchWeather()} est lancé en background :
+\begin{enumerate}
+  \item Géocodage de \ic{plan.city} via Nominatim → lat/lng.
+  \item Appel \ic{api.open-meteo.com/v1/forecast} avec \ic{current\_weather=true}.
+  \item Parse du JSON : température, code météo WMO.
+  \item Sur le thread UI : affichage dans \ic{layout\_weather} (icône,
+    description, conseil, température).
+\end{enumerate}
+
+\begin{tabularx}{\textwidth}{l l X}
+  \toprule
+  Code WMO & Icône & Affichage \\
+  \midrule
+  0     & ☀  & Ciel dégagé — Parfait pour visiter \\
+  1--3  & ⛅  & Partiellement nuageux — Bonne journée \\
+  45--49 & -- & Brouillard — Visibilité réduite \\
+  51--67 & -- & Pluie — Prévoyez un imperméable \\
+  71--77 & -- & Neige — Habillez-vous chaudement \\
+  80--82 & -- & Averses — Prévoyez un parapluie \\
+  95+   & -- & Orage — Privilégiez les activités intérieures \\
+  \bottomrule
+\end{tabularx}
+
+\subsection{Like / Sauvegarde}
+
+Le bouton cœur dans le détail toggle \ic{plan.liked} et \ic{plan.saved}
+(les deux sont synchronisés). \ic{viewModel.saveLikeAndSave(plan)} envoie
+la mise à jour en base via \ic{planDao.updatePlan()}. Le plan lliké apparaît
+alors dans l'onglet "Sauvegardés ❤️" de \ic{TravelPathFragment}.
+
+\subsection{Export PDF}
+
+Le bouton "Exporter PDF" déclenche sur le \ic{databaseWriteExecutor} la
+construction d'un document \ic{PdfDocument} Android (API native, sans librairie).
+Le PDF est rendu sur un \ic{Canvas} A4 (595×842 pt) avec trois objets \ic{Paint}
+distincts (titre en bleu navy, sous-titres gris, étapes noir). Chaque étape
+est inscrite avec créneau, nom, description, durée et coût. Le fichier est
+sauvegardé dans \ic{Documents/TravelPath/parcours\_VILLE.pdf} et ouvert via
+\ic{FileProvider} + \ic{Intent.ACTION\_VIEW}. Si aucune application PDF n'est
+disponible, un Toast indique le chemin du fichier.
+
+\subsection{Partage texte}
+
+Le bouton "Partager" construit en background un résumé texte du parcours
+(ville, toutes les étapes avec créneau et coût, budget total), puis lance
+\ic{Intent.ACTION\_SEND} pour le partager via n'importe quelle application
+(WhatsApp, email, SMS…).
+
+\section{Régénération de parcours}
+
+Le bouton "Régénérer" dans \ic{PlanDetailFragment} effectue deux opérations :
+\begin{enumerate}
+  \item \ic{getSupportFragmentManager().popBackStack()} pour revenir à la liste.
+  \item Chargement de \ic{TravelPathFragment.newInstanceForRegen(plan)} qui
+    reconstruit le formulaire avec tous les paramètres du plan courant.
+\end{enumerate}
+
+La restauration du formulaire parse la chaîne CSV \ic{plan.activities} pour
+cocher les bonnes cases, lit \ic{plan.budgetEur} et \ic{plan.durationHours}
+pour positionner les SeekBars, \ic{plan.effort} pour sélectionner le bon
+RadioButton, et \ic{plan.requiredPlaces} + \ic{plan.weatherTolerances} pour
+remplir les autres champs. Une bannière terracotta "🔄 Modifier et régénérer"
+confirme visuellement la restauration.
+
+
+% ==============================================================
+\chapter{Passerelle — Intégration des deux modules}
+% ==============================================================
+
+\section{Principe}
+
+La passerelle est ce qui différencie "Traveling" de deux applications séparées.
+Elle permet une navigation naturelle entre TravelShare et TravelPath, avec partage
+des données (lieux, photos) et une interface cohérente.
+
+\section{TravelShare vers TravelPath}
+
+Dans l'explorateur de TravelShare, un bouton "TravelPath" est visible en bas.
+Si l'utilisateur cherchait "Montpellier" au moment de cliquer, cette destination
+est automatiquement transmise au formulaire TravelPath via un argument Bundle.
+Une bannière verte "📍 Destination importée depuis TravelShare" confirme l'import.
+
+\begin{lstlisting}
+view.findViewById(R.id.btn_explorer_travelpath).setOnClickListener(v ->
+    requireActivity().getSupportFragmentManager()
+        .beginTransaction()
+        .replace(R.id.fragment_container, new TravelPathFragment())
+        .addToBackStack(null)
+        .commit()
+);
+
+String prefillCity = args != null ? args.getString(ARG_CITY, "") : "";
+if (!prefillCity.isEmpty())
+    ((EditText) view.findViewById(R.id.et_tp_city)).setText(prefillCity);
+\end{lstlisting}
+
+\section{TravelPath vers TravelShare}
+
+Dans le détail d'un parcours TravelPath, chaque étape peut afficher des photos
+TravelShare de la même catégorie. Le lien "Voir des photos" ouvre l'explorateur
+TravelShare avec le nom de l'étape pré-rempli dans la barre de recherche.
+
+\begin{lstlisting}
+h.tvSeePhotos.setOnClickListener(v -> {
+    ExplorerFragment explorer = new ExplorerFragment();
+    Bundle args = new Bundle();
+    args.putString(ExplorerFragment.ARG_SEARCH_QUERY, s.name);
+    explorer.setArguments(args);
+    fragment.requireActivity().getSupportFragmentManager()
+        .beginTransaction()
+        .replace(R.id.fragment_container, explorer)
+        .addToBackStack(null)
+        .commit();
+});
+\end{lstlisting}
+
+\section{Régénération de parcours}
+
+Un troisième flux de passerelle existe : depuis un parcours existant, l'utilisateur
+peut régénérer un nouveau parcours en modifiant les paramètres. Tous les paramètres
+(activités, budget, durée, effort, lieux) sont restaurés dans le formulaire.
+
+\begin{lstlisting}
+public static TravelPathFragment newInstanceForRegen(TravelPlan plan) {
+    TravelPathFragment f = new TravelPathFragment();
+    Bundle args = new Bundle();
+    args.putString(ARG_CITY,           plan.city);
+    args.putString(ARG_REGEN_ACTS,     plan.activities);
+    args.putInt   (ARG_REGEN_BUDGET,   plan.budgetEur);
+    args.putInt   (ARG_REGEN_DURATION, plan.durationHours);
+    args.putString(ARG_REGEN_EFFORT,   plan.effort);
+    args.putString(ARG_REGEN_PLACES,   plan.requiredPlaces);
+    args.putString(ARG_REGEN_WEATHER,  plan.weatherTolerances);
+    f.setArguments(args);
+    return f;
+}
+\end{lstlisting}
+
+
+% ==============================================================
+\chapter{Modèle de données Room}
+% ==============================================================
+
+\section{Les 12 entités}
+
+La base de données \ic{tp3\_database} (Room v19) contient 12 tables. Chaque table
+correspond à une classe Java annotée \ic{@Entity}.
+
+\begin{longtable}{>{\ttfamily\small}l >{\small}p{6.5cm} >{\centering\small}p{1.8cm}}
+  \toprule
+  \normalfont\textbf{Entité} & \textbf{Champs principaux et rôle} & \textbf{Module} \\
+  \midrule
+  \endhead
+  User
+    & id, login (unique), passwordHash, username,
+      \textbf{avatarUri} (photo de profil), \textbf{bio} (biographie).
+      Stocke les comptes utilisateurs.
+    & Commun \\
+  Photo
+    & id, title, location, author, likes, lat, lng, date,
+      category, tags, visibility (PUBLIC/GROUP), imageUri,
+      groupId, \textbf{voiceUri}.
+      Stocke toutes les photos publiées.
+    & TS \\
+  Comment
+    & id, photoId, author, text, date.
+      Commentaires attachés à une photo.
+    & TS \\
+  Group
+    & id, name, description, creatorId.
+      Groupes privés créés par les utilisateurs.
+    & TS \\
+  GroupMember
+    & id, groupId, userId, userName, status (PENDING/MEMBER).
+      Gère les membres et les demandes d'adhésion.
+    & TS \\
+  GroupMessage
+    & id, groupId, senderId, senderName, content, date.
+      Messages du chat de groupe.
+    & TS \\
+  Report
+    & id, targetId, type, reason, reporterId, date.
+      Signalements de contenu inapproprié.
+    & TS \\
+  NotificationPreference
+    & id, userId, type (AUTEUR/LIEU/TAG/GROUPE), value.
+      Préférences de notifications configurées par l'utilisateur.
+    & TS \\
+  AppNotification
+    & id, targetUserId, type, message, groupId, isRead, date.
+      Notifications in-app stockées pour consultation ultérieure.
+    & TS \\
+  Planning
+    & id, userId, title, startDate, endDate.
+      Plannings de voyage.
+    & TP \\
+  TravelPlan
+    & id, userId, city, type (economique/equilibre/confort),
+      activities (CSV), budgetEur, durationHours, effort,
+      liked, saved, requiredPlaces, weatherTolerances, date.
+      Parcours générés par TravelPath.
+    & TP \\
+  PlanStep
+    & id, planId, stepOrder, name, type, timeSlot, durationMin,
+      costEur, description, lat, lng, \textbf{openingHours}, \textbf{address}.
+      Étapes individuelles d'un parcours, avec coordonnées GPS et adresse réelle.
+    & TP \\
+  \bottomrule
+  \multicolumn{3}{l}{\small TS = TravelShare \quad TP = TravelPath}
+\end{longtable}
+
+\section{Relations entre les entités}
+
+\begin{tcolorbox}[mybox,colback=codebg,colframe=bord,
+  left=8pt,right=8pt,top=8pt,bottom=8pt]
+{\ttfamily\footnotesize\color{navy!80}
+\begin{verbatim}
+User (1) ──────────────────────────────────────────────── (N)
+  |                                                        |
+  ├── (1:N) ──> Photo ──── (1:N) ──> Comment              |
+  |              |                                         |
+  |              └── (N:1) ──> Group ──── (1:N) ──> GroupMember
+  |                               |                        |
+  |                               └── (1:N) ──> GroupMessage
+  |
+  ├── (1:N) ──> AppNotification (isRead, type, groupId)
+  ├── (1:N) ──> NotificationPreference (AUTEUR/LIEU/TAG)
+  ├── (1:N) ──> Report
+  ├── (1:N) ──> Planning
+  └── (1:N) ──> TravelPlan ──── (1:N) ──> PlanStep (lat, lng, address)
+\end{verbatim}}
+\end{tcolorbox}
+
+\section{Configuration de la base}
+
+\begin{lstlisting}
+@Database(
+    entities = {User.class, Planning.class, Photo.class, Comment.class,
+                Group.class, GroupMember.class, GroupMessage.class,
+                Report.class, NotificationPreference.class,
+                AppNotification.class, TravelPlan.class, PlanStep.class},
+    version = 19,        // incremente a chaque changement de schema
+    exportSchema = false
+)
+public abstract class AppDatabase extends RoomDatabase {
+    // Pool de 4 threads : toutes les operations DB passent par ici
+    public static final ExecutorService databaseWriteExecutor =
+        Executors.newFixedThreadPool(4);
+
+    // Singleton thread-safe (double-checked locking)
+    public static AppDatabase getInstance(Context context) {
+        if (INSTANCE == null) {
+            synchronized (AppDatabase.class) {
+                if (INSTANCE == null) {
+                    INSTANCE = Room.databaseBuilder(context,
+                                    AppDatabase.class, "tp3_database")
+                        .fallbackToDestructiveMigration()
+                        .build();
+                }
+            }
+        }
+        return INSTANCE;
+    }
+}
+\end{lstlisting}
+
+
+% ==============================================================
+\chapter{Bilan et conclusion}
+% ==============================================================
+
+\section{Conclusion}
+
+Ce projet nous a permis de construire une application Android complète, de bout en bout,
+en partant d'une idée simple — faciliter la découverte et la planification de voyages —
+jusqu'à une application fonctionnelle avec des données réelles.
+
+Ce qui nous a le plus occupés, c'est la fiabilité. Obtenir de vrais lieux sur la carte,
+des adresses précises, des itinéraires corrects, une synchronisation sans crash entre
+threads background et UI — tout cela a demandé beaucoup d'itérations. Les difficultés
+rencontrées (perte de données Room lors des migrations, géocodage erroné, événements
+tactiles capturés par le ScrollView) ont toutes été résolues et ont renforcé notre
+compréhension des mécanismes Android.
+
+Nous avons tenu à n'utiliser que des services entièrement gratuits, ce qui nous a
+poussés à explorer des alternatives open-source comme Overpass, Nominatim et OSRM —
+des outils que nous n'aurions probablement pas découverts autrement.
+
+\begin{okbox}[Ce qu'on retient]
+Une application Android fonctionnelle avec deux modules complets et une passerelle,
+des vrais lieux issus d'OpenStreetMap, un tracé routier réel, la météo du jour,
+de l'annotation IA, de la pagination, du partage, un profil utilisateur — le tout
+sans aucun service payant, développé en Java pur en suivant le pattern MVVM.
+\end{okbox}
+
+
+% ==============================================================
+\chapter*{Annexes}
+\addcontentsline{toc}{chapter}{Annexes}
+% ==============================================================
+
+\section*{A — Dépôt Git}
+
+\begin{itemize}
+  \item \textbf{URL} : \url{https://github.com/Soof2/Traveling.git}
+  \item \textbf{Branche principale} : \ic{main}
+\end{itemize}
+
+\section*{B — APIs et ressources externes utilisées}
+
+\begin{tabularx}{\textwidth}{l X l}
+  \toprule
+  \textbf{Service} & \textbf{Rôle} & \textbf{Coût} \\
+  \midrule
+  Nominatim OSM      & Géocodage d'adresses en coordonnées GPS
+                     & Gratuit \\
+  OSRM               & Calcul d'itinéraires routiers réels
+                     & Gratuit \\
+  Open-Meteo         & Données météo en temps réel
+                     & Gratuit \\
+  OSMDroid           & Librairie de cartographie Android
+                     & Open-source \\
+  Glide              & Chargement et mise en cache des images
+                     & Open-source \\
+  Overpass API (OSM) & Recherche de vrais lieux nommés (restaurants, musées…)
+                     & Gratuit \\
+  ML Kit (Google)    & Analyse IA on-device des photos (Image Labeling)
+                     & Gratuit \\
+  \bottomrule
+\end{tabularx}
+
+\section*{C — Permissions Android déclarées dans le Manifest}
+
+\begin{itemize}
+  \item \ic{android.permission.INTERNET}
+  \item \ic{android.permission.ACCESS\_FINE\_LOCATION}
+  \item \ic{android.permission.ACCESS\_COARSE\_LOCATION}
+  \item \ic{android.permission.RECORD\_AUDIO}
+  \item \ic{android.permission.CAMERA}
+  \item \ic{android.permission.POST\_NOTIFICATIONS}
+\end{itemize}
+
+\section*{D — Environnement de développement}
+
+\begin{tabularx}{\textwidth}{>{\bfseries}l X}
+  \toprule
+  Outil & Version \\
+  \midrule
+  Android Studio    & Hedgehog 2023.1+ \\
+  SDK Android       & API 33 (target), API 24 (minimum) \\
+  Java              & Java 8 (source compatibility) \\
+  Room              & 2.6.x \\
+  OSMDroid          & 6.1.18 \\
+  Glide             & 4.16.x \\
+  \bottomrule
+\end{tabularx}
+
+\end{document}

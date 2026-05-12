@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <external-cache-path name="captured_image" path="images/" />
+    <external-cache-path name="voice_recordings" path="voice/" />
     <external-files-path name="travelpath_pdf" path="Documents/TravelPath/" />
 </paths>

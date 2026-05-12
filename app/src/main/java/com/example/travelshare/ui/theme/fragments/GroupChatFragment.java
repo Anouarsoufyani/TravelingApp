@@ -55,10 +55,11 @@ public class GroupChatFragment extends Fragment {
         return f;
     }
 
-    // Élément unifié du flux (message OU post)
+    // Élément unifié du flux (message OU post OU photo partagée)
     static class ChatItem implements Comparable<ChatItem> {
         static final int TYPE_MESSAGE = 0;
         static final int TYPE_POST    = 1;
+        static final int TYPE_SHARED  = 2;
         int type;
         GroupMessage message;
         Photo post;
@@ -66,7 +67,7 @@ public class GroupChatFragment extends Fragment {
 
         static ChatItem fromMessage(GroupMessage m) {
             ChatItem item = new ChatItem();
-            item.type    = TYPE_MESSAGE;
+            item.type    = m.photoId > 0 ? TYPE_SHARED : TYPE_MESSAGE;
             item.message = m;
             item.date    = m.date != null ? m.date : "";
             return item;
@@ -277,6 +278,23 @@ public class GroupChatFragment extends Fragment {
             }
         }
 
+        // ViewHolder photo partagée depuis une fiche
+        static class SharedPhotoVH extends RecyclerView.ViewHolder {
+            androidx.cardview.widget.CardView card;
+            ImageView ivImage;
+            View vColor;
+            TextView tvTitle, tvLocation, tvAuthor;
+            SharedPhotoVH(View v) {
+                super(v);
+                card       = v.findViewById(R.id.card_shared);
+                ivImage    = v.findViewById(R.id.iv_shared_image);
+                vColor     = v.findViewById(R.id.v_shared_color);
+                tvTitle    = v.findViewById(R.id.tv_shared_title);
+                tvLocation = v.findViewById(R.id.tv_shared_location);
+                tvAuthor   = v.findViewById(R.id.tv_shared_author);
+            }
+        }
+
         // ViewHolder post photo
         static class PostVH extends RecyclerView.ViewHolder {
             android.widget.FrameLayout cardContainer;
@@ -307,6 +325,9 @@ public class GroupChatFragment extends Fragment {
             if (viewType == ChatItem.TYPE_POST) {
                 return new PostVH(inf.inflate(R.layout.item_chat_post, parent, false));
             }
+            if (viewType == ChatItem.TYPE_SHARED) {
+                return new SharedPhotoVH(inf.inflate(R.layout.item_shared_photo, parent, false));
+            }
             return new MessageVH(inf.inflate(R.layout.item_group_message, parent, false));
         }
 
@@ -315,20 +336,22 @@ public class GroupChatFragment extends Fragment {
             ChatItem item = items.get(position);
             if (item.type == ChatItem.TYPE_MESSAGE) {
                 bindMessage((MessageVH) holder, item.message);
+            } else if (item.type == ChatItem.TYPE_SHARED) {
+                bindSharedPhoto((SharedPhotoVH) holder, item.message);
             } else {
                 bindPost((PostVH) holder, item.post);
             }
         }
 
         private void bindMessage(MessageVH h, GroupMessage m) {
-            boolean mine = m.userId == currentUserId;
+            boolean mine = !currentUsername.isEmpty()
+                    && currentUsername.equalsIgnoreCase(m.authorName);
 
-            android.view.ViewGroup.LayoutParams lp = h.bubble.getLayoutParams();
-            if (lp instanceof android.widget.FrameLayout.LayoutParams) {
-                ((android.widget.FrameLayout.LayoutParams) lp).gravity =
-                        mine ? Gravity.END : Gravity.START;
-                h.bubble.setLayoutParams(lp);
-            }
+            android.widget.FrameLayout.LayoutParams lp =
+                    (android.widget.FrameLayout.LayoutParams) h.bubble.getLayoutParams();
+            lp.gravity = mine ? Gravity.END : Gravity.START;
+            h.bubble.setLayoutParams(lp);
+
             int bgColor = mine
                     ? h.bubble.getContext().getResources().getColor(R.color.teal, null)
                     : h.bubble.getContext().getResources().getColor(R.color.sand, null);
@@ -342,6 +365,55 @@ public class GroupChatFragment extends Fragment {
                     : h.tvText.getContext().getResources().getColor(R.color.ink, null));
             h.tvText.setText(m.message);
             h.tvDate.setText(m.date);
+        }
+
+        private void bindSharedPhoto(SharedPhotoVH h, GroupMessage m) {
+            boolean mine = !currentUsername.isEmpty()
+                    && currentUsername.equalsIgnoreCase(m.authorName);
+            android.widget.FrameLayout.LayoutParams lp =
+                    (android.widget.FrameLayout.LayoutParams) h.card.getLayoutParams();
+            lp.gravity = mine ? Gravity.END : Gravity.START;
+            h.card.setLayoutParams(lp);
+            h.tvAuthor.setText(mine ? "Moi" : "par @" + m.authorName);
+
+            // Extraire titre et lieu depuis le message "📸 titre — 📍 lieu"
+            String msg = m.message != null ? m.message : "";
+            String displayTitle = msg.replace("📸 ", "").replaceAll(" — 📍.*", "");
+            String displayLoc   = msg.contains("📍 ") ? "📍 " + msg.substring(msg.indexOf("📍 ") + 3) : "";
+            h.tvTitle.setText(displayTitle);
+            h.tvLocation.setText(displayLoc);
+
+            // Charger la photo depuis la DB pour afficher l'image et permettre le clic
+            com.example.travelshare.data.AppDatabase.databaseWriteExecutor.execute(() -> {
+                com.example.travelshare.data.models.Photo photo =
+                        com.example.travelshare.data.AppDatabase
+                                .getInstance(h.itemView.getContext())
+                                .photoDao().getPhotoById(m.photoId);
+                h.itemView.post(() -> {
+                    if (photo == null) return;
+                    String uri = photo.getImageUri();
+                    if (uri != null && !uri.isEmpty()) {
+                        h.ivImage.setVisibility(View.VISIBLE);
+                        h.vColor.setVisibility(View.GONE);
+                        Glide.with(h.ivImage.getContext()).load(android.net.Uri.parse(uri)).centerCrop().into(h.ivImage);
+                    }
+                    h.itemView.setOnClickListener(v -> {
+                        Intent intent = new Intent(v.getContext(), PhotoDetailActivity.class);
+                        intent.putExtra(PhotoDetailActivity.EXTRA_PHOTO_ID,  photo.getId());
+                        intent.putExtra(PhotoDetailActivity.EXTRA_TITLE,     photo.getTitle());
+                        intent.putExtra(PhotoDetailActivity.EXTRA_AUTHOR,    photo.getAuthor());
+                        intent.putExtra(PhotoDetailActivity.EXTRA_DATE,      photo.getDate());
+                        intent.putExtra(PhotoDetailActivity.EXTRA_LOCATION,  photo.getLocation());
+                        intent.putExtra(PhotoDetailActivity.EXTRA_CATEGORY,  photo.getCategory());
+                        intent.putExtra(PhotoDetailActivity.EXTRA_TAGS,      photo.getTags());
+                        intent.putExtra(PhotoDetailActivity.EXTRA_LIKES,     photo.getLikes());
+                        intent.putExtra(PhotoDetailActivity.EXTRA_LAT,       photo.getLatitude());
+                        intent.putExtra(PhotoDetailActivity.EXTRA_LNG,       photo.getLongitude());
+                        intent.putExtra(PhotoDetailActivity.EXTRA_IMAGE_URI, photo.getImageUri());
+                        v.getContext().startActivity(intent);
+                    });
+                });
+            });
         }
 
         private void bindPost(PostVH h, Photo p) {

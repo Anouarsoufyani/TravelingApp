@@ -20,6 +20,17 @@
             android:layout_marginBottom="24dp" />
 
         <EditText
+            android:id="@+id/et_path_city"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:hint="Ville de destination"
+            android:inputType="textCapSentences"
+            android:paddingHorizontal="16dp"
+            android:background="@drawable/bg_input"
+            android:textColor="@color/ink"
+            android:layout_marginBottom="12dp" />
+
+        <EditText
             android:id="@+id/et_path_budget"
             android:layout_width="match_parent"
             android:layout_height="52dp"

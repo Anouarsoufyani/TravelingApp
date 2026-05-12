@@ -12,4 +12,5 @@ public class GroupMessage {
     public String authorName;
     public String message;
     public String date;
+    public int    photoId; // 0 = message texte, >0 = photo partagée
 }

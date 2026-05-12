@@ -13,18 +13,27 @@ import com.example.travelshare.data.models.Comment;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentViewHolder> {
 
     private List<Comment> comments = new ArrayList<>();
+    private long currentUserId = -1;
+    private Consumer<Long> deleteCallback;
+
+    public void init(long currentUserId, Consumer<Long> deleteCallback) {
+        this.currentUserId = currentUserId;
+        this.deleteCallback = deleteCallback;
+    }
 
     public static class CommentViewHolder extends RecyclerView.ViewHolder {
-        TextView tvAuthor, tvDate, tvText;
+        TextView tvAuthor, tvDate, tvText, btnDelete;
         public CommentViewHolder(View v) {
             super(v);
-            tvAuthor = v.findViewById(R.id.tv_comment_author);
-            tvDate   = v.findViewById(R.id.tv_comment_date);
-            tvText   = v.findViewById(R.id.tv_comment_text);
+            tvAuthor  = v.findViewById(R.id.tv_comment_author);
+            tvDate    = v.findViewById(R.id.tv_comment_date);
+            tvText    = v.findViewById(R.id.tv_comment_text);
+            btnDelete = v.findViewById(R.id.btn_delete_comment);
         }
     }
 
@@ -41,13 +50,20 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
         holder.tvAuthor.setText(c.authorName);
         holder.tvDate.setText(c.date);
         holder.tvText.setText(c.text);
+
+        if (currentUserId >= 0 && c.userId == currentUserId && deleteCallback != null) {
+            holder.btnDelete.setVisibility(View.VISIBLE);
+            holder.btnDelete.setOnClickListener(v -> deleteCallback.accept(c.id));
+        } else {
+            holder.btnDelete.setVisibility(View.GONE);
+        }
     }
 
     @Override
     public int getItemCount() { return comments.size(); }
 
     public void setComments(List<Comment> comments) {
-        this.comments = comments;
+        this.comments = comments != null ? comments : new ArrayList<>();
         notifyDataSetChanged();
     }
 }

@@ -16,6 +16,7 @@ import com.bumptech.glide.Glide;
 import com.example.travelshare.R;
 import com.example.travelshare.data.models.Photo;
 import com.example.travelshare.ui.PhotoDetailActivity;
+import com.example.travelshare.ui.UserProfileActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,14 +25,14 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
 
 
     private static final int[][] GRADIENTS = {
-        {0xFF1B3A5C, 0xFF2D5480},  // navy
-        {0xFF2A5C3A, 0xFF3A7C50},  // forest
-        {0xFF7A3E0A, 0xFFA8601A},  // maroc
-        {0xFF2A4A6B, 0xFF4A6A8B},  // oslo
-        {0xFF5C2A6B, 0xFF8A4A98},  // plum
-        {0xFF3A4A2A, 0xFF5A6A3A},  // sage
-        {0xFF2A7D6F, 0xFF3FA090},  // teal
-        {0xFFC4603A, 0xFFD4804A},  // terracotta
+        {0xFF1B3A5C, 0xFF2D5480},
+        {0xFF2A5C3A, 0xFF3A7C50},
+        {0xFF7A3E0A, 0xFFA8601A},
+        {0xFF2A4A6B, 0xFF4A6A8B},
+        {0xFF5C2A6B, 0xFF8A4A98},
+        {0xFF3A4A2A, 0xFF5A6A3A},
+        {0xFF2A7D6F, 0xFF3FA090},
+        {0xFFC4603A, 0xFFD4804A},
     };
 
     private List<Photo> photos = new ArrayList<>();
@@ -92,6 +93,15 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
 
         h.tvLikes.setText(p.getLikes() + " likes");
 
+        h.tvAuthor.setOnClickListener(v -> {
+            String author = p.getAuthor();
+            if (author != null && !author.isEmpty()) {
+                Intent intent = new Intent(v.getContext(), UserProfileActivity.class);
+                intent.putExtra(UserProfileActivity.EXTRA_USERNAME, author);
+                v.getContext().startActivity(intent);
+            }
+        });
+
         h.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(v.getContext(), PhotoDetailActivity.class);
             intent.putExtra(PhotoDetailActivity.EXTRA_PHOTO_ID,  p.getId());
@@ -105,6 +115,7 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
             intent.putExtra(PhotoDetailActivity.EXTRA_LAT,       p.getLatitude());
             intent.putExtra(PhotoDetailActivity.EXTRA_LNG,       p.getLongitude());
             intent.putExtra(PhotoDetailActivity.EXTRA_IMAGE_URI, p.getImageUri());
+            intent.putExtra(PhotoDetailActivity.EXTRA_VOICE_URI, p.getVoiceUri());
             v.getContext().startActivity(intent);
         });
     }
@@ -112,7 +123,14 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
     @Override public int getItemCount() { return photos.size(); }
 
     public void setPhotos(List<Photo> photos) {
-        this.photos = photos != null ? photos : new ArrayList<>();
+        this.photos = photos != null ? new ArrayList<>(photos) : new ArrayList<>();
         notifyDataSetChanged();
+    }
+
+    public void appendPhotos(List<Photo> more) {
+        if (more == null || more.isEmpty()) return;
+        int start = this.photos.size();
+        this.photos.addAll(more);
+        notifyItemRangeInserted(start, more.size());
     }
 }

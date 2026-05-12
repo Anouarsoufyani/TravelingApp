@@ -22,4 +22,7 @@ public interface PlanStepDao {
 
     @Query("DELETE FROM plan_steps WHERE planId = :planId")
     void deleteStepsForPlan(long planId);
+
+    @Query("UPDATE plan_steps SET address = :address WHERE id = :id")
+    void updateAddress(long id, String address);
 }

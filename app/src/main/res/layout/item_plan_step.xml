@@ -75,11 +75,30 @@
             android:layout_marginBottom="2dp"/>
 
         <TextView
+            android:id="@+id/tv_step_address"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/ink_faint"
+            android:textSize="11sp"
+            android:drawableStart="@android:drawable/ic_menu_mylocation"
+            android:drawablePadding="4dp"
+            android:layout_marginBottom="2dp"
+            android:visibility="gone"/>
+
+        <TextView
             android:id="@+id/tv_step_description"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="@color/ink_muted"
             android:textSize="12sp"
+            android:layout_marginBottom="2dp"/>
+
+        <TextView
+            android:id="@+id/tv_step_opening_hours"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/gold"
+            android:textSize="11sp"
             android:layout_marginBottom="4dp"/>
 
         <LinearLayout
@@ -105,6 +124,16 @@
                 android:textColor="@color/ink_muted"
                 android:textSize="11sp"
                 android:padding="4dp"/>
+
+            <TextView
+                android:id="@+id/tv_step_video"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="▶ Vidéo"
+                android:textColor="@color/terracotta"
+                android:textSize="11sp"
+                android:padding="4dp"
+                android:layout_marginStart="8dp"/>
         </LinearLayout>
 
         <!-- Mini-galerie photos TravelShare liées à cette étape -->

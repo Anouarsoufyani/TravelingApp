@@ -17,4 +17,6 @@ public class PlanStep {
     public String description;
     public double lat;
     public double lng;
+    public String openingHours;
+    public String address;
 }

@@ -18,18 +18,41 @@
             android:gravity="bottom"
             android:padding="16dp">
 
-            <!-- Avatar -->
-            <TextView
-                android:id="@+id/tv_profile_avatar"
+            <!-- Avatar cliquable -->
+            <FrameLayout
+                android:id="@+id/frame_avatar"
                 android:layout_width="56dp"
                 android:layout_height="56dp"
-                android:gravity="center"
-                android:text="M"
-                android:textColor="@color/ink"
-                android:textSize="22sp"
-                android:fontFamily="serif"
-                android:background="@color/sand"
-                android:layout_marginEnd="12dp" />
+                android:layout_marginEnd="12dp">
+
+                <TextView
+                    android:id="@+id/tv_profile_avatar"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="M"
+                    android:textColor="@color/ink"
+                    android:textSize="22sp"
+                    android:fontFamily="serif"
+                    android:background="@color/sand" />
+
+                <ImageView
+                    android:id="@+id/iv_profile_avatar"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="16dp"
+                    android:layout_gravity="bottom"
+                    android:gravity="center"
+                    android:text="✎"
+                    android:textSize="10sp"
+                    android:textColor="@color/default_white"
+                    android:background="#88000000" />
+            </FrameLayout>
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -61,6 +84,48 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="16dp">
+
+            <!-- Biographie -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="BIOGRAPHIE"
+                android:textSize="10sp"
+                android:textColor="@color/ink_faint"
+                android:letterSpacing="0.1"
+                android:layout_marginBottom="6dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="@color/sand"
+                android:padding="10dp"
+                android:layout_marginBottom="16dp">
+
+                <EditText
+                    android:id="@+id/et_bio"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:hint="Ajoutez une bio…"
+                    android:textColor="@color/ink"
+                    android:textSize="13sp"
+                    android:background="@android:color/transparent"
+                    android:inputType="textMultiLine"
+                    android:maxLines="3" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btn_save_bio"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:text="OK"
+                    android:textAllCaps="false"
+                    android:textColor="@color/default_white"
+                    android:background="@drawable/bg_pill_solid"
+                    android:paddingHorizontal="12dp"
+                    android:textSize="12sp" />
+            </LinearLayout>
 
             <!-- Stats grid -->
             <LinearLayout

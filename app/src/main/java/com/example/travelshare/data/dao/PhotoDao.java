@@ -45,11 +45,20 @@ public interface PhotoDao {
     @Query("UPDATE photos SET likes = :likes WHERE id = :photoId")
     void updateLikes(int photoId, int likes);
 
+    @Query("UPDATE photos SET title = :title WHERE id = :photoId")
+    void updatePhotoTitle(int photoId, String title);
+
+    @Query("SELECT * FROM photos WHERE (visibility = 'PUBLIC' OR visibility IS NULL) ORDER BY id DESC LIMIT :limit OFFSET :offset")
+    List<Photo> getPublicPhotosPage(int offset, int limit);
+
     @Query("DELETE FROM photos WHERE id = :photoId")
     void deletePhoto(int photoId);
 
     @Query("SELECT * FROM photos WHERE id = :photoId LIMIT 1")
     Photo getPhotoById(int photoId);
+
+    @Query("SELECT * FROM photos WHERE id IN (:ids) ORDER BY id DESC")
+    LiveData<List<Photo>> getPhotosByIds(List<Integer> ids);
 
     @Query("SELECT * FROM photos WHERE (title LIKE '%' || :q || '%' OR location LIKE '%' || :q || '%' OR tags LIKE '%' || :q || '%') AND (visibility = 'PUBLIC' OR visibility IS NULL) ORDER BY id DESC LIMIT 5")
     List<Photo> searchPhotosSync(String q);

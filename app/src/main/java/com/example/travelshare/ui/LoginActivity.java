@@ -23,14 +23,30 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         
         sessionManager = new SessionManager(this);
-        // Si l'utilisateur est déjà connecté, on va direct à main
+        // Si l'utilisateur est déjà connecté, vérifier qu'il existe encore en base
         if (sessionManager.isLoggedIn()) {
-            goToMain();
+            com.example.travelshare.data.AppDatabase.databaseWriteExecutor.execute(() -> {
+                com.example.travelshare.data.models.User u =
+                        com.example.travelshare.data.AppDatabase.getInstance(this)
+                                .userDao().getUserByLogin(sessionManager.getUsername());
+                runOnUiThread(() -> {
+                    if (u != null) {
+                        goToMain();
+                    } else {
+                        sessionManager.logoutUser();
+                        setContentView(R.layout.activity_login);
+                        setupLoginForm();
+                    }
+                });
+            });
             return;
         }
 
         setContentView(R.layout.activity_login);
+        setupLoginForm();
+    }
 
+    private void setupLoginForm() {
         etUsername = findViewById(R.id.et_username);
         etPassword = findViewById(R.id.et_password);
         Button btnLogin = findViewById(R.id.btn_login);
@@ -46,7 +62,6 @@ public class LoginActivity extends AppCompatActivity {
         });
 
         btnAnonymous.setOnClickListener(v -> {
-            // Mode anonyme (clear old session)
             sessionManager.logoutUser();
             goToMain();
         });

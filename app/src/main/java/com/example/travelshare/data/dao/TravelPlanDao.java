@@ -29,4 +29,7 @@ public interface TravelPlanDao {
 
     @Query("DELETE FROM travel_plans WHERE id = :planId")
     void deletePlan(long planId);
+
+    @Query("DELETE FROM travel_plans WHERE userId = :userId AND saved = 0")
+    void deleteAllUnsavedForUser(long userId);
 }

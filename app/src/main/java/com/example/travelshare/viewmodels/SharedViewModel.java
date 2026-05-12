@@ -87,6 +87,10 @@ public class SharedViewModel extends AndroidViewModel {
         return photoDao.getPublicPhotosByAuthor(author);
     }
 
+    public LiveData<List<Photo>> getPhotosByIds(List<Integer> ids) {
+        return photoDao.getPhotosByIds(ids);
+    }
+
     public LiveData<List<Photo>> getPhotosByDateRange(String start, String end) {
         return photoDao.getPhotosByDateRange(start, end);
     }
@@ -112,12 +116,24 @@ public class SharedViewModel extends AndroidViewModel {
         AppDatabase.databaseWriteExecutor.execute(() -> photoDao.deletePhoto(photoId));
     }
 
+    public void updatePhotoTitle(int photoId, String title) {
+        AppDatabase.databaseWriteExecutor.execute(() -> photoDao.updatePhotoTitle(photoId, title));
+    }
+
+    public void loadMorePublicPhotos(int offset, int limit, java.util.function.Consumer<List<Photo>> callback) {
+        AppDatabase.databaseWriteExecutor.execute(() -> callback.accept(photoDao.getPublicPhotosPage(offset, limit)));
+    }
+
     public void getPhotoById(int photoId, java.util.function.Consumer<Photo> callback) {
         AppDatabase.databaseWriteExecutor.execute(() -> callback.accept(photoDao.getPhotoById(photoId)));
     }
 
     public void getUserByLogin(String login, java.util.function.Consumer<User> callback) {
         AppDatabase.databaseWriteExecutor.execute(() -> callback.accept(userDao.getUserByLogin(login)));
+    }
+
+    public void updateUserProfile(long userId, String avatarUri, String bio) {
+        AppDatabase.databaseWriteExecutor.execute(() -> userDao.updateUserProfile(userId, avatarUri, bio));
     }
 
     // ── COMMENTAIRES ────────────────────────────────────────────────────────
@@ -128,6 +144,10 @@ public class SharedViewModel extends AndroidViewModel {
 
     public void insertComment(Comment comment) {
         AppDatabase.databaseWriteExecutor.execute(() -> commentDao.insertComment(comment));
+    }
+
+    public void deleteComment(long id) {
+        AppDatabase.databaseWriteExecutor.execute(() -> commentDao.deleteComment(id));
     }
 
     // ── GROUPES ─────────────────────────────────────────────────────────────
@@ -240,6 +260,15 @@ public class SharedViewModel extends AndroidViewModel {
 
     public LiveData<Integer> getUnreadNotificationCount(long userId) {
         return appNotificationDao.getUnreadCount(userId);
+    }
+
+    public LiveData<Integer> getUnreadCountForGroup(long userId, long groupId) {
+        return appNotificationDao.getUnreadCountForGroup(userId, groupId);
+    }
+
+    public void markGroupMessagesRead(long userId, long groupId) {
+        AppDatabase.databaseWriteExecutor.execute(() ->
+                appNotificationDao.markGroupMessagesRead(userId, groupId));
     }
 
     // ── MESSAGES DE GROUPE ──────────────────────────────────────────────────

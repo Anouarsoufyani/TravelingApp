@@ -43,11 +43,26 @@ public class NotificationPreferencesFragment extends Fragment {
 
         // Spinner type
         Spinner spinnerType = view.findViewById(R.id.spinner_pref_type);
-        String[] types = {"AUTEUR", "LIEU", "TAG"};
+        String[] types = {"AUTEUR", "LIEU", "TAG", "GROUPE"};
         ArrayAdapter<String> typeAdapter = new ArrayAdapter<>(requireContext(),
                 android.R.layout.simple_spinner_item, types);
         typeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerType.setAdapter(typeAdapter);
+
+        // Hint dynamique selon le type sélectionné
+        EditText etValueHint = view.findViewById(R.id.et_pref_value);
+        spinnerType.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, View v, int pos, long id) {
+                switch (types[pos]) {
+                    case "AUTEUR":  etValueHint.setHint("Nom d'auteur (ex: marie)"); break;
+                    case "LIEU":    etValueHint.setHint("Lieu (ex: Paris)"); break;
+                    case "TAG":     etValueHint.setHint("Tag (ex: plage)"); break;
+                    case "GROUPE":  etValueHint.setHint("Nom du groupe"); break;
+                }
+            }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+        });
 
         // Liste des préférences
         RecyclerView rv = view.findViewById(R.id.rv_prefs);

@@ -31,6 +31,31 @@ public class MainActivity extends AppCompatActivity implements InscriptionFragme
 
         bottomNav = findViewById(R.id.bottom_navigation);
 
+        // ── Cache OSMDroid pour le mode hors-ligne ─────────────────────────
+        org.osmdroid.config.Configuration.getInstance().setUserAgentValue(getPackageName());
+        org.osmdroid.config.Configuration.getInstance().setOsmdroidTileCache(
+                new java.io.File(getCacheDir(), "osmdroid_tiles"));
+
+        // Vérifier que l'utilisateur en session existe encore en base (après reset DB)
+        com.example.travelshare.utils.SessionManager sessionCheck =
+                new com.example.travelshare.utils.SessionManager(this);
+        if (sessionCheck.isLoggedIn()) {
+            com.example.travelshare.data.AppDatabase.databaseWriteExecutor.execute(() -> {
+                com.example.travelshare.data.models.User u =
+                        com.example.travelshare.data.AppDatabase.getInstance(this)
+                                .userDao().getUserByLogin(sessionCheck.getUsername());
+                if (u == null) {
+                    sessionCheck.logoutUser();
+                    runOnUiThread(() -> {
+                        startActivity(new Intent(this,
+                                com.example.travelshare.ui.LoginActivity.class)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+                        finish();
+                    });
+                }
+            });
+        }
+
         String openFragment = getIntent().getStringExtra("OPEN_FRAGMENT");
         boolean openTravelPath = getIntent().getBooleanExtra("OPEN_TRAVELPATH", false);
         String travelPathCity  = getIntent().getStringExtra("TRAVELPATH_CITY");
@@ -87,6 +112,17 @@ public class MainActivity extends AppCompatActivity implements InscriptionFragme
                 badge.setVisibility(count != null && count > 0 ? View.VISIBLE : View.GONE));
 
         btnBellContainer.setOnClickListener(v -> loadFragment(new NotificationsFragment()));
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        boolean openTravelPath = intent.getBooleanExtra("OPEN_TRAVELPATH", false);
+        if (openTravelPath) {
+            String city = intent.getStringExtra("TRAVELPATH_CITY");
+            bottomNav.setVisibility(View.VISIBLE);
+            loadFragment(TravelPathFragment.newInstance(city != null ? city : ""));
+        }
     }
 
     private void loadFragment(Fragment fragment) {

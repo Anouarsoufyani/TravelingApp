@@ -21,6 +21,7 @@ public class Photo {
     private String visibility;
     private long groupId;
     private String imageUri;
+    private String voiceUri;
 
 
     public Photo(String title, String location, String author, int likes,
@@ -42,6 +43,7 @@ public class Photo {
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
     public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
     public String getLocation() { return location; }
     public String getAuthor() { return author; }
     public int getLikes() { return likes; }
@@ -57,4 +59,6 @@ public class Photo {
     public void setGroupId(long groupId) { this.groupId = groupId; }
     public String getImageUri() { return imageUri; }
     public void setImageUri(String imageUri) { this.imageUri = imageUri; }
+    public String getVoiceUri() { return voiceUri; }
+    public void setVoiceUri(String voiceUri) { this.voiceUri = voiceUri; }
 }

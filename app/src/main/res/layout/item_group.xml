@@ -15,17 +15,35 @@
         android:gravity="center_vertical"
         android:padding="14dp">
 
-        <!-- Avatar du groupe (initiale) -->
-        <TextView
-            android:id="@+id/tv_group_avatar"
+        <!-- Avatar + badge non-lu -->
+        <FrameLayout
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:gravity="center"
-            android:textSize="20sp"
-            android:textColor="@color/default_white"
-            android:fontFamily="serif"
-            android:background="@color/teal"
-            android:layout_marginEnd="12dp" />
+            android:layout_marginEnd="12dp">
+
+            <TextView
+                android:id="@+id/tv_group_avatar"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:gravity="center"
+                android:textSize="20sp"
+                android:textColor="@color/default_white"
+                android:fontFamily="serif"
+                android:background="@color/teal" />
+
+            <!-- Badge rouge nombre messages non lus -->
+            <TextView
+                android:id="@+id/tv_unread_badge"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="top|end"
+                android:gravity="center"
+                android:textColor="@color/default_white"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:background="@color/terracotta"
+                android:visibility="gone" />
+        </FrameLayout>
 
         <!-- Infos -->
         <LinearLayout
@@ -52,7 +70,6 @@
                 android:maxLines="1"
                 android:ellipsize="end" />
 
-            <!-- Badge "N demandes" visible uniquement pour le créateur -->
             <TextView
                 android:id="@+id/tv_pending_badge"
                 android:layout_width="wrap_content"
@@ -71,7 +88,6 @@
             android:orientation="vertical"
             android:gravity="end">
 
-            <!-- Bouton action principal (Demander / En attente / Membre / Admin) -->
             <TextView
                 android:id="@+id/tv_group_action"
                 android:layout_width="wrap_content"
@@ -82,7 +98,6 @@
                 android:background="@drawable/bg_pill_outline"
                 android:layout_marginBottom="6dp" />
 
-            <!-- Bouton Discussion (visible seulement dans Mes groupes) -->
             <TextView
                 android:id="@+id/tv_group_chat"
                 android:layout_width="wrap_content"

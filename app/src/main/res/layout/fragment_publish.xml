@@ -80,7 +80,16 @@
             android:fontFamily="sans-serif"
             android:textColor="@color/ink"
             android:hint="Lieu (ex: Paris, Musée)"
-            android:layout_marginBottom="12dp"/>
+            android:layout_marginBottom="6dp"/>
+
+        <CheckBox
+            android:id="@+id/check_approx_location"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📍 Lieu approximatif (masquer la position exacte)"
+            android:textColor="@color/ink_muted"
+            android:textSize="12sp"
+            android:layout_marginBottom="12dp" />
 
         <Spinner
             android:id="@+id/spinner_pub_category"
