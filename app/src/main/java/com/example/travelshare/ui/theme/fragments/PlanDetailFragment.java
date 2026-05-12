@@ -78,7 +78,6 @@ public class PlanDetailFragment extends Fragment {
         viewModel = new ViewModelProvider(this).get(TravelPathViewModel.class);
 
         // ── Carte ──────────────────────────────────────────────────────────
-        Configuration.getInstance().setUserAgentValue(requireContext().getPackageName());
         mapView       = view.findViewById(R.id.map_plan);
         blockRouteTime = view.findViewById(R.id.block_route_time);
         tvRouteTime    = view.findViewById(R.id.tv_pd_route_time);

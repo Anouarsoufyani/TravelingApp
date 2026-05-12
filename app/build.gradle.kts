@@ -1,6 +1,6 @@
 plugins {
     id("com.android.application")
-    // Notez qu'il n'y a plus le plugin KSP ici !
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -67,6 +67,11 @@ dependencies {
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
 
+
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
 
     // Tests par défaut
     testImplementation("junit:junit:4.13.2")

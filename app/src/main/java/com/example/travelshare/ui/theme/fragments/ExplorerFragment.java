@@ -376,6 +376,7 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
         }
     }
 
+    @android.annotation.SuppressLint("MissingPermission")
     private void fetchNearbyPhotos() {
         try {
             LocationManager lm = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);

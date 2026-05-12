@@ -44,6 +44,9 @@ import com.example.travelshare.data.models.Photo;
 import com.example.travelshare.utils.NotificationUtil;
 import com.example.travelshare.utils.SessionManager;
 import com.example.travelshare.viewmodels.SharedViewModel;
+import com.google.firebase.firestore.FirebaseFirestore;
+import java.util.HashMap;
+import java.util.Map;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -289,24 +292,51 @@ public class PublishFragment extends Fragment {
                     if (selectedPhotoUri != null) photo.setImageUri(selectedPhotoUri.toString());
                     if (savedVoicePath != null)   photo.setVoiceUri(savedVoicePath);
                     if (finalGroupId >= 0)        photo.setGroupId(finalGroupId);
-                    viewModel.insert(photo);
-                    btnPublish.setEnabled(true);
-                    Toast.makeText(getContext(), "Photo publiée !", Toast.LENGTH_SHORT).show();
-                    triggerNotificationsForPublish(finalAuthor, finalLocation, finalCategory, finalTags);
-                    // Reset formulaire
-                    etTitle.setText(""); etLocation.setText(""); etTags.setText("");
-                    spinnerCat.setSelection(0);
-                    switchVisibility.setChecked(false);
-                    checkApprox.setChecked(false);
-                    selectedPhotoUri = null;
-                    ivPreview.setVisibility(View.GONE);
-                    view.findViewById(R.id.layout_photo_placeholder).setVisibility(View.VISIBLE);
-                    resetVoiceState(btnVoice);
+                    viewModel.insertAndGetId(photo, roomId -> {
+                        savePhotoToFirestore(photo, roomId);
+                        btnPublish.setEnabled(true);
+                        Toast.makeText(getContext(), "Photo publiée !", Toast.LENGTH_SHORT).show();
+                        triggerNotificationsForPublish(finalAuthor, finalLocation, finalCategory, finalTags);
+                        etTitle.setText(""); etLocation.setText(""); etTags.setText("");
+                        spinnerCat.setSelection(0);
+                        switchVisibility.setChecked(false);
+                        checkApprox.setChecked(false);
+                        selectedPhotoUri = null;
+                        ivPreview.setVisibility(View.GONE);
+                        view.findViewById(R.id.layout_photo_placeholder).setVisibility(View.VISIBLE);
+                        resetVoiceState(btnVoice);
+                    });
                 });
             });
         });
 
         return view;
+    }
+
+    // ── Firestore ──────────────────────────────────────────────────────────
+
+    private void savePhotoToFirestore(Photo photo, long roomId) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("roomId",     roomId);
+        data.put("title",      photo.getTitle());
+        data.put("location",   photo.getLocation());
+        data.put("author",     photo.getAuthor());
+        data.put("latitude",   photo.getLatitude());
+        data.put("longitude",  photo.getLongitude());
+        data.put("date",       photo.getDate());
+        data.put("category",   photo.getCategory());
+        data.put("tags",       photo.getTags());
+        data.put("visibility", photo.getVisibility());
+        data.put("likes",      0);
+        data.put("imageUri",   photo.getImageUri() != null ? photo.getImageUri() : "");
+        data.put("timestamp",  com.google.firebase.firestore.FieldValue.serverTimestamp());
+
+        FirebaseFirestore.getInstance()
+                .collection("photos")
+                .document(String.valueOf(roomId))
+                .set(data)
+                .addOnFailureListener(e ->
+                        android.util.Log.w("Firestore", "Erreur upload photo", e));
     }
 
     // ── Enregistrement vocal ───────────────────────────────────────────────

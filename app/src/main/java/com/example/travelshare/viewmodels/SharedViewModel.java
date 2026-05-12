@@ -67,6 +67,13 @@ public class SharedViewModel extends AndroidViewModel {
         AppDatabase.databaseWriteExecutor.execute(() -> photoDao.insertPhoto(photo));
     }
 
+    public void insertAndGetId(Photo photo, java.util.function.Consumer<Long> callback) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            long id = photoDao.insertPhoto(photo);
+            new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> callback.accept(id));
+        });
+    }
+
     public LiveData<List<Photo>> searchPhotos(String query) {
         return photoDao.searchPhotos(query);
     }

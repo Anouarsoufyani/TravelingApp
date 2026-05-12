@@ -11,34 +11,25 @@ import com.example.travelshare.R;
 import com.example.travelshare.data.AppDatabase;
 import com.example.travelshare.data.models.User;
 import com.example.travelshare.utils.SessionManager;
+import com.google.firebase.auth.FirebaseAuth;
 
 public class LoginActivity extends AppCompatActivity {
 
     private EditText etUsername;
     private EditText etPassword;
     private SessionManager sessionManager;
+    private FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
+
+        mAuth          = FirebaseAuth.getInstance();
         sessionManager = new SessionManager(this);
-        // Si l'utilisateur est déjà connecté, vérifier qu'il existe encore en base
-        if (sessionManager.isLoggedIn()) {
-            com.example.travelshare.data.AppDatabase.databaseWriteExecutor.execute(() -> {
-                com.example.travelshare.data.models.User u =
-                        com.example.travelshare.data.AppDatabase.getInstance(this)
-                                .userDao().getUserByLogin(sessionManager.getUsername());
-                runOnUiThread(() -> {
-                    if (u != null) {
-                        goToMain();
-                    } else {
-                        sessionManager.logoutUser();
-                        setContentView(R.layout.activity_login);
-                        setupLoginForm();
-                    }
-                });
-            });
+
+        // Si Firebase a déjà une session active, aller direct à MainActivity
+        if (mAuth.getCurrentUser() != null && sessionManager.getUserId() != -1) {
+            goToMain();
             return;
         }
 
@@ -49,8 +40,8 @@ public class LoginActivity extends AppCompatActivity {
     private void setupLoginForm() {
         etUsername = findViewById(R.id.et_username);
         etPassword = findViewById(R.id.et_password);
-        Button btnLogin = findViewById(R.id.btn_login);
-        Button btnRegister = findViewById(R.id.btn_register);
+        Button btnLogin     = findViewById(R.id.btn_login);
+        Button btnRegister  = findViewById(R.id.btn_register);
         Button btnAnonymous = findViewById(R.id.btn_anonymous);
 
         btnLogin.setOnClickListener(v -> loginUser());
@@ -62,31 +53,40 @@ public class LoginActivity extends AppCompatActivity {
         });
 
         btnAnonymous.setOnClickListener(v -> {
+            mAuth.signOut();
             sessionManager.logoutUser();
             goToMain();
         });
     }
 
     private void loginUser() {
-        String username = etUsername.getText().toString().trim();
+        String login    = etUsername.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
 
-        if (username.isEmpty() || password.isEmpty()) {
+        if (login.isEmpty() || password.isEmpty()) {
             Toast.makeText(this, "Veuillez remplir tous les champs", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            User user = AppDatabase.getInstance(this).userDao().login(username, password);
-            runOnUiThread(() -> {
-                if (user != null) {
-                    sessionManager.createLoginSession(user.id, user.login);
-                    goToMain();
-                } else {
-                    Toast.makeText(this, "Identifiants incorrects", Toast.LENGTH_SHORT).show();
-                }
-            });
-        });
+        String email = SessionManager.toFirebaseEmail(login);
+
+        mAuth.signInWithEmailAndPassword(email, password)
+                .addOnSuccessListener(authResult -> {
+                    // Récupérer userId depuis Room
+                    AppDatabase.databaseWriteExecutor.execute(() -> {
+                        User user = AppDatabase.getInstance(this).userDao().getUserByLogin(login);
+                        runOnUiThread(() -> {
+                            if (user != null) {
+                                sessionManager.createLoginSession(user.id, user.login);
+                                goToMain();
+                            } else {
+                                Toast.makeText(this, "Utilisateur introuvable en base", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    });
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Identifiants incorrects", Toast.LENGTH_SHORT).show());
     }
 
     private void goToMain() {

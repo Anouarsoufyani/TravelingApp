@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "676318525499",
+    "project_id": "traveling-1c4e8",
+    "storage_bucket": "traveling-1c4e8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:676318525499:android:fee00aee8e3b976e1c441e",
+        "android_client_info": {
+          "package_name": "com.example.travelshare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAh_V3mQrr5OvgByvIbvpv9bCDxGl1dQFY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

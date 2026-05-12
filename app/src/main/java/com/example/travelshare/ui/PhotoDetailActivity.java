@@ -38,9 +38,15 @@ import com.example.travelshare.utils.NotificationUtil;
 import com.example.travelshare.utils.SessionManager;
 import com.example.travelshare.viewmodels.SharedViewModel;
 
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 public class PhotoDetailActivity extends AppCompatActivity {
 
@@ -62,6 +68,8 @@ public class PhotoDetailActivity extends AppCompatActivity {
     private int photoId;
     private int currentLikes;
     private boolean isLiked = false;
+    private ListenerRegistration likesListener;
+    private ListenerRegistration commentsListener;
     private long authorId = -1;
     private MediaPlayer mediaPlayer;
     private boolean isPlaying = false;
@@ -154,6 +162,18 @@ public class PhotoDetailActivity extends AppCompatActivity {
         TextView tvLikesCount = findViewById(R.id.tv_likes_count);
         tvLikesCount.setText(currentLikes + " personnes ont aimé");
 
+        // Listener temps réel sur les likes
+        likesListener = FirebaseFirestore.getInstance().collection("photos")
+                .document(String.valueOf(photoId))
+                .addSnapshotListener((doc, e) -> {
+                    if (e != null || doc == null || !doc.exists()) return;
+                    if (doc.getLong("likes") != null) {
+                        currentLikes = doc.getLong("likes").intValue();
+                        tvLikesCount.setText(currentLikes + " personnes ont aimé");
+                        viewModel.updateLikes(photoId, currentLikes);
+                    }
+                });
+
         // Restaurer état like depuis SharedPreferences
         android.content.SharedPreferences likePrefs = getSharedPreferences("likes", MODE_PRIVATE);
         java.util.Set<String> likedSet = new java.util.HashSet<>(
@@ -168,6 +188,8 @@ public class PhotoDetailActivity extends AppCompatActivity {
             btnLike.setText(isLiked ? "♥ Aimé" : "♡ Like");
             tvLikesCount.setText(currentLikes + " personnes ont aimé");
             viewModel.updateLikes(photoId, currentLikes);
+            FirebaseFirestore.getInstance().collection("photos").document(String.valueOf(photoId))
+                    .update("likes", currentLikes);
 
             // Sauvegarder dans SharedPreferences
             java.util.Set<String> ids = new java.util.HashSet<>(
@@ -395,6 +417,31 @@ public class PhotoDetailActivity extends AppCompatActivity {
         viewModel.getCommentsForPhoto((long) photoId)
                 .observe(this, commentAdapter::setComments);
 
+        // Listener temps réel sur les commentaires Firestore → Room
+        AppDatabase db = AppDatabase.getInstance(this);
+        commentsListener = FirebaseFirestore.getInstance().collection("comments")
+                .whereEqualTo("photoId", (long) photoId)
+                .addSnapshotListener((query, e) -> {
+                    if (e != null || query == null) return;
+                    AppDatabase.databaseWriteExecutor.execute(() -> {
+                        for (QueryDocumentSnapshot doc : query) {
+                            String fcAuthor = doc.getString("authorName");
+                            String fcText   = doc.getString("text");
+                            String fcDate   = doc.getString("date") != null ? doc.getString("date") : "";
+                            if (fcAuthor == null || fcText == null) continue;
+                            if (db.commentDao().countByContent(photoId, fcAuthor, fcText) == 0) {
+                                Comment fc = new Comment();
+                                fc.photoId    = photoId;
+                                fc.authorName = fcAuthor;
+                                fc.text       = fcText;
+                                fc.date       = fcDate;
+                                fc.userId     = -1;
+                                db.commentDao().insertComment(fc);
+                            }
+                        }
+                    });
+                });
+
         Button btnSend   = findViewById(R.id.btn_send_comment);
         EditText etInput = findViewById(R.id.et_comment_input);
 
@@ -411,6 +458,15 @@ public class PhotoDetailActivity extends AppCompatActivity {
             c.date       = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
 
             viewModel.insertComment(c);
+
+            Map<String, Object> cd = new HashMap<>();
+            cd.put("photoId",    (long) photoId);
+            cd.put("authorName", c.authorName);
+            cd.put("text",       c.text);
+            cd.put("date",       c.date);
+            cd.put("timestamp",  FieldValue.serverTimestamp());
+            FirebaseFirestore.getInstance().collection("comments").add(cd);
+
             etInput.setText("");
             Toast.makeText(this, "Commentaire publié !", Toast.LENGTH_SHORT).show();
 
@@ -425,6 +481,7 @@ public class PhotoDetailActivity extends AppCompatActivity {
         });
     }
 
+    @android.annotation.SuppressLint("MissingPermission")
     private void fetchRouteToPhoto() {
         LocationManager lm = (LocationManager) getSystemService(LOCATION_SERVICE);
         if (lm == null) { tvAccess.setText("Maps →"); return; }
@@ -494,5 +551,7 @@ public class PhotoDetailActivity extends AppCompatActivity {
             mediaPlayer.release();
             mediaPlayer = null;
         }
+        if (likesListener != null) likesListener.remove();
+        if (commentsListener != null) commentsListener.remove();
     }
 }

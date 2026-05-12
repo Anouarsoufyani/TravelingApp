@@ -34,8 +34,6 @@ public class MapFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
 
-        // Requis par OSMDroid : identifier l'application
-        Configuration.getInstance().setUserAgentValue(requireContext().getPackageName());
 
         View view = inflater.inflate(R.layout.fragment_map, container, false);
 
