@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import com.example.travelshare.data.AppDatabase;
 import com.example.travelshare.data.dao.AppNotificationDao;
+import com.example.travelshare.data.repository.FirebaseRepository;
 import com.example.travelshare.data.dao.CommentDao;
 import com.example.travelshare.data.dao.GroupDao;
 import com.example.travelshare.data.dao.GroupMemberDao;
@@ -121,14 +122,31 @@ public class SharedViewModel extends AndroidViewModel {
 
     public void deletePhoto(int photoId) {
         AppDatabase.databaseWriteExecutor.execute(() -> photoDao.deletePhoto(photoId));
+        FirebaseRepository.getInstance().deletePhoto(photoId);
     }
 
     public void updatePhotoTitle(int photoId, String title) {
         AppDatabase.databaseWriteExecutor.execute(() -> photoDao.updatePhotoTitle(photoId, title));
+        FirebaseRepository.getInstance().updatePhotoTitle(photoId, title);
     }
 
     public void loadMorePublicPhotos(int offset, int limit, java.util.function.Consumer<List<Photo>> callback) {
         AppDatabase.databaseWriteExecutor.execute(() -> callback.accept(photoDao.getPublicPhotosPage(offset, limit)));
+    }
+
+    public void syncPhotosFromFirestore() {
+        FirebaseRepository.getInstance().syncPublicPhotosToRoom(
+                AppDatabase.getInstance(getApplication()), null);
+    }
+
+    public void syncGroupsFromFirestore() {
+        FirebaseRepository.getInstance().syncGroupsToRoom(
+                AppDatabase.getInstance(getApplication()), null);
+    }
+
+    public void syncMyMemberStatuses(String username) {
+        FirebaseRepository.getInstance().syncMyMemberStatuses(
+                username, AppDatabase.getInstance(getApplication()), null);
     }
 
     public void getPhotoById(int photoId, java.util.function.Consumer<Photo> callback) {
@@ -154,7 +172,13 @@ public class SharedViewModel extends AndroidViewModel {
     }
 
     public void deleteComment(long id) {
-        AppDatabase.databaseWriteExecutor.execute(() -> commentDao.deleteComment(id));
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            com.example.travelshare.data.models.Comment c = commentDao.getCommentById(id);
+            commentDao.deleteComment(id);
+            if (c != null) {
+                FirebaseRepository.getInstance().deleteComment(c.photoId, c.authorName, c.text);
+            }
+        });
     }
 
     // ── GROUPES ─────────────────────────────────────────────────────────────

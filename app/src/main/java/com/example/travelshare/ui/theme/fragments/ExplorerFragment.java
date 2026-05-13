@@ -201,6 +201,9 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
         viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
         chipRoot = view;
 
+        // Sync silencieuse des photos publiques depuis Firestore
+        viewModel.syncPhotosFromFirestore();
+
         // Chargement initial
         String prefillQuery = getArguments() != null ? getArguments().getString(ARG_SEARCH_QUERY, "") : "";
         if (!prefillQuery.isEmpty()) {
@@ -396,8 +399,10 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
     }
 
     public static List<Integer> getLikedPhotoIdsStatic(android.content.Context ctx) {
+        String username = new com.example.travelshare.utils.SessionManager(ctx).getUsername().toLowerCase();
+        String likeKey  = "liked_ids_" + username;
         android.content.SharedPreferences prefs = ctx.getSharedPreferences("likes", android.content.Context.MODE_PRIVATE);
-        java.util.Set<String> set = prefs.getStringSet("liked_ids", new java.util.HashSet<>());
+        java.util.Set<String> set = prefs.getStringSet(likeKey, new java.util.HashSet<>());
         List<Integer> ids = new java.util.ArrayList<>();
         for (String s : set) { try { ids.add(Integer.parseInt(s)); } catch (Exception ignored) {} }
         return ids;

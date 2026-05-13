@@ -33,4 +33,13 @@ public interface GroupMemberDao {
 
     @Query("SELECT * FROM group_members WHERE userId = :userId AND groupId = :groupId LIMIT 1")
     GroupMember getMembership(long userId, long groupId);
+
+    @Query("SELECT COUNT(*) FROM group_members WHERE groupId = :groupId AND userName = :userName")
+    int countByUserName(long groupId, String userName);
+
+    @Query("SELECT * FROM group_members WHERE groupId = :groupId AND userName = :userName LIMIT 1")
+    GroupMember getMemberByUserName(long groupId, String userName);
+
+    @Query("UPDATE group_members SET status = 'MEMBER' WHERE groupId = :groupId AND userName = :userName")
+    void acceptRequestByUserName(long groupId, String userName);
 }

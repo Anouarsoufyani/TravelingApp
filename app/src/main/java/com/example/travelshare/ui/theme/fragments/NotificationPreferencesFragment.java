@@ -18,7 +18,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.travelshare.R;
+import com.example.travelshare.data.AppDatabase;
 import com.example.travelshare.data.models.NotificationPreference;
+import com.example.travelshare.data.repository.FirebaseRepository;
 import com.example.travelshare.utils.SessionManager;
 import com.example.travelshare.viewmodels.SharedViewModel;
 
@@ -67,10 +69,16 @@ public class NotificationPreferencesFragment extends Fragment {
         // Liste des préférences
         RecyclerView rv = view.findViewById(R.id.rv_prefs);
         rv.setLayoutManager(new LinearLayoutManager(getContext()));
-        PrefAdapter adapter = new PrefAdapter(viewModel);
+        PrefAdapter adapter = new PrefAdapter(viewModel, session.getUsername());
         rv.setAdapter(adapter);
 
         viewModel.getPreferencesForUser(userId).observe(getViewLifecycleOwner(), adapter::setPrefs);
+
+        // Sync préférences depuis Firestore au démarrage
+        if (session.isLoggedIn()) {
+            FirebaseRepository.getInstance().syncNotificationPreferences(
+                    session.getUsername(), AppDatabase.getInstance(requireContext()), userId, null);
+        }
 
         // Bouton ajouter
         EditText etValue = view.findViewById(R.id.et_pref_value);
@@ -86,6 +94,7 @@ public class NotificationPreferencesFragment extends Fragment {
             pref.type   = type;
             pref.value  = value;
             viewModel.insertPreference(pref);
+            FirebaseRepository.getInstance().saveNotificationPreference(session.getUsername(), type, value);
             etValue.setText("");
             Toast.makeText(getContext(), "Alerte ajoutée !", Toast.LENGTH_SHORT).show();
         });
@@ -98,8 +107,12 @@ public class NotificationPreferencesFragment extends Fragment {
     static class PrefAdapter extends RecyclerView.Adapter<PrefAdapter.PVH> {
         private List<NotificationPreference> prefs = new ArrayList<>();
         private final SharedViewModel viewModel;
+        private final String username;
 
-        PrefAdapter(SharedViewModel vm) { this.viewModel = vm; }
+        PrefAdapter(SharedViewModel vm, String username) {
+            this.viewModel = vm;
+            this.username  = username;
+        }
 
         static class PVH extends RecyclerView.ViewHolder {
             TextView tvType, tvValue, btnDelete;
@@ -123,7 +136,10 @@ public class NotificationPreferencesFragment extends Fragment {
             NotificationPreference p = prefs.get(position);
             h.tvType.setText(p.type);
             h.tvValue.setText(p.value);
-            h.btnDelete.setOnClickListener(v -> viewModel.deletePreference(p));
+            h.btnDelete.setOnClickListener(v -> {
+                viewModel.deletePreference(p);
+                FirebaseRepository.getInstance().deleteNotificationPreference(username, p.type, p.value);
+            });
         }
 
         @Override public int getItemCount() { return prefs.size(); }

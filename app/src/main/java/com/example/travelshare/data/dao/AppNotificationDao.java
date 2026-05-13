@@ -14,6 +14,9 @@ public interface AppNotificationDao {
     @Insert
     void insert(AppNotification notification);
 
+    @Query("SELECT COUNT(*) FROM app_notifications WHERE targetUserId = :userId AND type = :type AND message = :message")
+    int countByContent(long userId, String type, String message);
+
     @Query("SELECT * FROM app_notifications WHERE targetUserId = :userId ORDER BY id DESC")
     LiveData<List<AppNotification>> getForUser(long userId);
 

@@ -11,6 +11,8 @@ import com.example.travelshare.data.dao.PlanStepDao;
 import com.example.travelshare.data.dao.TravelPlanDao;
 import com.example.travelshare.data.models.PlanStep;
 import com.example.travelshare.data.models.TravelPlan;
+import com.example.travelshare.data.repository.FirebaseRepository;
+import com.example.travelshare.utils.SessionManager;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -54,7 +56,15 @@ public class TravelPathViewModel extends AndroidViewModel {
     }
 
     public void saveLikeAndSave(TravelPlan plan) {
-        AppDatabase.databaseWriteExecutor.execute(() -> planDao.updatePlan(plan));
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            planDao.updatePlan(plan);
+            if (plan.liked) {
+                String username = new SessionManager(getApplication()).getUsername();
+                if (username != null && !username.isEmpty()) {
+                    FirebaseRepository.getInstance().savePlan(username, plan);
+                }
+            }
+        });
     }
 
     public void deletePlan(long planId) {

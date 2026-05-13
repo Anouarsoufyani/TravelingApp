@@ -23,14 +23,17 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.travelshare.R;
+import com.example.travelshare.data.AppDatabase;
 import com.example.travelshare.data.models.AppNotification;
 import com.example.travelshare.data.models.GroupMember;
 import com.example.travelshare.data.models.GroupMessage;
 import com.example.travelshare.data.models.Photo;
+import com.example.travelshare.data.repository.FirebaseRepository;
 import com.example.travelshare.ui.PhotoDetailActivity;
 import com.example.travelshare.utils.NotificationUtil;
 import com.example.travelshare.utils.SessionManager;
 import com.example.travelshare.viewmodels.SharedViewModel;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -44,6 +47,9 @@ public class GroupChatFragment extends Fragment {
     public static final String ARG_GROUP_ID      = "group_id";
     public static final String ARG_GROUP_NAME    = "group_name";
     public static final String ARG_GROUP_CREATOR = "group_creator_id";
+
+    private ListenerRegistration chatListener;
+    private ListenerRegistration membersListener;
 
     public static GroupChatFragment newInstance(long groupId, String groupName, long creatorId) {
         GroupChatFragment f = new GroupChatFragment();
@@ -110,7 +116,7 @@ public class GroupChatFragment extends Fragment {
         TextView tvBadge    = view.findViewById(R.id.tv_requests_badge);
         RecyclerView rvReqs = view.findViewById(R.id.rv_requests);
         rvReqs.setLayoutManager(new LinearLayoutManager(getContext()));
-        RequestAdapter reqAdapter = new RequestAdapter(viewModel, groupId);
+        RequestAdapter reqAdapter = new RequestAdapter(viewModel, groupId, groupName);
         rvReqs.setAdapter(reqAdapter);
 
         if (isCreator) {
@@ -150,6 +156,16 @@ public class GroupChatFragment extends Fragment {
             if (!items.isEmpty()) rv.scrollToPosition(items.size() - 1);
         });
 
+        // Listener Firestore temps réel pour les messages des autres utilisateurs
+        chatListener = FirebaseRepository.getInstance().listenToMessages(
+                groupName, AppDatabase.getInstance(requireContext()), groupId);
+
+        // Listener Firestore temps réel pour les demandes d'adhésion (créateur uniquement)
+        if (isCreator) {
+            membersListener = FirebaseRepository.getInstance().listenToPendingMembers(
+                    groupName, AppDatabase.getInstance(requireContext()), groupId);
+        }
+
         // ── Envoi de message ───────────────────────────────────────────────
         EditText etInput = view.findViewById(R.id.et_chat_input);
         view.findViewById(R.id.btn_chat_send).setOnClickListener(v -> {
@@ -168,6 +184,7 @@ public class GroupChatFragment extends Fragment {
             msg.message    = text;
             msg.date       = date;
             viewModel.sendGroupMessage(msg);
+            FirebaseRepository.getInstance().saveMessage(groupName, session.getUsername(), text, date);
 
             AppNotification notif = new AppNotification();
             notif.targetUserId = session.getUserId();
@@ -187,6 +204,13 @@ public class GroupChatFragment extends Fragment {
         return view;
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (chatListener != null) { chatListener.remove(); chatListener = null; }
+        if (membersListener != null) { membersListener.remove(); membersListener = null; }
+    }
+
     /** Fusionne messages et posts triés par date */
     private List<ChatItem> buildFeed(List<GroupMessage> messages, List<Photo> posts) {
         List<ChatItem> items = new ArrayList<>();
@@ -202,8 +226,13 @@ public class GroupChatFragment extends Fragment {
         private List<GroupMember> requests = new ArrayList<>();
         private final SharedViewModel viewModel;
         private final long groupId;
+        private final String groupName;
 
-        RequestAdapter(SharedViewModel vm, long gid) { this.viewModel = vm; this.groupId = gid; }
+        RequestAdapter(SharedViewModel vm, long gid, String gname) {
+            this.viewModel  = vm;
+            this.groupId    = gid;
+            this.groupName  = gname;
+        }
 
         static class RVH extends RecyclerView.ViewHolder {
             TextView tvAvatar, tvName, btnAccept, btnReject;
@@ -230,6 +259,7 @@ public class GroupChatFragment extends Fragment {
             h.tvName.setText(name);
             h.btnAccept.setOnClickListener(v -> {
                 viewModel.acceptJoinRequest(groupId, m.userId);
+                FirebaseRepository.getInstance().saveGroupMember(groupName, m.userName, "MEMBER");
                 AppNotification notif = new AppNotification();
                 notif.targetUserId = m.userId;
                 notif.type    = "JOIN_ACCEPTED";
@@ -237,10 +267,12 @@ public class GroupChatFragment extends Fragment {
                 notif.groupId = groupId;
                 notif.date    = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
                 viewModel.insertAppNotification(notif);
+                FirebaseRepository.getInstance().saveNotification(m.userName, notif);
                 Toast.makeText(v.getContext(), name + " accepté !", Toast.LENGTH_SHORT).show();
             });
             h.btnReject.setOnClickListener(v -> {
                 viewModel.rejectOrLeaveGroup(groupId, m.userId);
+                FirebaseRepository.getInstance().deleteGroupMember(groupName, m.userName);
                 Toast.makeText(v.getContext(), "Demande refusée.", Toast.LENGTH_SHORT).show();
             });
         }

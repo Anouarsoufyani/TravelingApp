@@ -17,16 +17,21 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.travelshare.R;
+import com.example.travelshare.data.AppDatabase;
 import com.example.travelshare.data.models.AppNotification;
 import com.example.travelshare.data.models.Group;
+import com.example.travelshare.data.repository.FirebaseRepository;
 import com.example.travelshare.ui.PhotoDetailActivity;
 import com.example.travelshare.utils.SessionManager;
 import com.example.travelshare.viewmodels.SharedViewModel;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class NotificationsFragment extends Fragment {
+
+    private ListenerRegistration notifListener;
 
     @Nullable
     @Override
@@ -48,7 +53,19 @@ public class NotificationsFragment extends Fragment {
         view.findViewById(R.id.btn_clear_notifs).setOnClickListener(v ->
                 viewModel.clearNotificationsForUser(userId));
 
+        // Listener Firestore temps réel pour les notifications entrantes
+        if (session.isLoggedIn()) {
+            notifListener = FirebaseRepository.getInstance().listenToNotifications(
+                    session.getUsername(), AppDatabase.getInstance(requireContext()), userId);
+        }
+
         return view;
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (notifListener != null) { notifListener.remove(); notifListener = null; }
     }
 
     // ── Adapter ───────────────────────────────────────────────────────────

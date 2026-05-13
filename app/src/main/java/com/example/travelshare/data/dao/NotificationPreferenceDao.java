@@ -22,4 +22,7 @@ public interface NotificationPreferenceDao {
 
     @Query("SELECT * FROM notification_preferences WHERE userId = :userId")
     List<NotificationPreference> getPreferencesForUserSync(long userId);
+
+    @Query("SELECT COUNT(*) FROM notification_preferences WHERE userId = :userId AND type = :type AND value = :value")
+    int countByTypeValue(long userId, String type, String value);
 }

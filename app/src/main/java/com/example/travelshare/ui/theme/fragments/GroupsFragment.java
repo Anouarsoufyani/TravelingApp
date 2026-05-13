@@ -23,6 +23,7 @@ import com.example.travelshare.R;
 import com.example.travelshare.data.models.AppNotification;
 import com.example.travelshare.data.models.Group;
 import com.example.travelshare.data.models.GroupMember;
+import com.example.travelshare.data.repository.FirebaseRepository;
 import com.example.travelshare.utils.SessionManager;
 import com.example.travelshare.viewmodels.SharedViewModel;
 
@@ -119,8 +120,9 @@ public class GroupsFragment extends Fragment {
         adapter.clearMemberships();
 
         if (myTab) {
-            // Mes groupes : uniquement les groupes où l'user est créateur ou membre accepté
+            // Sync des statuts acceptés depuis Firestore (cas : demande acceptée sur un autre appareil)
             if (session.isLoggedIn()) {
+                viewModel.syncMyMemberStatuses(session.getUsername());
                 observeGroups(viewModel.getGroupsForUser(session.getUserId()));
             } else {
                 // Non connecté → liste vide, jamais getAllGroups()
@@ -129,7 +131,8 @@ public class GroupsFragment extends Fragment {
                 adapter.setGroups(new ArrayList<>());
             }
         } else {
-            // Découvrir : tous les groupes (normal, c'est le but)
+            // Découvrir : sync Firestore → Room puis afficher tous les groupes
+            viewModel.syncGroupsFromFirestore();
             observeGroups(viewModel.getAllGroups());
         }
     }
@@ -174,6 +177,7 @@ public class GroupsFragment extends Fragment {
                     g.description = etDesc.getText().toString().trim();
                     g.creatorId = session.getUserId();
                     viewModel.insertGroup(g);
+                    FirebaseRepository.getInstance().saveGroup(name, g.description, session.getUsername());
                     Toast.makeText(getContext(), "Groupe \"" + name + "\" créé !", Toast.LENGTH_SHORT).show();
                     switchTab(TAB_MY);
                 })
@@ -310,6 +314,7 @@ public class GroupsFragment extends Fragment {
                                 .setTitle("Quitter " + g.name + " ?")
                                 .setPositiveButton("Quitter", (d, w) -> {
                                     viewModel.rejectOrLeaveGroup(g.id, session.getUserId());
+                                    FirebaseRepository.getInstance().deleteGroupMember(g.name, session.getUsername());
                                     memberships.put(g.id, null);
                                     notifyDataSetChanged();
                                 })
@@ -331,6 +336,7 @@ public class GroupsFragment extends Fragment {
                         return;
                     }
                     viewModel.requestJoinGroup(g.id, session.getUserId(), session.getUsername());
+                    FirebaseRepository.getInstance().saveGroupMember(g.name, session.getUsername(), "PENDING");
                     memberships.put(g.id, "PENDING");
                     notifyDataSetChanged();
                     Toast.makeText(v.getContext(), "Demande envoyée !", Toast.LENGTH_SHORT).show();

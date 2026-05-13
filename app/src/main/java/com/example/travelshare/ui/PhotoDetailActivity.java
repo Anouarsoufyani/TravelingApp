@@ -165,17 +165,18 @@ public class PhotoDetailActivity extends AppCompatActivity {
             viewModel.updateLikes(photoId, currentLikes);
         });
 
-        // Restaurer état like depuis SharedPreferences
+        // Restaurer état like depuis SharedPreferences — clé par utilisateur
+        String likeKey = "liked_ids_" + sessionManager.getUsername().toLowerCase();
         android.content.SharedPreferences likePrefs = getSharedPreferences("likes", MODE_PRIVATE);
         java.util.Set<String> likedSet = new java.util.HashSet<>(
-                likePrefs.getStringSet("liked_ids", new java.util.HashSet<>()));
+                likePrefs.getStringSet(likeKey, new java.util.HashSet<>()));
         isLiked = likedSet.contains(String.valueOf(photoId));
         btnLike.setText(isLiked ? "♥ Aimé" : "♡ Like");
 
         // ── Like / Unlike persisté (accessible en mode anonyme) ───────────
         btnLike.setOnClickListener(v -> {
             isLiked = !isLiked;
-            currentLikes += isLiked ? 1 : -1;
+            currentLikes = Math.max(0, currentLikes + (isLiked ? 1 : -1));
             btnLike.setText(isLiked ? "♥ Aimé" : "♡ Like");
             tvLikesCount.setText(currentLikes + " personnes ont aimé");
             viewModel.updateLikes(photoId, currentLikes);
@@ -183,9 +184,9 @@ public class PhotoDetailActivity extends AppCompatActivity {
 
             // Sauvegarder dans SharedPreferences
             java.util.Set<String> ids = new java.util.HashSet<>(
-                    getSharedPreferences("likes", MODE_PRIVATE).getStringSet("liked_ids", new java.util.HashSet<>()));
+                    getSharedPreferences("likes", MODE_PRIVATE).getStringSet(likeKey, new java.util.HashSet<>()));
             if (isLiked) ids.add(String.valueOf(photoId)); else ids.remove(String.valueOf(photoId));
-            getSharedPreferences("likes", MODE_PRIVATE).edit().putStringSet("liked_ids", ids).apply();
+            getSharedPreferences("likes", MODE_PRIVATE).edit().putStringSet(likeKey, ids).apply();
 
             if (isLiked) {
                 String liker    = sessionManager.isLoggedIn() ? sessionManager.getUsername() : "Quelqu'un";
@@ -197,6 +198,7 @@ public class PhotoDetailActivity extends AppCompatActivity {
                 notif.photoId = photoId;
                 notif.date    = likeDate;
                 viewModel.insertAppNotification(notif);
+                FirebaseRepository.getInstance().saveNotification(author, notif);
                 NotificationUtil.showNotification(this, "Nouveau like", notif.message);
             }
         });

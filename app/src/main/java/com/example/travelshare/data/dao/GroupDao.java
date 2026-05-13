@@ -3,6 +3,7 @@ package com.example.travelshare.data.dao;
 import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Insert;
+import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 import com.example.travelshare.data.models.Group;
 import java.util.List;
@@ -12,6 +13,15 @@ public interface GroupDao {
 
     @Insert
     long insertGroup(Group group);
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    long insertGroupOrIgnore(Group group);
+
+    @Query("SELECT COUNT(*) FROM `groups` WHERE name = :name")
+    int countByName(String name);
+
+    @Query("SELECT * FROM `groups` WHERE name = :name LIMIT 1")
+    Group getGroupByName(String name);
 
     @Query("SELECT * FROM `groups` ORDER BY id DESC")
     LiveData<List<Group>> getAllGroups();

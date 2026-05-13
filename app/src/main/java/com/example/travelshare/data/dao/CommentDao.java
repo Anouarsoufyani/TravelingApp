@@ -18,6 +18,9 @@ public interface CommentDao {
     @Query("DELETE FROM comments WHERE id = :id")
     void deleteComment(long id);
 
+    @Query("SELECT * FROM comments WHERE id = :id LIMIT 1")
+    Comment getCommentById(long id);
+
     @Query("SELECT COUNT(*) FROM comments WHERE photoId = :photoId AND authorName = :authorName AND text = :text")
     int countByContent(long photoId, String authorName, String text);
 }

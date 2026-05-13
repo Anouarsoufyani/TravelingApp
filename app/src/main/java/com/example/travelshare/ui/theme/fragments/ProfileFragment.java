@@ -26,6 +26,7 @@ import com.example.travelshare.R;
 import com.example.travelshare.data.models.Group;
 import com.example.travelshare.data.models.NotificationPreference;
 import com.example.travelshare.data.models.Photo;
+import com.example.travelshare.data.repository.FirebaseRepository;
 import com.example.travelshare.ui.LoginActivity;
 import com.example.travelshare.utils.SessionManager;
 import com.example.travelshare.viewmodels.SharedViewModel;
@@ -101,6 +102,19 @@ public class ProfileFragment extends Fragment {
                     }
                 });
             });
+            // Charger bio depuis Firestore (mise à jour si plus récente)
+            FirebaseRepository.getInstance().loadUserProfile(username, data -> {
+                if (data == null || !isAdded()) return;
+                String firebaseBio = data.get("bio") instanceof String ? (String) data.get("bio") : null;
+                if (firebaseBio != null && !firebaseBio.isEmpty()) {
+                    requireActivity().runOnUiThread(() -> {
+                        if (!isAdded() || etBio == null) return;
+                        if (etBio.getText().toString().trim().isEmpty()) {
+                            etBio.setText(firebaseBio);
+                        }
+                    });
+                }
+            });
         } else {
             tvName.setText("Anonyme");
             tvHandle.setText("Mode anonyme");
@@ -120,6 +134,7 @@ public class ProfileFragment extends Fragment {
             if (!session.isLoggedIn()) return;
             String bio = etBio.getText().toString().trim();
             viewModel.updateUserProfile(session.getUserId(), currentAvatarUri, bio);
+            FirebaseRepository.getInstance().saveUserProfile(session.getUsername(), bio);
             Toast.makeText(getContext(), "Profil mis à jour ✓", Toast.LENGTH_SHORT).show();
         });
 

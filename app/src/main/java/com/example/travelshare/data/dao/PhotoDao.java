@@ -3,6 +3,7 @@ package com.example.travelshare.data.dao;
 import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Insert;
+import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 import java.util.List;
 import com.example.travelshare.data.models.Photo;
@@ -17,6 +18,12 @@ public interface PhotoDao {
 
     @Insert
     long insertPhoto(Photo photo);
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    long insertPhotoOrIgnore(Photo photo);
+
+    @Query("SELECT COUNT(*) FROM photos WHERE id = :id")
+    int countById(int id);
 
     @Query("SELECT * FROM photos WHERE (visibility = 'PUBLIC' OR visibility IS NULL) ORDER BY RANDOM() LIMIT :limit")
     LiveData<List<Photo>> getRandomPhotos(int limit);
