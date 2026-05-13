@@ -535,11 +535,20 @@ s'empilent par-dessus via \ic{addToBackStack()}, permettant de revenir en arriè
   Firebase Auth + Firestore
     & Authentification email/password et synchronisation cloud des données sociales
       (photos, likes, commentaires) via \ic{addSnapshotListener} pour des mises à jour
-      temps réel. Plan Spark gratuit — aucune carte bancaire requise. \\
+      temps réel. Security Rules configurées (\ic{request.auth != null}).
+      Plan Spark gratuit — aucune carte bancaire requise. \\
+  FirebaseRepository
+    & Pattern Repository (recommandé par le cours) : toutes les opérations Firestore
+      sont centralisées dans \ic{FirebaseRepository} (singleton), découplant
+      complètement Firebase de l'UI. Les Activities n'accèdent plus directement
+      au SDK Firestore. \\
   Room (SQLite local)
-    & Les données personnelles (groupes, chat, parcours, préférences) sont stockées
-      localement. Room offre la sécurité de type, les LiveData automatiques,
-      et fonctionne sans connexion réseau. \\
+    & Architecture \textbf{local-first} : les données privées (groupes, chat, parcours,
+      préférences, notifications) restent sur l'appareil de l'utilisateur.
+      Ce choix délibéré sépare la \textit{couche sociale} (contenu public synchronisé
+      via Firestore) de la \textit{couche personnelle} (données sensibles jamais
+      transmises à un serveur tiers). Room garantit également le fonctionnement
+      hors-ligne et offre sécurité de type et LiveData automatiques. \\
   OSMDroid (cartographie)
     & Alternative open-source à Google Maps, sans clé API ni facturation.
       Supporte les marqueurs, les polylines et le zoom automatique. \\
@@ -637,6 +646,14 @@ local afin de limiter la complexité backend.
   TravelPath       & Room local — itinéraires personnels, pas de partage nécessaire. \\
   \bottomrule
 \end{tabularx}
+
+\textbf{Architecture} : toutes les opérations Firestore sont centralisées dans
+\ic{FirebaseRepository} (pattern Repository, singleton), conformément aux bonnes pratiques
+du cours. Les Activities et Fragments n'accèdent jamais directement au SDK Firestore.
+
+\textbf{Security Rules} : les règles Firestore sont configurées avec
+\ic{allow read, write: if request.auth != null} — seuls les utilisateurs authentifiés
+peuvent lire et écrire. Le mode test (ouvert) n'est pas utilisé en production.
 
 \section{L'explorateur de photos (ExplorerFragment)}
 
@@ -1656,9 +1673,11 @@ correspond à une classe Java annotée \ic{@Entity}.
   \midrule
   \endhead
   User
-    & id, login (unique), passwordHash, username,
+    & id, login (unique), password, nom, prenom, email,
+      telephone, dateNaissance, centresInteret,
       \textbf{avatarUri} (photo de profil), \textbf{bio} (biographie).
-      Stocke les comptes utilisateurs.
+      Stocke les comptes utilisateurs. L'identité cloud est gérée
+      par Firebase Auth (email fictif \ic{login@traveling.app}).
     & Commun \\
   Photo
     & id, title, location, author, likes, lat, lng, date,
@@ -1679,8 +1698,9 @@ correspond à une classe Java annotée \ic{@Entity}.
       Gère les membres et les demandes d'adhésion.
     & TS \\
   GroupMessage
-    & id, groupId, senderId, senderName, content, date.
-      Messages du chat de groupe.
+    & id, groupId, userId, authorName, message, date,
+      \textbf{photoId} (0 = texte, $>$0 = photo partagée).
+      Messages du chat de groupe — 3 types selon photoId.
     & TS \\
   Report
     & id, targetId, type, reason, reporterId, date.
