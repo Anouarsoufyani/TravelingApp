@@ -36,7 +36,8 @@ public class SessionManager {
     }
 
     public String getUsername() {
-        return pref.getString(KEY_USERNAME, "Anonyme");
+        String username = pref.getString(KEY_USERNAME, "Anonyme");
+        return username != null ? username : "Anonyme";
     }
 
     public int getUserId() {

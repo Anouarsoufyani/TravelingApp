@@ -5,8 +5,9 @@
     android:orientation="horizontal"
     android:gravity="center_vertical"
     android:padding="14dp"
-    android:background="@color/warm_white"
-    android:layout_marginBottom="1dp">
+    android:background="@drawable/bg_card_md"
+    android:layout_marginHorizontal="12dp"
+    android:layout_marginVertical="5dp">
 
     <TextView
         android:id="@+id/tv_notif_icon"
@@ -14,7 +15,7 @@
         android:layout_height="40dp"
         android:gravity="center"
         android:textSize="18sp"
-        android:background="@color/sand"
+        android:background="@drawable/bg_icon_surface"
         android:layout_marginEnd="12dp" />
 
     <LinearLayout
@@ -44,7 +45,7 @@
         android:id="@+id/dot_unread"
         android:layout_width="8dp"
         android:layout_height="8dp"
-        android:background="@color/teal"
+        android:background="@drawable/bg_notif_badge"
         android:layout_marginStart="8dp" />
 
 </LinearLayout>

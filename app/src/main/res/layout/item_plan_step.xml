@@ -6,7 +6,7 @@
     android:padding="12dp"
     android:layout_marginHorizontal="16dp"
     android:layout_marginVertical="4dp"
-    android:background="@color/default_white">
+    android:background="@drawable/bg_card_md">
 
     <!-- Timeline dot + line -->
     <LinearLayout
@@ -22,12 +22,12 @@
             android:layout_height="32dp"
             android:gravity="center"
             android:textSize="16sp"
-            android:background="@color/sand" />
+            android:background="@drawable/bg_icon_surface" />
 
         <View
             android:layout_width="2dp"
             android:layout_height="match_parent"
-            android:background="@color/sand"
+            android:background="@color/border_light"
             android:layout_gravity="center_horizontal"
             android:minHeight="16dp"/>
     </LinearLayout>
@@ -50,7 +50,7 @@
                 android:id="@+id/tv_step_slot"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@color/navy_light"
+                android:background="@drawable/bg_pill_solid"
                 android:paddingHorizontal="8dp"
                 android:paddingVertical="2dp"
                 android:textColor="@color/default_white"

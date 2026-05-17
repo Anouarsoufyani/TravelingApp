@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment;
 import com.example.travelshare.R;
 import com.example.travelshare.data.AppDatabase;
 import com.example.travelshare.data.models.User;
+import com.example.travelshare.data.repository.FirebaseRepository;
 import com.example.travelshare.utils.SessionManager;
 import com.google.firebase.auth.FirebaseAuth;
 import java.util.concurrent.Executors;
@@ -118,6 +119,8 @@ public class InscriptionFragment extends Fragment {
 
                             Executors.newSingleThreadExecutor().execute(() -> {
                                 long newUserId = db.userDao().insertUser(newUser);
+                                FirebaseRepository.getInstance().saveUserAccount(
+                                        login, email, nom, prenom, telephone, interets.toString());
                                 if (getActivity() != null)
                                     getActivity().runOnUiThread(() ->
                                             listener.onInscriptionReussie(newUserId, login));

@@ -1,50 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="@color/background_color">
 
     <!-- Header -->
     <LinearLayout
+        android:id="@+id/chat_header"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:orientation="horizontal"
+        android:layout_height="wrap_content"
         android:gravity="center_vertical"
-        android:padding="12dp"
-        android:background="@color/teal">
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/space_md"
+        android:paddingTop="@dimen/space_md"
+        android:paddingEnd="@dimen/space_md"
+        android:paddingBottom="@dimen/space_md">
 
         <TextView
             android:id="@+id/btn_chat_back"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:gravity="center"
             android:text="←"
             android:textColor="@color/default_white"
-            android:textSize="20sp"
-            android:layout_marginEnd="12dp"
-            android:padding="4dp" />
+            android:textSize="24sp" />
 
         <TextView
             android:id="@+id/tv_chat_group_name"
+            style="@style/TextAppearance.Travelshare.TitleMedium"
             android:layout_width="0dp"
-            android:layout_weight="1"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:paddingStart="@dimen/space_sm"
             android:text="Discussion"
-            android:textColor="@color/default_white"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:textColor="@color/default_white" />
 
         <!-- Badge demandes (créateur uniquement) -->
         <TextView
             android:id="@+id/tv_requests_badge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/space_sm"
+            android:background="@drawable/bg_pill_solid"
+            android:backgroundTint="@color/coral_soft"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
             android:text="● 0 demande"
-            android:textColor="#FFFFCC"
-            android:textSize="11sp"
+            android:textColor="@color/coral"
+            android:textSize="10sp"
             android:textStyle="bold"
-            android:visibility="gone"
-            android:padding="4dp" />
+            android:visibility="gone" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_invite_group"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Inviter"
+            android:textAllCaps="false"
+            android:textColor="@color/coral"
+            app:icon="@drawable/ic_ms_explore"
+            app:iconTint="@color/coral" />
     </LinearLayout>
 
     <!-- Section demandes (créateur) -->
@@ -52,71 +70,96 @@
         android:id="@+id/layout_requests"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_below="@id/chat_header"
+        android:background="@color/surface_card"
         android:orientation="vertical"
-        android:background="#FFF8E1"
         android:visibility="gone">
 
         <TextView
+            style="@style/TextAppearance.Travelshare.LabelSmall"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:paddingHorizontal="@dimen/space_xl"
+            android:paddingTop="@dimen/space_sm"
+            android:paddingBottom="@dimen/space_xs"
             android:text="DEMANDES D'ADHÉSION"
-            android:textSize="9sp"
-            android:textColor="@color/ink_faint"
-            android:letterSpacing="0.1"
-            android:paddingHorizontal="12dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="4dp" />
+            android:textColor="@color/sheet_muted" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_requests"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingHorizontal="8dp"
-            android:paddingBottom="8dp"
-            android:nestedScrollingEnabled="false" />
+            android:clipToPadding="false"
+            android:nestedScrollingEnabled="false"
+            android:paddingHorizontal="@dimen/space_md"
+            android:paddingBottom="@dimen/space_sm" />
     </LinearLayout>
 
-    <!-- Flux unifié : messages + posts mélangés par date -->
+    <!-- Input Bar at the bottom -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/layout_input"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="@dimen/space_md"
+        android:layout_marginTop="@dimen/space_sm"
+        android:layout_marginEnd="@dimen/space_md"
+        android:layout_marginBottom="@dimen/space_md"
+        app:cardBackgroundColor="@color/surface_field"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="4dp"
+        app:strokeWidth="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="4dp">
+
+            <EditText
+                android:id="@+id/et_chat_input"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@android:color/transparent"
+                android:hint="Message..."
+                android:inputType="textMultiLine|textCapSentences"
+                android:maxLines="4"
+                android:minHeight="48dp"
+                android:paddingStart="@dimen/space_xl"
+                android:paddingEnd="@dimen/space_md"
+                android:textColor="@color/default_white"
+                android:textColorHint="@color/ink_faint"
+                android:textSize="16sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_chat_send"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:insetLeft="0dp"
+                android:insetTop="0dp"
+                android:insetRight="0dp"
+                android:insetBottom="0dp"
+                android:padding="0dp"
+                app:backgroundTint="@color/coral"
+                app:cornerRadius="24dp"
+                app:icon="@drawable/ic_ms_explore"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconTint="@color/default_white" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Message Feed -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_chat_messages"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="match_parent"
+        android:layout_above="@id/layout_input"
+        android:layout_below="@id/layout_requests"
         android:clipToPadding="false"
-        android:paddingTop="4dp"
-        android:paddingBottom="4dp" />
+        android:paddingTop="@dimen/space_sm"
+        android:paddingBottom="@dimen/space_sm" />
 
-    <!-- Input -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:padding="10dp"
-        android:background="@color/warm_white">
-
-        <EditText
-            android:id="@+id/et_chat_input"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="44dp"
-            android:hint="Message..."
-            android:paddingHorizontal="12dp"
-            android:background="@drawable/bg_input"
-            android:textColor="@color/ink"
-            android:inputType="textMultiLine"
-            android:maxLines="3"
-            android:layout_marginEnd="8dp" />
-
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btn_chat_send"
-            android:layout_width="wrap_content"
-            android:layout_height="44dp"
-            android:text="Envoyer"
-            android:textColor="@color/default_white"
-            android:background="@drawable/bg_pill_solid"
-            android:paddingHorizontal="16dp"
-            android:textAllCaps="false" />
-    </LinearLayout>
-
-</LinearLayout>
+</RelativeLayout>

@@ -27,6 +27,15 @@ public class MainActivity extends AppCompatActivity implements InscriptionFragme
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        com.example.travelshare.utils.SessionManager session = new com.example.travelshare.utils.SessionManager(this);
+        if (!session.isLoggedIn()) {
+            Intent intent = new Intent(this, com.example.travelshare.ui.LoginActivity.class);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
         setContentView(R.layout.activity_main);
 
         bottomNav = findViewById(R.id.bottom_navigation);
@@ -34,25 +43,6 @@ public class MainActivity extends AppCompatActivity implements InscriptionFragme
         org.osmdroid.config.Configuration.getInstance().setUserAgentValue(getPackageName());
         org.osmdroid.config.Configuration.getInstance().setOsmdroidTileCache(
                 new java.io.File(getCacheDir(), "osmdroid_tiles"));
-
-        com.example.travelshare.utils.SessionManager sessionCheck =
-                new com.example.travelshare.utils.SessionManager(this);
-        if (sessionCheck.isLoggedIn()) {
-            com.example.travelshare.data.AppDatabase.databaseWriteExecutor.execute(() -> {
-                com.example.travelshare.data.models.User u =
-                        com.example.travelshare.data.AppDatabase.getInstance(this)
-                                .userDao().getUserByLogin(sessionCheck.getUsername());
-                if (u == null) {
-                    sessionCheck.logoutUser();
-                    runOnUiThread(() -> {
-                        startActivity(new Intent(this,
-                                com.example.travelshare.ui.LoginActivity.class)
-                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
-                        finish();
-                    });
-                }
-            });
-        }
 
         String openFragment = getIntent().getStringExtra("OPEN_FRAGMENT");
         boolean openTravelPath = getIntent().getBooleanExtra("OPEN_TRAVELPATH", false);

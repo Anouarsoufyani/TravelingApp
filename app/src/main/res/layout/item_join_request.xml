@@ -4,7 +4,9 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:padding="10dp">
+    android:padding="10dp"
+    android:background="@drawable/bg_card_md"
+    android:layout_marginVertical="4dp">
 
     <TextView
         android:id="@+id/tv_req_avatar"
@@ -13,7 +15,7 @@
         android:gravity="center"
         android:textSize="14sp"
         android:textColor="@color/default_white"
-        android:background="@color/navy"
+        android:background="@drawable/bg_pill_solid"
         android:layout_marginEnd="10dp" />
 
     <TextView
@@ -31,7 +33,7 @@
         android:layout_height="wrap_content"
         android:text="✓ Accepter"
         android:textColor="@color/default_white"
-        android:background="@color/teal"
+        android:background="@drawable/bg_pill_solid"
         android:paddingHorizontal="10dp"
         android:paddingVertical="5dp"
         android:textSize="12sp"

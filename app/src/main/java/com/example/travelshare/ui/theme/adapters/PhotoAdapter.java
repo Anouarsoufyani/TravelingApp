@@ -24,14 +24,12 @@ import java.util.List;
 public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHolder> {
 
     private static final int[][] GRADIENTS = {
-        {0xFF1B3A5C, 0xFF2D5480},
-        {0xFF2A5C3A, 0xFF3A7C50},
-        {0xFF7A3E0A, 0xFFA8601A},
-        {0xFF2A4A6B, 0xFF4A6A8B},
-        {0xFF5C2A6B, 0xFF8A4A98},
-        {0xFF3A4A2A, 0xFF5A6A3A},
-        {0xFF2A7D6F, 0xFF3FA090},
-        {0xFFC4603A, 0xFFD4804A},
+        {0xFF2D9CDB, 0xFF5BE7C4},
+        {0xFF102027, 0xFF2F5D62},
+        {0xFF5267D8, 0xFF2D9CDB},
+        {0xFF4BAF8F, 0xFFD8B45C},
+        {0xFF172126, 0xFF66757D},
+        {0xFF2F5D62, 0xFF4BAF8F},
     };
 
     private List<Photo> photos = new ArrayList<>();

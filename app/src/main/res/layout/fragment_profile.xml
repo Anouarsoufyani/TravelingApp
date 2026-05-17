@@ -9,11 +9,11 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Hero teal -->
+        <!-- Hero -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="120dp"
-            android:background="@color/teal"
+            android:background="@drawable/bg_header_gradient"
             android:orientation="horizontal"
             android:gravity="bottom"
             android:padding="16dp">
@@ -31,10 +31,11 @@
                     android:layout_height="match_parent"
                     android:gravity="center"
                     android:text="M"
-                    android:textColor="@color/ink"
+                    android:textColor="@color/teal"
                     android:textSize="22sp"
-                    android:fontFamily="serif"
-                    android:background="@color/sand" />
+                    android:textStyle="bold"
+                    android:fontFamily="sans"
+                    android:background="@drawable/bg_avatar" />
 
                 <ImageView
                     android:id="@+id/iv_profile_avatar"
@@ -51,7 +52,7 @@
                     android:text="✎"
                     android:textSize="10sp"
                     android:textColor="@color/default_white"
-                    android:background="#88000000" />
+                    android:background="@color/overlay_soft" />
             </FrameLayout>
 
             <LinearLayout
@@ -67,14 +68,15 @@
                     android:text="Utilisateur"
                     android:textColor="@color/default_white"
                     android:textSize="17sp"
-                    android:fontFamily="serif" />
+                    android:textStyle="bold"
+                    android:fontFamily="sans" />
 
                 <TextView
                     android:id="@+id/tv_profile_handle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@anonyme"
-                    android:textColor="#80FFFFFF"
+                    android:textColor="#CCFFFFFF"
                     android:textSize="12sp" />
             </LinearLayout>
         </LinearLayout>
@@ -99,7 +101,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:background="@color/sand"
+                android:background="@drawable/bg_input"
                 android:padding="10dp"
                 android:layout_marginBottom="16dp">
 
@@ -112,6 +114,7 @@
                     android:textColor="@color/ink"
                     android:textSize="13sp"
                     android:background="@android:color/transparent"
+                    android:textColorHint="@color/ink_faint"
                     android:inputType="textMultiLine"
                     android:maxLines="3" />
 
@@ -140,7 +143,7 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:gravity="center"
-                    android:background="@color/sand"
+                    android:background="@drawable/bg_stat_tile"
                     android:padding="10dp"
                     android:layout_marginEnd="6dp">
                     <TextView
@@ -149,7 +152,8 @@
                         android:layout_height="wrap_content"
                         android:text="0"
                         android:textSize="22sp"
-                        android:fontFamily="serif"
+                        android:fontFamily="sans"
+                        android:textStyle="bold"
                         android:textColor="@color/ink" />
                     <TextView
                         android:layout_width="wrap_content"
@@ -166,7 +170,7 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:gravity="center"
-                    android:background="@color/sand"
+                    android:background="@drawable/bg_stat_tile"
                     android:padding="10dp"
                     android:layout_marginEnd="6dp">
                     <TextView
@@ -175,7 +179,8 @@
                         android:layout_height="wrap_content"
                         android:text="0"
                         android:textSize="22sp"
-                        android:fontFamily="serif"
+                        android:fontFamily="sans"
+                        android:textStyle="bold"
                         android:textColor="@color/ink" />
                     <TextView
                         android:layout_width="wrap_content"
@@ -192,7 +197,7 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:gravity="center"
-                    android:background="@color/sand"
+                    android:background="@drawable/bg_stat_tile"
                     android:padding="10dp">
                     <TextView
                         android:id="@+id/tv_stat_groups"
@@ -200,7 +205,8 @@
                         android:layout_height="wrap_content"
                         android:text="0"
                         android:textSize="22sp"
-                        android:fontFamily="serif"
+                        android:fontFamily="sans"
+                        android:textStyle="bold"
                         android:textColor="@color/ink" />
                     <TextView
                         android:layout_width="wrap_content"
@@ -280,7 +286,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="@color/sand"
+                android:background="@drawable/bg_card_md"
                 android:padding="12dp"
                 android:layout_marginBottom="20dp">
 

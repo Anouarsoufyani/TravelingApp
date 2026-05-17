@@ -1,28 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Brand Colors -->
-    <color name="navy">#1B3A5C</color>
-    <color name="navy_light">#2D5480</color>
-    <color name="teal">#2A7D6F</color>
-    <color name="teal_light">#3FA090</color>
-    <color name="sand">#F5F0E8</color>
-    <color name="warm_white">#FAFAF7</color>
-    
-    <!-- Ink / Text Colors -->
-    <color name="ink">#1A1A18</color>
-    <color name="ink_muted">#6B6860</color>
-    <color name="ink_faint">#B0ADA6</color>
-    
-    <!-- Accent Colors -->
-    <color name="terracotta">#C4603A</color>
-    <color name="gold">#A87C3E</color>
-    <color name="sage">#4A7C59</color>
-    <color name="plum">#7A3E6B</color>
+    <color name="navy">#0D1B2A</color>
+    <color name="navy_light">#162032</color>
+    <color name="navy_field">#1E2D40</color>
+    <color name="sand">#E8C99A</color>
+    <color name="coral">#FF6B6B</color>
+    <color name="comfort_green">#4BAF8F</color>
+    <color name="warm_white">#FFFFFF</color>
 
-    <!-- UI Helpers -->
-    <color name="background_color">#EDEAE3</color>
-    <color name="border_light">#1A1A1A18</color> <!-- approx rgba(26,26,24,0.1) -->
-    <color name="border_strong">#331A1A18</color> <!-- approx rgba(26,26,24,0.2) -->
+    <color name="ink">#FFFFFFFF</color>
+    <color name="ink_muted">#D9E2EA</color>
+    <color name="ink_faint">#93A4B4</color>
+
+    <color name="terracotta">#FF6B6B</color>
+    <color name="gold">#E8C99A</color>
+    <color name="sage">#4BAF8F</color>
+    <color name="teal">#E8C99A</color>
+    <color name="teal_light">#F3DDB7</color>
+    <color name="plum">#FF6B6B</color>
+
+    <color name="background_color">#0D1B2A</color>
+    <color name="border_light">#2A3A4D</color>
+    <color name="border_strong">#E8C99A</color>
+    <color name="surface_subtle">#162032</color>
+    <color name="surface_card">#162032</color>
+    <color name="surface_field">#1E2D40</color>
+    <color name="overlay_scrim">#99000000</color>
+    <color name="overlay_photo_bottom">#CC000000</color>
+    <color name="overlay_soft">#66000000</color>
+    <color name="accent_soft">#26E8C99A</color>
+    <color name="coral_soft">#33FF6B6B</color>
+    <color name="success_soft">#1F4BAF8F</color>
+    <color name="sheet_light">#FFFFFFFF</color>
+    <color name="sheet_text">#0D1B2A</color>
+    <color name="sheet_muted">#617084</color>
 
     <color name="default_black">#FF000000</color>
     <color name="default_white">#FFFFFFFF</color>

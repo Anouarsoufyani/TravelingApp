@@ -59,7 +59,7 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
     private SharedViewModel viewModel;
     private PhotoAdapter adapter;
     private LiveData<List<Photo>> currentSource;
-    private boolean isGridView = true;
+    private boolean isGridView = false;
 
     private int currentOffset = 0;
     private boolean isPaginationMode = false;
@@ -148,7 +148,7 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
         View view = inflater.inflate(R.layout.fragment_explorer, container, false);
 
         RecyclerView recyclerView = view.findViewById(R.id.recycler_view_photos);
-        recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new PhotoAdapter();
         recyclerView.setAdapter(adapter);
 
@@ -233,35 +233,11 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
                 Toast.makeText(getContext(), "Reconnaissance vocale non disponible", Toast.LENGTH_SHORT).show();
             }
         });
-
-        EditText etAuthor = view.findViewById(R.id.et_filter_author);
-        etAuthor.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                String author = s.toString().trim();
-                if (!author.isEmpty()) {
-                    observeSource(viewModel.getPublicPhotosByAuthor(author));
-                } else {
-                    setActiveChip(R.id.chip_all);
-                    enterPaginationMode();
-                }
-            }
-            @Override public void afterTextChanged(Editable s) {}
-        });
-
-        EditText etDateStart = view.findViewById(R.id.et_filter_date_start);
-        EditText etDateEnd   = view.findViewById(R.id.et_filter_date_end);
-        View.OnFocusChangeListener dateListener = (v, hasFocus) -> {
-            if (!hasFocus) {
-                String start = etDateStart.getText().toString().trim();
-                String end   = etDateEnd.getText().toString().trim();
-                if (!start.isEmpty() && !end.isEmpty()) {
-                    observeSource(viewModel.getPhotosByDateRange(start, end));
-                }
-            }
-        };
-        etDateStart.setOnFocusChangeListener(dateListener);
-        etDateEnd.setOnFocusChangeListener(dateListener);
+        
+        View btnRandom = view.findViewById(R.id.btn_random_feed);
+        if (btnRandom != null) {
+            btnRandom.setOnClickListener(v -> onShakeDetected());
+        }
 
         view.findViewById(R.id.chip_all).setOnClickListener(v -> {
             setActiveChip(R.id.chip_all);
@@ -352,7 +328,7 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
                 chip.setBackgroundResource(R.drawable.bg_pill_solid);
                 chip.setTextColor(requireContext().getResources().getColor(R.color.default_white, null));
             } else {
-                chip.setBackgroundResource(R.drawable.bg_pill_outline);
+                chip.setBackgroundResource(R.drawable.bg_collection_card);
                 chip.setTextColor(requireContext().getResources().getColor(R.color.ink_muted, null));
             }
         }
@@ -378,8 +354,9 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
     }
 
     public static List<Integer> getLikedPhotoIdsStatic(android.content.Context ctx) {
-        String username = new com.example.travelshare.utils.SessionManager(ctx).getUsername().toLowerCase();
-        String likeKey  = "liked_ids_" + username;
+        String rawUsername = new com.example.travelshare.utils.SessionManager(ctx).getUsername();
+        String safeUsername = (rawUsername != null) ? rawUsername.toLowerCase() : "anonyme";
+        String likeKey  = "liked_ids_" + safeUsername;
         android.content.SharedPreferences prefs = ctx.getSharedPreferences("likes", android.content.Context.MODE_PRIVATE);
         java.util.Set<String> set = prefs.getStringSet(likeKey, new java.util.HashSet<>());
         List<Integer> ids = new java.util.ArrayList<>();

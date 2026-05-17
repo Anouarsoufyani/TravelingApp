@@ -15,7 +15,7 @@
             android:layout_height="wrap_content"
             android:text="Créer un compte"
 
-            android:textColor="@color/navy"
+            android:textColor="@color/ink"
             android:textSize="28sp"
             android:textStyle="bold"
             android:layout_marginBottom="24dp" />
@@ -29,6 +29,7 @@
 
             android:hint="Login (Max 10 lettres)"
             android:textColor="@color/ink"
+            android:textColorHint="@color/ink_faint"
             android:layout_marginBottom="12dp"/>
 
         <EditText
@@ -41,6 +42,7 @@
             android:hint="Mot de passe (Min 6 car.)"
             android:inputType="textPassword"
             android:textColor="@color/ink"
+            android:textColorHint="@color/ink_faint"
             android:layout_marginBottom="12dp"/>
 
         <EditText
@@ -52,6 +54,7 @@
 
             android:hint="Nom"
             android:textColor="@color/ink"
+            android:textColorHint="@color/ink_faint"
             android:layout_marginBottom="12dp"/>
 
         <EditText
@@ -63,6 +66,7 @@
 
             android:hint="Prénom"
             android:textColor="@color/ink"
+            android:textColorHint="@color/ink_faint"
             android:layout_marginBottom="12dp"/>
 
         <EditText
@@ -74,6 +78,7 @@
 
             android:hint="Date de naissance"
             android:textColor="@color/ink"
+            android:textColorHint="@color/ink_faint"
             android:layout_marginBottom="12dp"/>
 
         <EditText
@@ -86,6 +91,7 @@
             android:hint="Téléphone"
             android:inputType="phone"
             android:textColor="@color/ink"
+            android:textColorHint="@color/ink_faint"
             android:layout_marginBottom="12dp"/>
 
         <EditText
@@ -98,6 +104,7 @@
             android:hint="Email"
             android:inputType="textEmailAddress"
             android:textColor="@color/ink"
+            android:textColorHint="@color/ink_faint"
             android:layout_marginBottom="12dp"/>
 
         <TextView

@@ -1,47 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="10dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="2dp"
-    app:cardBackgroundColor="@color/default_white">
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="@dimen/radius_lg"
+    app:cardElevation="0dp"
+    app:cardBackgroundColor="@color/surface_card"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/border_light">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:padding="14dp">
+        android:padding="16dp">
 
-        <!-- Avatar + badge non-lu -->
+        <!-- Avatar + unread badge -->
         <FrameLayout
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginEnd="12dp">
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginEnd="16dp">
 
             <TextView
                 android:id="@+id/tv_group_avatar"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
                 android:gravity="center"
-                android:textSize="20sp"
+                android:textSize="22sp"
                 android:textColor="@color/default_white"
-                android:fontFamily="serif"
-                android:background="@color/teal" />
+                android:fontFamily="sans-serif-medium"
+                android:background="@drawable/bg_pill_solid"
+                android:backgroundTint="@color/surface_field" />
 
-            <!-- Badge rouge nombre messages non lus -->
             <TextView
                 android:id="@+id/tv_unread_badge"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
                 android:layout_gravity="top|end"
                 android:gravity="center"
                 android:textColor="@color/default_white"
-                android:textSize="10sp"
+                android:textSize="11sp"
                 android:textStyle="bold"
-                android:background="@color/terracotta"
+                android:background="@drawable/bg_notif_badge"
                 android:visibility="gone" />
         </FrameLayout>
 
@@ -54,30 +56,29 @@
 
             <TextView
                 android:id="@+id/tv_group_name"
+                style="@style/TextAppearance.Travelshare.TitleMedium"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/ink"
-                android:textStyle="bold"
-                android:textSize="15sp"
-                android:layout_marginBottom="2dp" />
+                android:layout_marginBottom="4dp"
+                android:textColor="@color/default_white" />
 
             <TextView
                 android:id="@+id/tv_group_desc"
+                style="@style/TextAppearance.Travelshare.BodyMedium"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/ink_muted"
-                android:textSize="12sp"
                 android:maxLines="1"
-                android:ellipsize="end" />
+                android:ellipsize="end"
+                android:textColor="@color/sheet_muted" />
 
             <TextView
                 android:id="@+id/tv_pending_badge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/terracotta"
+                android:textColor="@color/coral"
                 android:textSize="11sp"
                 android:textStyle="bold"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="6dp"
                 android:visibility="gone" />
         </LinearLayout>
 
@@ -90,27 +91,22 @@
 
             <TextView
                 android:id="@+id/tv_group_action"
+                style="@style/TextAppearance.Travelshare.LabelSmall"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingHorizontal="10dp"
-                android:paddingVertical="5dp"
-                android:textSize="12sp"
+                android:layout_height="32dp"
+                android:gravity="center"
+                android:paddingHorizontal="12dp"
                 android:background="@drawable/bg_pill_outline"
-                android:layout_marginBottom="6dp" />
+                android:textColor="@color/sand" />
 
+            <!-- This is hidden now as per user request -->
             <TextView
                 android:id="@+id/tv_group_chat"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="💬 Discussion"
-                android:textColor="@color/teal"
-                android:textSize="12sp"
-                android:background="@drawable/bg_pill_outline"
-                android:paddingHorizontal="10dp"
-                android:paddingVertical="5dp"
                 android:visibility="gone" />
 
         </LinearLayout>
     </LinearLayout>
 
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

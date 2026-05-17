@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="space_xxs">4dp</dimen>
+    <dimen name="space_xs">8dp</dimen>
+    <dimen name="space_sm">12dp</dimen>
+    <dimen name="space_md">16dp</dimen>
+    <dimen name="space_lg">20dp</dimen>
+    <dimen name="space_xl">24dp</dimen>
+    <dimen name="space_2xl">32dp</dimen>
+
+    <dimen name="radius_sm">8dp</dimen>
+    <dimen name="radius_md">12dp</dimen>
+    <dimen name="radius_lg">16dp</dimen>
+    <dimen name="radius_pill">100dp</dimen>
+
+    <dimen name="touch_target">48dp</dimen>
+    <dimen name="bottom_nav_height">74dp</dimen>
+    <dimen name="notification_button_size">48dp</dimen>
+    <dimen name="badge_size">10dp</dimen>
+    <dimen name="stroke_none">0dp</dimen>
+    <dimen name="stroke_hairline">1dp</dimen>
+    <dimen name="elevation_overlay">6dp</dimen>
+    <dimen name="elevation_nav">10dp</dimen>
+    <dimen name="bottom_bar_elevation">8dp</dimen>
+    <dimen name="bottom_nav_indicator_width">56dp</dimen>
+    <dimen name="bottom_nav_indicator_height">32dp</dimen>
+
+    <dimen name="photo_card_height">220dp</dimen>
+    <dimen name="photo_overlay_height">112dp</dimen>
+    <dimen name="avatar_sm">28dp</dimen>
+    <dimen name="route_thumb_size">80dp</dimen>
+    <dimen name="similar_strip_height">160dp</dimen>
+    <dimen name="empty_illustration_size">160dp</dimen>
+    <dimen name="accent_bar_width">4dp</dimen>
+    <dimen name="hero_detail_height">280dp</dimen>
+    <dimen name="login_logo_size">46sp</dimen>
+    <dimen name="headline_large_size">28sp</dimen>
+    <dimen name="title_medium_size">16sp</dimen>
+    <dimen name="body_medium_size">14sp</dimen>
+    <dimen name="label_small_size">11sp</dimen>
+    <dimen name="icon_text_size">18sp</dimen>
+    <dimen name="button_icon_text_size">16sp</dimen>
+    <dimen name="like_text_size">24sp</dimen>
+    <dimen name="delete_text_size">22sp</dimen>
+    <dimen name="button_height">56dp</dimen>
+    <dimen name="search_height">56dp</dimen>
+    <dimen name="elevation_card">4dp</dimen>
+</resources>

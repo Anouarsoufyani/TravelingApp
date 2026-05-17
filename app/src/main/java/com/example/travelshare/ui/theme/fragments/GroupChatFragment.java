@@ -47,16 +47,23 @@ public class GroupChatFragment extends Fragment {
     public static final String ARG_GROUP_ID      = "group_id";
     public static final String ARG_GROUP_NAME    = "group_name";
     public static final String ARG_GROUP_CREATOR = "group_creator_id";
+    public static final String ARG_GROUP_CREATOR_USERNAME = "group_creator_username";
 
     private ListenerRegistration chatListener;
     private ListenerRegistration membersListener;
 
     public static GroupChatFragment newInstance(long groupId, String groupName, long creatorId) {
+        return newInstance(groupId, groupName, creatorId, null);
+    }
+
+    public static GroupChatFragment newInstance(long groupId, String groupName, long creatorId,
+                                                @Nullable String creatorUsername) {
         GroupChatFragment f = new GroupChatFragment();
         Bundle args = new Bundle();
         args.putLong(ARG_GROUP_ID, groupId);
         args.putString(ARG_GROUP_NAME, groupName);
         args.putLong(ARG_GROUP_CREATOR, creatorId);
+        args.putString(ARG_GROUP_CREATOR_USERNAME, creatorUsername);
         f.setArguments(args);
         return f;
     }
@@ -101,14 +108,25 @@ public class GroupChatFragment extends Fragment {
         long groupId   = getArguments() != null ? getArguments().getLong(ARG_GROUP_ID) : -1;
         String groupName = getArguments() != null ? getArguments().getString(ARG_GROUP_NAME, "Groupe") : "Groupe";
         long creatorId = getArguments() != null ? getArguments().getLong(ARG_GROUP_CREATOR, -1) : -1;
+        String creatorUsername = getArguments() != null
+                ? getArguments().getString(ARG_GROUP_CREATOR_USERNAME, null) : null;
 
         SharedViewModel viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
         SessionManager session = new SessionManager(requireContext());
-        boolean isCreator = session.isLoggedIn() && session.getUserId() == creatorId;
+        boolean isCreator = session.isLoggedIn()
+                && ((creatorUsername != null && creatorUsername.equalsIgnoreCase(session.getUsername()))
+                || session.getUserId() == creatorId);
 
         ((TextView) view.findViewById(R.id.tv_chat_group_name)).setText("💬 " + groupName);
         view.findViewById(R.id.btn_chat_back).setOnClickListener(v ->
                 requireActivity().getSupportFragmentManager().popBackStack());
+        view.findViewById(R.id.btn_invite_group).setOnClickListener(v -> {
+            if (!session.isLoggedIn()) {
+                Toast.makeText(getContext(), "Connectez-vous pour inviter un membre.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            showInviteDialog(groupName, groupId, session.getUsername());
+        });
 
         View layoutRequests = view.findViewById(R.id.layout_requests);
         TextView tvBadge    = view.findViewById(R.id.tv_requests_badge);
@@ -118,13 +136,17 @@ public class GroupChatFragment extends Fragment {
         rvReqs.setAdapter(reqAdapter);
 
         if (isCreator) {
-            viewModel.getPendingCountForGroup(groupId).observe(getViewLifecycleOwner(), count -> {
-                boolean hasPending = count != null && count > 0;
-                tvBadge.setVisibility(hasPending ? View.VISIBLE : View.GONE);
-                if (hasPending) tvBadge.setText("● " + count + " demande" + (count > 1 ? "s" : ""));
-                layoutRequests.setVisibility(hasPending ? View.VISIBLE : View.GONE);
+            membersListener = FirebaseRepository.getInstance().listenToPendingMembers(groupName, requests -> {
+                if (!isAdded()) return;
+                requireActivity().runOnUiThread(() -> {
+                    int count = requests != null ? requests.size() : 0;
+                    boolean hasPending = count > 0;
+                    tvBadge.setVisibility(hasPending ? View.VISIBLE : View.GONE);
+                    if (hasPending) tvBadge.setText("● " + count + " demande" + (count > 1 ? "s" : ""));
+                    layoutRequests.setVisibility(hasPending ? View.VISIBLE : View.GONE);
+                    reqAdapter.setRequests(requests);
+                });
             });
-            viewModel.getPendingForGroup(groupId).observe(getViewLifecycleOwner(), reqAdapter::setRequests);
         }
 
         RecyclerView rv = view.findViewById(R.id.rv_chat_messages);
@@ -154,11 +176,6 @@ public class GroupChatFragment extends Fragment {
 
         chatListener = FirebaseRepository.getInstance().listenToMessages(
                 groupName, AppDatabase.getInstance(requireContext()), groupId);
-
-        if (isCreator) {
-            membersListener = FirebaseRepository.getInstance().listenToPendingMembers(
-                    groupName, AppDatabase.getInstance(requireContext()), groupId);
-        }
 
         EditText etInput = view.findViewById(R.id.et_chat_input);
         view.findViewById(R.id.btn_chat_send).setOnClickListener(v -> {
@@ -195,6 +212,33 @@ public class GroupChatFragment extends Fragment {
         });
 
         return view;
+    }
+
+    private void showInviteDialog(String groupName, long groupId, String inviterUsername) {
+        EditText etUsername = new EditText(requireContext());
+        etUsername.setHint("Nom d'utilisateur à inviter");
+        etUsername.setSingleLine(true);
+        int pad = (int) (24 * getResources().getDisplayMetrics().density);
+        etUsername.setPadding(pad, 8, pad, 0);
+
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Inviter dans " + groupName)
+                .setMessage("Pour l’instant, entrez le nom d’utilisateur. La liste sera limitée aux amis quand le module amis sera ajouté.")
+                .setView(etUsername)
+                .setPositiveButton("Inviter", (dialog, which) -> {
+                    String target = etUsername.getText().toString().trim();
+                    if (target.isEmpty()) return;
+                    if (target.equalsIgnoreCase(inviterUsername)) {
+                        Toast.makeText(getContext(), "Vous êtes déjà dans ce groupe.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    String date = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
+                    FirebaseRepository.getInstance().sendGroupInvitation(
+                            groupName, groupId, inviterUsername, target, date);
+                    Toast.makeText(getContext(), "Invitation envoyée à " + target, Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Annuler", null)
+                .show();
     }
 
     @Override
@@ -248,7 +292,6 @@ public class GroupChatFragment extends Fragment {
             h.tvAvatar.setText(!name.isEmpty() ? String.valueOf(name.charAt(0)).toUpperCase() : "?");
             h.tvName.setText(name);
             h.btnAccept.setOnClickListener(v -> {
-                viewModel.acceptJoinRequest(groupId, m.userId);
                 FirebaseRepository.getInstance().saveGroupMember(groupName, m.userName, "MEMBER");
                 AppNotification notif = new AppNotification();
                 notif.targetUserId = m.userId;
@@ -261,7 +304,6 @@ public class GroupChatFragment extends Fragment {
                 Toast.makeText(v.getContext(), name + " accepté !", Toast.LENGTH_SHORT).show();
             });
             h.btnReject.setOnClickListener(v -> {
-                viewModel.rejectOrLeaveGroup(groupId, m.userId);
                 FirebaseRepository.getInstance().deleteGroupMember(groupName, m.userName);
                 Toast.makeText(v.getContext(), "Demande refusée.", Toast.LENGTH_SHORT).show();
             });
@@ -286,10 +328,12 @@ public class GroupChatFragment extends Fragment {
         }
 
         static class MessageVH extends RecyclerView.ViewHolder {
+            com.google.android.material.card.MaterialCardView card;
             android.widget.LinearLayout bubble;
             TextView tvAuthor, tvText, tvDate;
             MessageVH(View v) {
                 super(v);
+                card     = v.findViewById(R.id.msg_card);
                 bubble   = v.findViewById(R.id.msg_bubble);
                 tvAuthor = v.findViewById(R.id.tv_msg_author);
                 tvText   = v.findViewById(R.id.tv_msg_text);
@@ -298,15 +342,13 @@ public class GroupChatFragment extends Fragment {
         }
 
         static class SharedPhotoVH extends RecyclerView.ViewHolder {
-            androidx.cardview.widget.CardView card;
+            com.google.android.material.card.MaterialCardView card;
             ImageView ivImage;
-            View vColor;
             TextView tvTitle, tvLocation, tvAuthor;
             SharedPhotoVH(View v) {
                 super(v);
                 card       = v.findViewById(R.id.card_shared);
                 ivImage    = v.findViewById(R.id.iv_shared_image);
-                vColor     = v.findViewById(R.id.v_shared_color);
                 tvTitle    = v.findViewById(R.id.tv_shared_title);
                 tvLocation = v.findViewById(R.id.tv_shared_location);
                 tvAuthor   = v.findViewById(R.id.tv_shared_author);
@@ -315,16 +357,14 @@ public class GroupChatFragment extends Fragment {
 
         static class PostVH extends RecyclerView.ViewHolder {
             android.widget.FrameLayout cardContainer;
-            androidx.cardview.widget.CardView card;
+            com.google.android.material.card.MaterialCardView card;
             ImageView ivImage;
-            View vColor;
             TextView tvTitle, tvMeta, tvAuthor;
             PostVH(View v) {
                 super(v);
                 cardContainer = (android.widget.FrameLayout) v;
                 card     = v.findViewById(R.id.card_chat_post);
                 ivImage  = v.findViewById(R.id.iv_chat_post_image);
-                vColor   = v.findViewById(R.id.v_chat_post_color);
                 tvTitle  = v.findViewById(R.id.tv_chat_post_title);
                 tvMeta   = v.findViewById(R.id.tv_chat_post_meta);
                 tvAuthor = v.findViewById(R.id.tv_chat_post_author);
@@ -364,24 +404,28 @@ public class GroupChatFragment extends Fragment {
             boolean mine = !currentUsername.isEmpty()
                     && currentUsername.equalsIgnoreCase(m.authorName);
 
-            android.widget.FrameLayout.LayoutParams lp =
-                    (android.widget.FrameLayout.LayoutParams) h.bubble.getLayoutParams();
+            android.widget.LinearLayout.LayoutParams lp =
+                    (android.widget.LinearLayout.LayoutParams) h.card.getLayoutParams();
             lp.gravity = mine ? Gravity.END : Gravity.START;
-            h.bubble.setLayoutParams(lp);
+            h.card.setLayoutParams(lp);
 
             int bgColor = mine
-                    ? h.bubble.getContext().getResources().getColor(R.color.teal, null)
-                    : h.bubble.getContext().getResources().getColor(R.color.sand, null);
-            h.bubble.setBackgroundColor(bgColor);
+                    ? h.bubble.getContext().getResources().getColor(R.color.coral, null)
+                    : h.bubble.getContext().getResources().getColor(R.color.surface_field, null);
+            h.card.setCardBackgroundColor(bgColor);
+
             h.tvAuthor.setTextColor(mine
                     ? h.tvAuthor.getContext().getResources().getColor(R.color.default_white, null)
-                    : h.tvAuthor.getContext().getResources().getColor(R.color.teal, null));
+                    : h.tvAuthor.getContext().getResources().getColor(R.color.sand, null));
             h.tvAuthor.setText(mine ? "Moi" : m.authorName);
-            h.tvText.setTextColor(mine
-                    ? h.tvText.getContext().getResources().getColor(R.color.default_white, null)
-                    : h.tvText.getContext().getResources().getColor(R.color.ink, null));
+            h.tvAuthor.setVisibility(mine ? View.GONE : View.VISIBLE);
+
+            h.tvText.setTextColor(h.tvText.getContext().getResources().getColor(R.color.default_white, null));
             h.tvText.setText(m.message);
             h.tvDate.setText(m.date);
+            h.tvDate.setTextColor(mine
+                    ? h.tvDate.getContext().getResources().getColor(R.color.default_white, null)
+                    : h.tvDate.getContext().getResources().getColor(R.color.ink_faint, null));
         }
 
         private void bindSharedPhoto(SharedPhotoVH h, GroupMessage m) {
@@ -409,7 +453,6 @@ public class GroupChatFragment extends Fragment {
                     String uri = photo.getImageUri();
                     if (uri != null && !uri.isEmpty()) {
                         h.ivImage.setVisibility(View.VISIBLE);
-                        h.vColor.setVisibility(View.GONE);
                         Glide.with(h.ivImage.getContext()).load(android.net.Uri.parse(uri)).centerCrop().into(h.ivImage);
                     }
                     h.itemView.setOnClickListener(v -> {
@@ -445,11 +488,9 @@ public class GroupChatFragment extends Fragment {
             String uri = p.getImageUri();
             if (uri != null && !uri.isEmpty()) {
                 h.ivImage.setVisibility(View.VISIBLE);
-                h.vColor.setVisibility(View.GONE);
                 Glide.with(h.ivImage.getContext()).load(Uri.parse(uri)).centerCrop().into(h.ivImage);
             } else {
                 h.ivImage.setVisibility(View.GONE);
-                h.vColor.setVisibility(View.VISIBLE);
             }
 
             h.itemView.setOnClickListener(v -> {

@@ -9,7 +9,6 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -87,6 +86,11 @@ public class PhotoDetailActivity extends AppCompatActivity {
 
         Intent intent = getIntent();
         photoId      = intent.getIntExtra(EXTRA_PHOTO_ID, -1);
+        if (photoId <= 0) {
+            Toast.makeText(this, "Post introuvable.", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
         String title    = intent.getStringExtra(EXTRA_TITLE);
         String author   = intent.getStringExtra(EXTRA_AUTHOR);
         String date     = intent.getStringExtra(EXTRA_DATE);
@@ -134,22 +138,13 @@ public class PhotoDetailActivity extends AppCompatActivity {
                 ? date.substring(0, 7) : date);
         tvAccess = findViewById(R.id.tv_detail_access);
         tvAccess.setText("📍 Calcul...");
-        if (lat != 0 && lng != 0) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                    == PackageManager.PERMISSION_GRANTED) {
-                fetchRouteToPhoto();
-            } else {
-                locationPermLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
-            }
-        } else {
-            tvAccess.setText("Maps →");
-        }
+        tvAccess.setText(lat != 0 && lng != 0 ? "Maps →" : "Lieu non défini");
 
         findViewById(R.id.btn_back).setOnClickListener(v -> finish());
 
-        Button btnLike   = findViewById(R.id.btn_detail_like);
-        Button btnRoute  = findViewById(R.id.btn_detail_route);
-        Button btnReport = findViewById(R.id.btn_detail_report);
+        TextView btnLike   = findViewById(R.id.btn_detail_like);
+        TextView btnRoute  = findViewById(R.id.btn_detail_route);
+        TextView btnReport = findViewById(R.id.btn_detail_report);
         TextView tvLikesCount = findViewById(R.id.tv_likes_count);
         tvLikesCount.setText(currentLikes + " personnes ont aimé");
 
@@ -159,7 +154,9 @@ public class PhotoDetailActivity extends AppCompatActivity {
             viewModel.updateLikes(photoId, currentLikes);
         });
 
-        String likeKey = "liked_ids_" + sessionManager.getUsername().toLowerCase();
+        String username = sessionManager.getUsername();
+        String safeUsername = (username != null) ? username.toLowerCase() : "anonyme";
+        String likeKey = "liked_ids_" + safeUsername;
         android.content.SharedPreferences likePrefs = getSharedPreferences("likes", MODE_PRIVATE);
         java.util.Set<String> likedSet = new java.util.HashSet<>(
                 likePrefs.getStringSet(likeKey, new java.util.HashSet<>()));
@@ -200,9 +197,7 @@ public class PhotoDetailActivity extends AppCompatActivity {
                 return;
             }
             long userId = sessionManager.getUserId();
-            AppDatabase.databaseWriteExecutor.execute(() -> {
-                java.util.List<com.example.travelshare.data.models.Group> groups =
-                        AppDatabase.getInstance(this).groupDao().getGroupsForUserSync(userId);
+            FirebaseRepository.getInstance().getMyMemberGroups(sessionManager.getUsername(), groups -> {
                 runOnUiThread(() -> {
                     if (groups == null || groups.isEmpty()) {
                         Toast.makeText(this, "Vous n'appartenez à aucun groupe", Toast.LENGTH_SHORT).show();
@@ -222,6 +217,12 @@ public class PhotoDetailActivity extends AppCompatActivity {
                                 msg.photoId    = photoId;
                                 msg.date       = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
                                 viewModel.sendGroupMessage(msg);
+                                FirebaseRepository.getInstance().saveSharedPhotoMessage(
+                                        groups.get(which).name,
+                                        sessionManager.getUsername(),
+                                        msg.message,
+                                        photoId,
+                                        msg.date);
                                 Toast.makeText(this, "Partagé dans \"" + names[which] + "\"", Toast.LENGTH_SHORT).show();
                             })
                             .setNegativeButton("Annuler", null)
@@ -312,7 +313,7 @@ public class PhotoDetailActivity extends AppCompatActivity {
         });
 
         View layoutVoice = findViewById(R.id.layout_voice_note);
-        Button btnPlayVoice = findViewById(R.id.btn_play_voice);
+        TextView btnPlayVoice = findViewById(R.id.btn_play_voice);
         if (voiceUri != null && !voiceUri.isEmpty()) {
             layoutVoice.setVisibility(View.VISIBLE);
             btnPlayVoice.setOnClickListener(v -> {
@@ -394,7 +395,7 @@ public class PhotoDetailActivity extends AppCompatActivity {
         commentsListener = FirebaseRepository.getInstance()
                 .listenToComments(photoId, AppDatabase.getInstance(this));
 
-        Button btnSend   = findViewById(R.id.btn_send_comment);
+        TextView btnSend   = findViewById(R.id.btn_send_comment);
         EditText etInput = findViewById(R.id.et_comment_input);
 
         btnSend.setOnClickListener(v -> {

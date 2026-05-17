@@ -66,7 +66,8 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.16.0")
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
-
+    // Loading skeletons
+    implementation("com.facebook.shimmer:shimmer:0.5.0")
 
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))

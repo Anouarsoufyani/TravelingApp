@@ -135,7 +135,7 @@ public class PublishFragment extends Fragment {
         catAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerCat.setAdapter(catAdapter);
 
-        Switch switchVisibility   = view.findViewById(R.id.switch_visibility);
+        com.google.android.material.switchmaterial.SwitchMaterial switchVisibility = view.findViewById(R.id.switch_visibility);
         View layoutGroupSelector  = view.findViewById(R.id.layout_group_selector);
         Spinner spinnerGroups     = view.findViewById(R.id.spinner_groups);
         Button btnNewGroup        = view.findViewById(R.id.btn_new_group);

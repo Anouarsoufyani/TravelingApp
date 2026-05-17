@@ -11,8 +11,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="TravelShare"
-        android:fontFamily="serif"
-        android:textColor="@color/navy"
+        android:fontFamily="sans"
+        android:textColor="@color/ink"
         android:textSize="42sp"
         android:textStyle="bold"
         android:layout_marginBottom="8dp" />
@@ -33,6 +33,7 @@
         android:text="Créer un compte"
         android:textColor="@color/default_white"
         android:background="@drawable/bg_pill_solid"
+        android:elevation="0dp"
         android:fontFamily="sans-serif"
         android:textAllCaps="false"
         android:textSize="16sp"
@@ -45,6 +46,7 @@
         android:text="Se connecter"
         android:textColor="@color/ink"
         android:background="@drawable/bg_pill_outline"
+        android:elevation="0dp"
         android:fontFamily="sans-serif"
         android:textAllCaps="false"
         android:textSize="16sp" />

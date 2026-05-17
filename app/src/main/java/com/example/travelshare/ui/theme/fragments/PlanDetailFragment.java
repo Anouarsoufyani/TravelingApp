@@ -412,7 +412,7 @@ public class PlanDetailFragment extends Fragment {
 
         routeOverlay = new Polyline(mapView);
         routeOverlay.setPoints(points);
-        routeOverlay.getOutlinePaint().setColor(Color.parseColor("#1B3A5C"));
+        routeOverlay.getOutlinePaint().setColor(Color.parseColor("#2D9CDB"));
         routeOverlay.getOutlinePaint().setStrokeWidth(9f);
         routeOverlay.getOutlinePaint().setAlpha(210);
         routeOverlay.getOutlinePaint().setStrokeCap(Paint.Cap.ROUND);
@@ -482,14 +482,14 @@ public class PlanDetailFragment extends Fragment {
         Canvas canvas = page.getCanvas();
 
         Paint titlePaint = new Paint();
-        titlePaint.setColor(Color.parseColor("#1B3A5C"));
+        titlePaint.setColor(Color.parseColor("#102027"));
         titlePaint.setTextSize(22f); titlePaint.setFakeBoldText(true);
         Paint subPaint = new Paint();
-        subPaint.setColor(Color.parseColor("#555555")); subPaint.setTextSize(13f);
+        subPaint.setColor(Color.parseColor("#66757D")); subPaint.setTextSize(13f);
         Paint stepPaint = new Paint();
         stepPaint.setColor(Color.BLACK); stepPaint.setTextSize(12f);
         Paint accentPaint = new Paint();
-        accentPaint.setColor(Color.parseColor("#1B8C82")); accentPaint.setTextSize(11f);
+        accentPaint.setColor(Color.parseColor("#2D9CDB")); accentPaint.setTextSize(11f);
         Paint linePaint = new Paint(); linePaint.setColor(Color.LTGRAY);
 
         String typeLabel = "equilibre".equals(plan.type) ? "Équilibré"

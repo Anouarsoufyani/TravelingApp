@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="90"
+                android:startColor="#27445C"
+                android:centerColor="@color/navy"
+                android:endColor="#07111D" />
+        </shape>
+    </item>
+    <item android:gravity="bottom">
+        <vector
+            android:width="480dp"
+            android:height="320dp"
+            android:viewportWidth="480"
+            android:viewportHeight="320">
+            <path
+                android:fillColor="#334F67"
+                android:pathData="M0,220 L80,132 L150,200 L220,96 L330,220 L480,118 L480,320 L0,320 Z" />
+            <path
+                android:fillColor="#20374D"
+                android:pathData="M0,248 L120,160 L210,232 L292,142 L480,244 L480,320 L0,320 Z" />
+            <path
+                android:fillColor="@color/sand"
+                android:fillAlpha="0.18"
+                android:pathData="M52,94 C126,64 214,68 294,104 C366,136 424,128 480,92 L480,132 C408,170 336,168 262,132 C188,96 114,96 52,128 Z" />
+        </vector>
+    </item>
+</layer-list>

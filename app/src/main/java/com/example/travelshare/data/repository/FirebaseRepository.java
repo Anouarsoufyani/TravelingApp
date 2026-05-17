@@ -14,7 +14,10 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -177,6 +180,39 @@ public class FirebaseRepository {
                 .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "saveUserProfile failed", e));
     }
 
+    public void saveUserAccount(String username, String email, String nom, String prenom,
+                                String telephone, String centresInteret) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("username", username != null ? username : "");
+        data.put("email", email != null ? email : "");
+        data.put("nom", nom != null ? nom : "");
+        data.put("prenom", prenom != null ? prenom : "");
+        data.put("telephone", telephone != null ? telephone : "");
+        data.put("centresInteret", centresInteret != null ? centresInteret : "");
+        data.put("userId", stableUserId(username));
+        data.put("timestamp", FieldValue.serverTimestamp());
+
+        db.collection("users")
+                .document(username)
+                .set(data, com.google.firebase.firestore.SetOptions.merge())
+                .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "saveUserAccount failed", e));
+    }
+
+    public void loadUserAccountByEmail(String email, Consumer<Map<String, Object>> callback) {
+        db.collection("users")
+                .whereEqualTo("email", email)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(query -> {
+                    if (query == null || query.isEmpty()) {
+                        callback.accept(null);
+                        return;
+                    }
+                    callback.accept(query.getDocuments().get(0).getData());
+                })
+                .addOnFailureListener(e -> callback.accept(null));
+    }
+
     public void loadUserProfile(String username, Consumer<Map<String, Object>> callback) {
         db.collection("users")
                 .document(username)
@@ -186,16 +222,109 @@ public class FirebaseRepository {
     }
 
     public void saveGroup(String name, String description, String creatorUsername) {
+        saveGroup(name, description, creatorUsername, stableUserId(creatorUsername), Group.VISIBILITY_PRIVATE);
+    }
+
+    public void saveGroup(String name, String description, String creatorUsername,
+                          long creatorId, String visibility) {
+        String safeVisibility = Group.VISIBILITY_PUBLIC.equals(visibility)
+                ? Group.VISIBILITY_PUBLIC : Group.VISIBILITY_PRIVATE;
         Map<String, Object> data = new HashMap<>();
         data.put("name",            name);
         data.put("description",     description != null ? description : "");
         data.put("creatorUsername", creatorUsername);
+        data.put("creatorId",       creatorId);
+        data.put("groupId",         stableGroupId(name));
+        data.put("visibility",      safeVisibility);
         data.put("timestamp",       FieldValue.serverTimestamp());
 
         db.collection("groups")
-                .document(name)
+                .document(sanitize(name))
                 .set(data)
                 .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "saveGroup failed", e));
+    }
+
+    public ListenerRegistration listenToGroups(Consumer<List<Group>> callback) {
+        return db.collection("groups")
+                .addSnapshotListener((query, e) -> {
+                    if (e != null || query == null) {
+                        callback.accept(new ArrayList<>());
+                        return;
+                    }
+                    List<Group> groups = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : query) {
+                        Group group = groupFromDoc(doc);
+                        if (group.name != null && !group.name.isEmpty()) groups.add(group);
+                    }
+                    callback.accept(groups);
+                });
+    }
+
+    public ListenerRegistration listenToMyGroupMemberships(String username,
+            Consumer<Map<String, String>> callback) {
+        return db.collection("group_members")
+                .whereEqualTo("username", username)
+                .addSnapshotListener((query, e) -> {
+                    Map<String, String> statuses = new LinkedHashMap<>();
+                    if (e == null && query != null) {
+                        for (QueryDocumentSnapshot doc : query) {
+                            String groupName = doc.getString("groupName");
+                            String status = doc.getString("status");
+                            if (groupName != null && status != null) statuses.put(groupName, status);
+                        }
+                    }
+                    callback.accept(statuses);
+                });
+    }
+
+    public void getMyMemberGroups(String username, Consumer<List<Group>> callback) {
+        db.collection("group_members")
+                .whereEqualTo("username", username)
+                .whereEqualTo("status", "MEMBER")
+                .get()
+                .addOnSuccessListener(members -> db.collection("groups")
+                        .get()
+                        .addOnSuccessListener(groupsQuery -> {
+                            Map<String, Group> allGroups = new LinkedHashMap<>();
+                            for (QueryDocumentSnapshot doc : groupsQuery) {
+                                Group group = groupFromDoc(doc);
+                                allGroups.put(group.name, group);
+                            }
+                            List<Group> result = new ArrayList<>();
+                            for (QueryDocumentSnapshot memberDoc : members) {
+                                String groupName = memberDoc.getString("groupName");
+                                Group group = allGroups.get(groupName);
+                                if (group != null) result.add(group);
+                            }
+                            callback.accept(result);
+                        })
+                        .addOnFailureListener(e -> callback.accept(new ArrayList<>())))
+                .addOnFailureListener(e -> callback.accept(new ArrayList<>()));
+    }
+
+    public void getGroupMembershipStatus(String groupName, String username,
+            Consumer<String> callback) {
+        db.collection("group_members")
+                .document(sanitize(groupName) + "_" + sanitize(username))
+                .get()
+                .addOnSuccessListener(doc -> callback.accept(doc.exists() ? doc.getString("status") : null))
+                .addOnFailureListener(e -> callback.accept(null));
+    }
+
+    private Group groupFromDoc(QueryDocumentSnapshot doc) {
+        Group g = new Group();
+        g.name = str(doc, "name");
+        if (g.name.isEmpty()) g.name = doc.getId();
+        g.description = str(doc, "description");
+        g.creatorUsername = str(doc, "creatorUsername");
+        Long creatorId = doc.getLong("creatorId");
+        g.creatorId = creatorId != null ? creatorId : stableUserId(g.creatorUsername);
+        Long groupId = doc.getLong("groupId");
+        g.id = groupId != null ? groupId : stableGroupId(g.name);
+        String visibility = doc.getString("visibility");
+        g.visibility = Group.VISIBILITY_PUBLIC.equals(visibility)
+                ? Group.VISIBILITY_PUBLIC : Group.VISIBILITY_PRIVATE;
+        return g;
     }
 
     public void syncGroupsToRoom(AppDatabase localDb, Runnable onDone) {
@@ -211,7 +340,12 @@ public class FirebaseRepository {
                             Group g = new Group();
                             g.name        = name;
                             g.description = doc.getString("description") != null ? doc.getString("description") : "";
-                            g.creatorId   = 0;
+                            Long creatorId = doc.getLong("creatorId");
+                            g.creatorId   = creatorId != null ? creatorId : stableUserId(doc.getString("creatorUsername"));
+                            g.creatorUsername = doc.getString("creatorUsername");
+                            String visibility = doc.getString("visibility");
+                            g.visibility = Group.VISIBILITY_PUBLIC.equals(visibility)
+                                    ? Group.VISIBILITY_PUBLIC : Group.VISIBILITY_PRIVATE;
                             localDb.groupDao().insertGroupOrIgnore(g);
                         }
                         if (onDone != null)
@@ -224,7 +358,9 @@ public class FirebaseRepository {
     public void saveGroupMember(String groupName, String username, String status) {
         Map<String, Object> data = new HashMap<>();
         data.put("groupName", groupName);
+        data.put("groupId",   stableGroupId(groupName));
         data.put("username",  username);
+        data.put("userId",    stableUserId(username));
         data.put("status",    status);
         data.put("timestamp", FieldValue.serverTimestamp());
 
@@ -233,6 +369,41 @@ public class FirebaseRepository {
                 .document(docId)
                 .set(data)
                 .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "saveGroupMember failed", e));
+    }
+
+    public void sendGroupInvitation(String groupName, long groupId, String inviterUsername,
+                                    String targetUsername, String date) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("groupName", groupName);
+        data.put("groupId", groupId > 0 ? groupId : stableGroupId(groupName));
+        data.put("username", targetUsername);
+        data.put("userId", stableUserId(targetUsername));
+        data.put("status", "INVITED");
+        data.put("invitedBy", inviterUsername);
+        data.put("timestamp", FieldValue.serverTimestamp());
+
+        String docId = sanitize(groupName) + "_" + sanitize(targetUsername);
+        db.collection("group_members")
+                .document(docId)
+                .set(data)
+                .addOnSuccessListener(unused -> {
+                    AppNotification notif = new AppNotification();
+                    notif.type = "GROUP_INVITE";
+                    notif.message = inviterUsername + " vous invite à rejoindre \"" + groupName + "\"";
+                    notif.groupId = groupId > 0 ? groupId : stableGroupId(groupName);
+                    notif.groupName = groupName;
+                    notif.date = date != null ? date : "";
+                    saveNotification(targetUsername, notif);
+                })
+                .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "sendGroupInvitation failed", e));
+    }
+
+    public void acceptGroupInvitation(String groupName, String username) {
+        saveGroupMember(groupName, username, "MEMBER");
+    }
+
+    public void declineGroupInvitation(String groupName, String username) {
+        deleteGroupMember(groupName, username);
     }
 
     public void deleteGroupMember(String groupName, String username) {
@@ -266,6 +437,31 @@ public class FirebaseRepository {
                 });
     }
 
+    public ListenerRegistration listenToPendingMembers(String groupName,
+            Consumer<List<GroupMember>> callback) {
+        return db.collection("group_members")
+                .whereEqualTo("groupName", groupName)
+                .whereEqualTo("status", "PENDING")
+                .addSnapshotListener((query, e) -> {
+                    List<GroupMember> members = new ArrayList<>();
+                    if (e == null && query != null) {
+                        for (QueryDocumentSnapshot doc : query) {
+                            String username = doc.getString("username");
+                            if (username == null || username.isEmpty()) continue;
+                            GroupMember m = new GroupMember();
+                            Long groupId = doc.getLong("groupId");
+                            Long userId = doc.getLong("userId");
+                            m.groupId = groupId != null ? groupId : stableGroupId(groupName);
+                            m.userId = userId != null ? userId : stableUserId(username);
+                            m.userName = username;
+                            m.status = "PENDING";
+                            members.add(m);
+                        }
+                    }
+                    callback.accept(members);
+                });
+    }
+
     public void syncMyMemberStatuses(String username, AppDatabase localDb, Runnable onDone) {
         db.collection("group_members")
                 .whereEqualTo("username", username)
@@ -291,6 +487,14 @@ public class FirebaseRepository {
         return s != null ? s.replaceAll("[^a-zA-Z0-9_-]", "_") : "unknown";
     }
 
+    public long stableGroupId(String groupName) {
+        return Math.abs((long) sanitize(groupName).toLowerCase(java.util.Locale.ROOT).hashCode());
+    }
+
+    public long stableUserId(String username) {
+        return Math.abs((long) sanitize(username).toLowerCase(java.util.Locale.ROOT).hashCode());
+    }
+
     public void saveMessage(String groupName, String authorName, String message, String date) {
         Map<String, Object> data = new HashMap<>();
         data.put("groupName",   groupName);
@@ -305,6 +509,21 @@ public class FirebaseRepository {
                 .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "saveMessage failed", e));
     }
 
+    public void saveSharedPhotoMessage(String groupName, String authorName, String message,
+                                       long photoId, String date) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("groupName",   groupName);
+        data.put("authorName",  authorName);
+        data.put("message",     message);
+        data.put("date",        date != null ? date : "");
+        data.put("photoId",     photoId);
+        data.put("timestamp",   FieldValue.serverTimestamp());
+
+        db.collection("group_messages")
+                .add(data)
+                .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "saveSharedPhotoMessage failed", e));
+    }
+
     public ListenerRegistration listenToMessages(String groupName, AppDatabase localDb, long localGroupId) {
         return db.collection("group_messages")
                 .whereEqualTo("groupName", groupName)
@@ -315,6 +534,7 @@ public class FirebaseRepository {
                             String author  = doc.getString("authorName");
                             String text    = doc.getString("message");
                             String date    = doc.getString("date");
+                            Long photoId   = doc.getLong("photoId");
                             if (author == null || text == null) continue;
                             if (localDb.groupMessageDao().countByContent(localGroupId, author, text) > 0) continue;
 
@@ -324,7 +544,7 @@ public class FirebaseRepository {
                             msg.authorName = author;
                             msg.message    = text;
                             msg.date       = date != null ? date : "";
-                            msg.photoId    = 0;
+                            msg.photoId    = photoId != null ? photoId.intValue() : 0;
                             localDb.groupMessageDao().insertOrIgnore(msg);
                         }
                     });
@@ -352,6 +572,7 @@ public class FirebaseRepository {
         data.put("message", notif.message != null ? notif.message : "");
         data.put("photoId", notif.photoId);
         data.put("groupId", notif.groupId);
+        data.put("groupName", notif.groupName != null ? notif.groupName : "");
         data.put("date",    notif.date    != null ? notif.date    : "");
         data.put("isRead",  false);
         data.put("timestamp", FieldValue.serverTimestamp());
@@ -382,6 +603,7 @@ public class FirebaseRepository {
                             Long gid  = doc.getLong("groupId");
                             n.photoId = pid != null ? pid.intValue() : 0;
                             n.groupId = gid != null ? gid : 0;
+                            n.groupName = doc.getString("groupName") != null ? doc.getString("groupName") : "";
                             n.isRead  = false;
                             localDb.appNotificationDao().insert(n);
                         }

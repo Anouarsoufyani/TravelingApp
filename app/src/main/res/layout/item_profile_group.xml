@@ -5,13 +5,13 @@
     android:orientation="horizontal"
     android:gravity="center_vertical"
     android:padding="10dp"
-    android:background="@color/sand"
+    android:background="@drawable/bg_card_md"
     android:layout_marginBottom="6dp">
 
     <View
         android:layout_width="28dp"
         android:layout_height="28dp"
-        android:background="@color/teal_light"
+        android:background="@drawable/bg_pill_solid"
         android:layout_marginEnd="10dp" />
 
     <LinearLayout

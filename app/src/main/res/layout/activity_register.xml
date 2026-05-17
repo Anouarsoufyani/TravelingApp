@@ -3,9 +3,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="24dp"
+    android:padding="28dp"
     android:gravity="center"
-    android:background="#EDEAE3">
+    android:background="@color/background_color">
 
     <TextView
         android:layout_width="wrap_content"
@@ -13,36 +13,41 @@
         android:text="Créer un compte"
         android:textSize="28sp"
         android:textStyle="bold"
-        android:textColor="#1B3A5C"
+        android:textColor="@color/ink"
         android:layout_marginBottom="40dp"/>
 
     <EditText
         android:id="@+id/et_reg_username"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="52dp"
         android:hint="Nom d'utilisateur"
         android:inputType="textPersonName"
-        android:padding="12dp"
-        android:background="#FFFFFF"
+        android:paddingHorizontal="16dp"
+        android:background="@drawable/bg_input"
+        android:textColor="@color/ink"
+        android:textColorHint="@color/ink_faint"
         android:layout_marginBottom="16dp"/>
 
     <EditText
         android:id="@+id/et_reg_password"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="52dp"
         android:hint="Mot de passe"
         android:inputType="textPassword"
-        android:padding="12dp"
-        android:background="#FFFFFF"
+        android:paddingHorizontal="16dp"
+        android:background="@drawable/bg_input"
+        android:textColor="@color/ink"
+        android:textColorHint="@color/ink_faint"
         android:layout_marginBottom="24dp"/>
 
     <Button
         android:id="@+id/btn_do_register"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="56dp"
         android:text="S'inscrire"
-        android:backgroundTint="#1B3A5C"
-        android:textColor="#FFFFFF"
+        android:background="@drawable/bg_pill_solid"
+        android:textColor="@color/default_white"
+        android:textAllCaps="false"
         android:layout_marginBottom="16dp"/>
 
     <Button
@@ -51,5 +56,6 @@
         android:layout_height="wrap_content"
         android:text="Retour à la connexion"
         style="?android:attr/borderlessButtonStyle"
-        android:textColor="#1B3A5C"/>
+        android:textAllCaps="false"
+        android:textColor="@color/ink_muted"/>
 </LinearLayout>

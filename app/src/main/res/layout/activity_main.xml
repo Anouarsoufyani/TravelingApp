@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -9,46 +9,49 @@
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@id/bottom_navigation" />
+        android:layout_marginBottom="@dimen/bottom_nav_height" />
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:background="@color/default_white"
+        android:layout_height="@dimen/bottom_nav_height"
+        android:layout_gravity="bottom"
+        android:background="@drawable/bg_bottom_nav"
+        android:elevation="@dimen/elevation_nav"
+        app:itemActiveIndicatorStyle="@style/Widget.Travelshare.BottomNavigation.ActiveIndicator"
         app:itemIconTint="@color/bottom_nav_colors"
         app:itemTextColor="@color/bottom_nav_colors"
+        app:labelVisibilityMode="labeled"
         app:menu="@menu/bottom_nav_menu" />
 
-    <!-- Bouton notification en haut à droite (overlay) -->
     <FrameLayout
         android:id="@+id/btn_notif_bell"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="12dp">
+        android:layout_width="@dimen/notification_button_size"
+        android:layout_height="@dimen/notification_button_size"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="@dimen/space_xs"
+        android:layout_marginEnd="@dimen/space_sm"
+        android:background="@drawable/bg_icon_surface"
+        android:clickable="true"
+        android:contentDescription="@string/notifications_content_description"
+        android:elevation="@dimen/elevation_overlay"
+        android:focusable="true">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:text="🔔"
-            android:textSize="22sp"
-            android:gravity="center" />
+        <ImageView
+            android:layout_width="@dimen/touch_target"
+            android:layout_height="@dimen/touch_target"
+            android:contentDescription="@string/notifications_content_description"
+            android:padding="@dimen/space_sm"
+            android:src="@drawable/ic_ms_notifications" />
 
-        <!-- Badge rouge -->
         <View
             android:id="@+id/notif_badge"
-            android:layout_width="10dp"
-            android:layout_height="10dp"
+            android:layout_width="@dimen/badge_size"
+            android:layout_height="@dimen/badge_size"
             android:layout_gravity="top|end"
-            android:layout_marginTop="4dp"
-            android:layout_marginEnd="4dp"
-            android:background="#FFE53935"
+            android:layout_marginTop="@dimen/space_xxs"
+            android:layout_marginEnd="@dimen/space_xxs"
+            android:background="@drawable/bg_notif_badge"
             android:visibility="gone" />
-
     </FrameLayout>
-
-</RelativeLayout>
+</FrameLayout>

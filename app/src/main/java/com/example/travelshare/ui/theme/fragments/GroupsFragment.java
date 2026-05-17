@@ -7,6 +7,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -14,7 +16,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -26,6 +27,7 @@ import com.example.travelshare.data.models.GroupMember;
 import com.example.travelshare.data.repository.FirebaseRepository;
 import com.example.travelshare.utils.SessionManager;
 import com.example.travelshare.viewmodels.SharedViewModel;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -44,9 +46,11 @@ public class GroupsFragment extends Fragment {
     private SharedViewModel viewModel;
     private SessionManager session;
     private GroupAdapter adapter;
-    private LiveData<List<Group>> currentSource;
+    private ListenerRegistration groupsListener;
+    private ListenerRegistration membershipsListener;
+    private final List<Group> firebaseGroups = new ArrayList<>();
+    private final Map<String, String> membershipsByName = new HashMap<>();
 
-    private TextView tabMyGroups, tabDiscover;
     private View layoutSearch;
     private EditText etSearch;
 
@@ -59,8 +63,7 @@ public class GroupsFragment extends Fragment {
         viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
         session   = new SessionManager(requireContext());
 
-        tabMyGroups  = view.findViewById(R.id.tab_my_groups);
-        tabDiscover  = view.findViewById(R.id.tab_discover);
+        com.google.android.material.tabs.TabLayout tabs = view.findViewById(R.id.tabs_groups);
         layoutSearch = view.findViewById(R.id.layout_search);
         etSearch     = view.findViewById(R.id.et_search_groups);
 
@@ -69,14 +72,18 @@ public class GroupsFragment extends Fragment {
         adapter = new GroupAdapter(viewModel, session, this);
         rv.setAdapter(adapter);
 
-        tabMyGroups.setOnClickListener(v -> switchTab(TAB_MY));
-        tabDiscover.setOnClickListener(v -> switchTab(TAB_DISC));
+        tabs.addOnTabSelectedListener(new com.google.android.material.tabs.TabLayout.OnTabSelectedListener() {
+            @Override public void onTabSelected(com.google.android.material.tabs.TabLayout.Tab tab) {
+                switchTab(tab.getPosition());
+            }
+            @Override public void onTabUnselected(com.google.android.material.tabs.TabLayout.Tab tab) {}
+            @Override public void onTabReselected(com.google.android.material.tabs.TabLayout.Tab tab) {}
+        });
 
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                String q = s.toString().trim();
-                observeGroups(q.isEmpty() ? viewModel.getAllGroups() : viewModel.searchGroups(q));
+                renderGroups();
             }
             @Override public void afterTextChanged(Editable s) {}
         });
@@ -89,7 +96,8 @@ public class GroupsFragment extends Fragment {
             showCreateDialog();
         });
 
-        switchTab(TAB_MY);
+        startFirestoreListeners();
+        // Initial tab state already handled by switchTab or initial TabLayout setup
         return view;
     }
 
@@ -99,60 +107,88 @@ public class GroupsFragment extends Fragment {
 
         session = new SessionManager(requireContext());
         adapter.setSession(session);
-        switchTab(currentTab);
+        restartMembershipListener();
+        renderGroups();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (groupsListener != null) { groupsListener.remove(); groupsListener = null; }
+        if (membershipsListener != null) { membershipsListener.remove(); membershipsListener = null; }
+    }
+
+    private void startFirestoreListeners() {
+        if (groupsListener != null) groupsListener.remove();
+        groupsListener = FirebaseRepository.getInstance().listenToGroups(groups -> {
+            firebaseGroups.clear();
+            if (groups != null) firebaseGroups.addAll(groups);
+            if (isAdded()) requireActivity().runOnUiThread(this::renderGroups);
+        });
+        restartMembershipListener();
+    }
+
+    private void restartMembershipListener() {
+        if (membershipsListener != null) {
+            membershipsListener.remove();
+            membershipsListener = null;
+        }
+        membershipsByName.clear();
+        if (!session.isLoggedIn()) {
+            if (adapter != null) adapter.setMemberships(membershipsByName);
+            return;
+        }
+        membershipsListener = FirebaseRepository.getInstance()
+                .listenToMyGroupMemberships(session.getUsername(), statuses -> {
+                    membershipsByName.clear();
+                    if (statuses != null) membershipsByName.putAll(statuses);
+                    if (isAdded()) requireActivity().runOnUiThread(this::renderGroups);
+                });
     }
 
     private void switchTab(int tab) {
         currentTab = tab;
         boolean myTab = (tab == TAB_MY);
 
-        tabMyGroups.setTextColor(requireContext().getResources().getColor(
-                myTab ? R.color.teal : R.color.ink_muted, null));
-        tabMyGroups.setTypeface(null, myTab ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
-        tabDiscover.setTextColor(requireContext().getResources().getColor(
-                myTab ? R.color.ink_muted : R.color.teal, null));
-        tabDiscover.setTypeface(null, myTab ? android.graphics.Typeface.NORMAL : android.graphics.Typeface.BOLD);
-
         layoutSearch.setVisibility(myTab ? View.GONE : View.VISIBLE);
         if (myTab) etSearch.setText("");
 
         adapter.setMode(myTab ? GroupAdapter.MODE_MY : GroupAdapter.MODE_DISCOVER);
-        adapter.clearMemberships();
-
-        if (myTab) {
-
-            if (session.isLoggedIn()) {
-                viewModel.syncMyMemberStatuses(session.getUsername());
-                observeGroups(viewModel.getGroupsForUser(session.getUserId()));
-            } else {
-
-                if (currentSource != null) currentSource.removeObservers(getViewLifecycleOwner());
-                currentSource = null;
-                adapter.setGroups(new ArrayList<>());
-            }
-        } else {
-
-            viewModel.syncGroupsFromFirestore();
-            observeGroups(viewModel.getAllGroups());
-        }
+        renderGroups();
     }
 
-    private void observeGroups(LiveData<List<Group>> source) {
-        if (currentSource != null) currentSource.removeObservers(getViewLifecycleOwner());
-        currentSource = source;
-        currentSource.observe(getViewLifecycleOwner(), groups -> {
-            adapter.setGroups(groups);
+    private void renderGroups() {
+        if (adapter == null) return;
+        adapter.setMemberships(membershipsByName);
+        if (!session.isLoggedIn() && currentTab == TAB_MY) {
+            adapter.setGroups(new ArrayList<>());
+            return;
+        }
 
-            if (currentTab == TAB_DISC && session.isLoggedIn() && groups != null) {
-                for (Group g : groups) {
-                    viewModel.getMembership(session.getUserId(), g.id, m -> {
-                        if (!isAdded()) return;
-                        requireActivity().runOnUiThread(() ->
-                                adapter.putMembership(g.id, m != null ? m.status : null));
-                    });
-                }
+        String currentUsername = session.getUsername();
+        String query = etSearch != null ? etSearch.getText().toString().trim().toLowerCase(Locale.ROOT) : "";
+        List<Group> visible = new ArrayList<>();
+        for (Group g : firebaseGroups) {
+            boolean isCreator = isCreator(g, currentUsername);
+            String status = membershipsByName.get(g.name);
+            boolean isMember = "MEMBER".equals(status);
+            boolean belongsToMe = isCreator || isMember;
+
+            if (currentTab == TAB_MY && !belongsToMe) continue;
+            if (currentTab == TAB_DISC && !query.isEmpty()) {
+                String haystack = ((g.name != null ? g.name : "") + " "
+                        + (g.description != null ? g.description : "")).toLowerCase(Locale.ROOT);
+                if (!haystack.contains(query)) continue;
             }
-        });
+            visible.add(g);
+        }
+        adapter.setGroups(visible);
+    }
+
+    private static boolean isCreator(Group g, String username) {
+        return g.creatorUsername != null
+                && username != null
+                && g.creatorUsername.equalsIgnoreCase(username);
     }
 
     private void showCreateDialog() {
@@ -160,11 +196,23 @@ public class GroupsFragment extends Fragment {
         etName.setHint("Nom du groupe");
         EditText etDesc = new EditText(getContext());
         etDesc.setHint("Description (optionnel)");
+        RadioGroup rgVisibility = new RadioGroup(getContext());
+        rgVisibility.setOrientation(RadioGroup.HORIZONTAL);
+        RadioButton rbPrivate = new RadioButton(getContext());
+        rbPrivate.setText("Privé");
+        rbPrivate.setId(View.generateViewId());
+        RadioButton rbPublic = new RadioButton(getContext());
+        rbPublic.setText("Public");
+        rbPublic.setId(View.generateViewId());
+        rgVisibility.addView(rbPrivate);
+        rgVisibility.addView(rbPublic);
+        rgVisibility.check(rbPrivate.getId());
         android.widget.LinearLayout layout = new android.widget.LinearLayout(getContext());
         layout.setOrientation(android.widget.LinearLayout.VERTICAL);
         layout.setPadding(48, 16, 48, 0);
         layout.addView(etName);
         layout.addView(etDesc);
+        layout.addView(rgVisibility);
 
         new AlertDialog.Builder(requireContext())
                 .setTitle("Créer un groupe")
@@ -175,10 +223,16 @@ public class GroupsFragment extends Fragment {
                     Group g = new Group();
                     g.name = name;
                     g.description = etDesc.getText().toString().trim();
-                    g.creatorId = session.getUserId();
-                    viewModel.insertGroup(g);
-                    FirebaseRepository.getInstance().saveGroup(name, g.description, session.getUsername());
-                    Toast.makeText(getContext(), "Groupe \"" + name + "\" créé !", Toast.LENGTH_SHORT).show();
+                    g.creatorId = FirebaseRepository.getInstance().stableUserId(session.getUsername());
+                    g.creatorUsername = session.getUsername();
+                    g.visibility = rgVisibility.getCheckedRadioButtonId() == rbPublic.getId()
+                            ? Group.VISIBILITY_PUBLIC : Group.VISIBILITY_PRIVATE;
+                    FirebaseRepository.getInstance().saveGroup(
+                            name, g.description, session.getUsername(), g.creatorId, g.visibility);
+                    Toast.makeText(getContext(),
+                            "Groupe " + ("PUBLIC".equals(g.visibility) ? "public" : "privé")
+                                    + " \"" + name + "\" créé !",
+                            Toast.LENGTH_SHORT).show();
                     switchTab(TAB_MY);
                 })
                 .setNegativeButton("Annuler", null)
@@ -196,7 +250,7 @@ public class GroupsFragment extends Fragment {
         private final SharedViewModel viewModel;
         private final Fragment fragment;
 
-        private final Map<Long, String> memberships = new HashMap<>();
+        private final Map<String, String> memberships = new HashMap<>();
 
         GroupAdapter(SharedViewModel vm, SessionManager s, Fragment f) {
             this.viewModel = vm;
@@ -207,13 +261,9 @@ public class GroupsFragment extends Fragment {
         void setSession(SessionManager s) { this.session = s; }
         void setMode(int m)               { mode = m; notifyDataSetChanged(); }
 
-        void clearMemberships() {
+        void setMemberships(Map<String, String> statuses) {
             memberships.clear();
-            notifyDataSetChanged();
-        }
-
-        void putMembership(long groupId, String status) {
-            memberships.put(groupId, status);
+            if (statuses != null) memberships.putAll(statuses);
             notifyDataSetChanged();
         }
 
@@ -247,14 +297,18 @@ public class GroupsFragment extends Fragment {
         @Override
         public void onBindViewHolder(@NonNull GVH h, int position) {
             Group g = groups.get(position);
-            boolean isCreator = session.isLoggedIn() && g.creatorId == session.getUserId();
+            boolean isCreator = session.isLoggedIn()
+                    && g.creatorUsername != null
+                    && g.creatorUsername.equalsIgnoreCase(session.getUsername());
 
             String initial = (g.name != null && !g.name.isEmpty())
                     ? String.valueOf(g.name.charAt(0)).toUpperCase() : "G";
             h.tvAvatar.setText(initial);
             h.tvName.setText(g.name);
-            h.tvDesc.setText(g.description != null && !g.description.isEmpty()
-                    ? g.description : "Groupe privé");
+            String visibility = g.isPublic() ? "Public" : "Privé";
+            String desc = g.description != null && !g.description.isEmpty()
+                    ? g.description : "Aucune description";
+            h.tvDesc.setText(visibility + " · " + desc);
 
             if (mode == MODE_MY) {
                 bindMyGroup(h, g, isCreator);
@@ -264,27 +318,14 @@ public class GroupsFragment extends Fragment {
         }
 
         private void bindMyGroup(GVH h, Group g, boolean isCreator) {
-            h.tvAction.setText(isCreator ? "👑 Admin" : "Membre ✓");
-            h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(
-                    isCreator ? R.color.terracotta : R.color.teal, null));
-
-            if (!isCreator) {
-                h.tvAction.setOnClickListener(v ->
-                        new AlertDialog.Builder(v.getContext())
-                                .setTitle("Quitter " + g.name + " ?")
-                                .setPositiveButton("Quitter", (d, w) -> {
-                                    viewModel.rejectOrLeaveGroup(g.id, session.getUserId());
-                                    FirebaseRepository.getInstance().deleteGroupMember(g.name, session.getUsername());
-                                    Toast.makeText(v.getContext(), "Vous avez quitté \"" + g.name + "\"", Toast.LENGTH_SHORT).show();
-                                })
-                                .setNegativeButton("Annuler", null)
-                                .show());
-            } else {
-                h.tvAction.setOnClickListener(null);
+            h.tvAction.setVisibility(isCreator ? View.VISIBLE : View.GONE);
+            if (isCreator) {
+                h.tvAction.setText("👑 Admin");
+                h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(R.color.sand, null));
             }
 
-            h.tvChat.setVisibility(View.VISIBLE);
-            h.tvChat.setOnClickListener(v -> {
+            // Clicking the whole card opens the chat
+            h.itemView.setOnClickListener(v -> {
                 viewModel.markGroupMessagesRead(session.getUserId(), g.id);
                 h.tvUnreadBadge.setVisibility(View.GONE);
                 openChat(v, g);
@@ -304,62 +345,71 @@ public class GroupsFragment extends Fragment {
         }
 
         private void bindDiscoverGroup(GVH h, Group g, boolean isCreator) {
-            h.tvChat.setVisibility(View.GONE);
-
+            h.tvAction.setVisibility(View.VISIBLE);
+            
             if (isCreator) {
                 h.tvAction.setText("👑 Mon groupe");
-                h.tvAction.setTextColor(h.tvAction.getContext().getResources()
-                        .getColor(R.color.terracotta, null));
+                h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(R.color.sand, null));
+                h.itemView.setOnClickListener(v -> openChat(v, g));
                 h.tvAction.setOnClickListener(v -> openChat(v, g));
                 return;
             }
 
-            String status = memberships.get(g.id);
+            String status = memberships.get(g.name);
 
             if ("MEMBER".equals(status)) {
                 h.tvAction.setText("Membre ✓");
-                h.tvAction.setTextColor(h.tvAction.getContext().getResources()
-                        .getColor(R.color.teal, null));
+                h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(R.color.comfort_green, null));
+                h.itemView.setOnClickListener(v -> openChat(v, g));
                 h.tvAction.setOnClickListener(v ->
                         new AlertDialog.Builder(v.getContext())
                                 .setTitle("Quitter " + g.name + " ?")
                                 .setPositiveButton("Quitter", (d, w) -> {
-                                    viewModel.rejectOrLeaveGroup(g.id, session.getUserId());
                                     FirebaseRepository.getInstance().deleteGroupMember(g.name, session.getUsername());
-                                    memberships.put(g.id, null);
+                                    memberships.remove(g.name);
                                     notifyDataSetChanged();
                                 })
                                 .setNegativeButton("Annuler", null)
                                 .show());
-            } else if ("PENDING".equals(status)) {
-                h.tvAction.setText("⏳ En attente");
-                h.tvAction.setTextColor(h.tvAction.getContext().getResources()
-                        .getColor(R.color.ink_muted, null));
-                h.tvAction.setOnClickListener(v ->
-                        Toast.makeText(v.getContext(), "Demande envoyée, en attente d'approbation.", Toast.LENGTH_SHORT).show());
             } else {
-                h.tvAction.setText("Demander →");
-                h.tvAction.setTextColor(h.tvAction.getContext().getResources()
-                        .getColor(R.color.navy, null));
-                h.tvAction.setOnClickListener(v -> {
-                    if (!session.isLoggedIn()) {
-                        Toast.makeText(v.getContext(), "Connectez-vous pour rejoindre un groupe.", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    viewModel.requestJoinGroup(g.id, session.getUserId(), session.getUsername());
-                    FirebaseRepository.getInstance().saveGroupMember(g.name, session.getUsername(), "PENDING");
-                    memberships.put(g.id, "PENDING");
-                    notifyDataSetChanged();
-                    Toast.makeText(v.getContext(), "Demande envoyée !", Toast.LENGTH_SHORT).show();
-
-                    AppNotification notif = new AppNotification();
-                    notif.targetUserId = g.creatorId;
-                    notif.type    = "JOIN_REQUEST";
-                    notif.message = session.getUsername() + " souhaite rejoindre \"" + g.name + "\"";
-                    notif.groupId = g.id;
-                    notif.date    = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
-                    viewModel.insertAppNotification(notif);
-                });
+                h.itemView.setOnClickListener(null); // Can't open chat if not a member
+                if ("PENDING".equals(status)) {
+                    h.tvAction.setText("⏳ En attente");
+                    h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(R.color.ink_faint, null));
+                    h.tvAction.setOnClickListener(v ->
+                            Toast.makeText(v.getContext(), "Demande envoyée, en attente d'approbation.", Toast.LENGTH_SHORT).show());
+                } else if ("INVITED".equals(status)) {
+                    h.tvAction.setText("Invitation");
+                    h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(R.color.coral, null));
+                    h.tvAction.setOnClickListener(v ->
+                            new android.app.AlertDialog.Builder(v.getContext())
+                                    .setTitle("Rejoindre " + g.name + " ?")
+                                    .setMessage("Vous avez été invité à rejoindre ce groupe.")
+                                    .setPositiveButton("Accepter", (d, w) -> {
+                                        FirebaseRepository.getInstance().acceptGroupInvitation(g.name, session.getUsername());
+                                        memberships.put(g.name, "MEMBER");
+                                        notifyDataSetChanged();
+                                    })
+                                    .setNegativeButton("Refuser", (d, w) -> {
+                                        FirebaseRepository.getInstance().declineGroupInvitation(g.name, session.getUsername());
+                                        memberships.remove(g.name);
+                                        notifyDataSetChanged();
+                                    })
+                                    .show());
+                } else {
+                    h.tvAction.setText(g.isPublic() ? "Rejoindre →" : "Demander →");
+                    h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(R.color.coral, null));
+                    h.tvAction.setOnClickListener(v -> {
+                        if (!session.isLoggedIn()) {
+                            Toast.makeText(v.getContext(), "Connectez-vous pour rejoindre un groupe.", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        String newStatus = g.isPublic() ? "MEMBER" : "PENDING";
+                        FirebaseRepository.getInstance().saveGroupMember(g.name, session.getUsername(), newStatus);
+                        memberships.put(g.name, newStatus);
+                        notifyDataSetChanged();
+                    });
+                }
             }
         }
 
@@ -369,7 +419,7 @@ public class GroupsFragment extends Fragment {
             activity.getSupportFragmentManager()
                     .beginTransaction()
                     .replace(R.id.fragment_container,
-                            GroupChatFragment.newInstance(g.id, g.name, g.creatorId))
+                            GroupChatFragment.newInstance(g.id, g.name, g.creatorId, g.creatorUsername))
                     .addToBackStack(null)
                     .commit();
         }

@@ -12,6 +12,7 @@ public class AppNotification {
     public String message;
     public int    photoId;
     public long   groupId;
+    public String groupName;
     public String date;
     public boolean isRead;
 }

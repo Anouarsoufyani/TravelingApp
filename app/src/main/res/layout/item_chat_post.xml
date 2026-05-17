@@ -10,8 +10,8 @@
         android:layout_width="260dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="12dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="2dp"
+        app:cardCornerRadius="10dp"
+        app:cardElevation="0dp"
         app:cardBackgroundColor="@color/default_white">
 
         <LinearLayout
@@ -25,7 +25,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="120dp"
                 android:scaleType="centerCrop"
-                android:background="@color/navy_light"
+                android:background="@drawable/bg_photo_placeholder"
                 android:visibility="gone" />
 
             <!-- Placeholder couleur si pas d'image -->
@@ -33,7 +33,7 @@
                 android:id="@+id/v_chat_post_color"
                 android:layout_width="match_parent"
                 android:layout_height="8dp"
-                android:background="@color/teal" />
+                android:background="@color/teal_light" />
 
             <LinearLayout
                 android:layout_width="match_parent"

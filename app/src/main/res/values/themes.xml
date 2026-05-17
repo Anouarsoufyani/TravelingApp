@@ -1,17 +1,108 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.Travelshare" parent="Theme.MaterialComponents.Light.NoActionBar">
-        <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/teal</item>
-        <item name="colorPrimaryVariant">@color/teal_light</item>
+    <style name="Theme.Travelshare" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/sand</item>
+        <item name="colorPrimaryVariant">@color/sand</item>
         <item name="colorOnPrimary">@color/default_white</item>
-        <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/navy</item>
-        <item name="colorSecondaryVariant">@color/navy_light</item>
+        <item name="colorSecondary">@color/coral</item>
+        <item name="colorSecondaryVariant">@color/coral</item>
         <item name="colorOnSecondary">@color/default_white</item>
-        <!-- Custom colors -->
+        <item name="colorSurface">@color/surface_card</item>
+        <item name="colorOnSurface">@color/default_white</item>
+        <item name="colorAccent">@color/coral</item>
+        <item name="android:colorAccent">@color/coral</item>
         <item name="android:windowBackground">@color/background_color</item>
-        <item name="android:textColor">@color/ink</item>
+        <item name="android:textColorPrimary">@color/default_white</item>
+        <item name="android:textColorSecondary">@color/ink_muted</item>
+        <item name="android:textColor">@color/default_white</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:navigationBarColor">@color/navy</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="bottomNavigationStyle">@style/Widget.Travelshare.BottomNavigationView</item>
+        <item name="materialButtonStyle">@style/Widget.Travelshare.Button</item>
+        <item name="materialCardViewStyle">@style/Widget.Travelshare.Card</item>
+        <item name="textInputStyle">@style/Widget.Travelshare.TextInputLayout</item>
+    </style>
+
+    <style name="Widget.Travelshare.BottomNavigationView" parent="Widget.MaterialComponents.BottomNavigationView">
+        <item name="itemRippleColor">@color/coral_soft</item>
+        <item name="itemTextAppearanceActive">@style/TextAppearance.Travelshare.Nav.Active</item>
+        <item name="itemTextAppearanceInactive">@style/TextAppearance.Travelshare.Nav</item>
+        <item name="itemActiveIndicatorStyle">@style/Widget.Travelshare.BottomNavigation.ActiveIndicator</item>
+    </style>
+
+    <style name="Widget.Travelshare.BottomNavigation.ActiveIndicator" parent="">
+        <item name="android:color">@color/coral</item>
+        <item name="android:width">@dimen/bottom_nav_indicator_width</item>
+        <item name="android:height">@dimen/bottom_nav_indicator_height</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Travelshare.Pill</item>
+    </style>
+
+    <style name="Widget.Travelshare.Button" parent="Widget.MaterialComponents.Button">
+        <item name="cornerRadius">@dimen/radius_md</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:minHeight">@dimen/touch_target</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="Widget.Travelshare.Card" parent="Widget.MaterialComponents.CardView">
+        <item name="cardCornerRadius">@dimen/radius_lg</item>
+        <item name="cardElevation">@dimen/elevation_card</item>
+        <item name="cardBackgroundColor">@color/surface_card</item>
+    </style>
+
+    <style name="Widget.Travelshare.TextInputLayout" parent="Widget.MaterialComponents.TextInputLayout.FilledBox">
+        <item name="boxBackgroundColor">@color/surface_field</item>
+        <item name="boxCornerRadiusTopStart">@dimen/radius_lg</item>
+        <item name="boxCornerRadiusTopEnd">@dimen/radius_lg</item>
+        <item name="boxCornerRadiusBottomStart">@dimen/radius_lg</item>
+        <item name="boxCornerRadiusBottomEnd">@dimen/radius_lg</item>
+    </style>
+
+    <style name="ShapeAppearance.Travelshare.Pill" parent="ShapeAppearance.MaterialComponents.SmallComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <style name="TextAppearance.Travelshare.Nav" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textSize">@dimen/label_small_size</item>
+        <item name="android:textColor">@color/ink_faint</item>
+    </style>
+
+    <style name="TextAppearance.Travelshare.Nav.Active" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">@dimen/label_small_size</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/default_white</item>
+    </style>
+
+    <style name="TextAppearance.Travelshare.HeadlineLarge" parent="TextAppearance.MaterialComponents.Headline4">
+        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">@dimen/headline_large_size</item>
+        <item name="android:textColor">@color/default_white</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.Travelshare.TitleMedium" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">@dimen/title_medium_size</item>
+        <item name="android:textColor">@color/default_white</item>
+    </style>
+
+    <style name="TextAppearance.Travelshare.BodyMedium" parent="TextAppearance.MaterialComponents.Body2">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textSize">@dimen/body_medium_size</item>
+        <item name="android:textColor">@color/ink_muted</item>
+    </style>
+
+    <style name="TextAppearance.Travelshare.LabelSmall" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textSize">@dimen/label_small_size</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="android:textColor">@color/ink_faint</item>
     </style>
 </resources>

@@ -12,14 +12,15 @@
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:paddingHorizontal="12dp"
-        android:background="@color/navy">
+        android:background="@color/default_white"
+        android:elevation="4dp">
 
         <TextView
             android:id="@+id/btn_pd_back"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="←"
-            android:textColor="@color/default_white"
+            android:textColor="@color/ink"
             android:textSize="20sp"
             android:padding="4dp"
             android:layout_marginEnd="10dp" />
@@ -29,7 +30,7 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:textColor="@color/default_white"
+            android:textColor="@color/ink"
             android:textSize="16sp"
             android:textStyle="bold" />
     </LinearLayout>
@@ -55,7 +56,7 @@
 
                 <LinearLayout android:layout_width="0dp" android:layout_weight="1"
                     android:layout_height="wrap_content" android:orientation="vertical"
-                    android:background="@color/sand" android:padding="10dp" android:layout_marginEnd="6dp">
+                    android:background="@drawable/bg_stat_tile" android:padding="10dp" android:layout_marginEnd="6dp">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="BUDGET" android:textSize="9sp" android:textColor="@color/ink_faint" android:letterSpacing="0.08"/>
                     <TextView android:id="@+id/tv_pd_budget"
@@ -65,7 +66,7 @@
 
                 <LinearLayout android:layout_width="0dp" android:layout_weight="1"
                     android:layout_height="wrap_content" android:orientation="vertical"
-                    android:background="@color/sand" android:padding="10dp" android:layout_marginEnd="6dp">
+                    android:background="@drawable/bg_stat_tile" android:padding="10dp" android:layout_marginEnd="6dp">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="DURÉE" android:textSize="9sp" android:textColor="@color/ink_faint" android:letterSpacing="0.08"/>
                     <TextView android:id="@+id/tv_pd_duration"
@@ -75,7 +76,7 @@
 
                 <LinearLayout android:layout_width="0dp" android:layout_weight="1"
                     android:layout_height="wrap_content" android:orientation="vertical"
-                    android:background="@color/sand" android:padding="10dp" android:layout_marginEnd="6dp">
+                    android:background="@drawable/bg_stat_tile" android:padding="10dp" android:layout_marginEnd="6dp">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="EFFORT" android:textSize="9sp" android:textColor="@color/ink_faint" android:letterSpacing="0.08"/>
                     <TextView android:id="@+id/tv_pd_effort"
@@ -85,7 +86,7 @@
 
                 <LinearLayout android:layout_width="0dp" android:layout_weight="1"
                     android:layout_height="wrap_content" android:orientation="vertical"
-                    android:background="@color/sand" android:padding="10dp"
+                    android:background="@drawable/bg_stat_tile" android:padding="10dp"
                     android:visibility="gone" android:id="@+id/block_route_time">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="TRAJET" android:textSize="9sp" android:textColor="@color/ink_faint" android:letterSpacing="0.08"/>
@@ -102,7 +103,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:background="@color/navy_light"
+                android:background="@drawable/bg_header_gradient"
                 android:padding="12dp"
                 android:layout_marginHorizontal="16dp"
                 android:layout_marginBottom="12dp"

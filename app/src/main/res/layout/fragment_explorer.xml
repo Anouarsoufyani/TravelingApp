@@ -1,257 +1,362 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="@color/background_color"
-    android:padding="16dp">
+    android:orientation="vertical">
 
-    <!-- Header -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="travel·share"
-        android:textSize="24sp"
-        android:textColor="@color/navy"
-        android:layout_marginBottom="12dp" />
-
-    <!-- Bouton TravelPath -->
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_explorer_travelpath"
-        android:layout_width="match_parent"
-        android:layout_height="44dp"
-        android:text="🗺 Planifier un voyage — TravelPath"
-        android:textColor="@color/default_white"
-        android:background="@drawable/bg_pill_solid"
-        android:textAllCaps="false"
-        android:textSize="13sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="12dp" />
-
-    <!-- Barre de recherche + bouton micro -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:orientation="horizontal"
-        android:layout_marginBottom="12dp">
-
-        <EditText
-            android:id="@+id/et_search_query"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="match_parent"
-            android:hint="Rechercher une destination..."
-            android:paddingHorizontal="16dp"
-            android:background="@drawable/bg_pill_outline"
-            android:textColor="@color/ink"
-            android:drawableStart="@android:drawable/ic_menu_search"
-            android:drawablePadding="8dp"
-            android:imeOptions="actionSearch"
-            android:inputType="text"
-            android:layout_marginEnd="8dp"/>
-
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btn_voice_search"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:text="🎤"
-            android:textSize="18sp"
-            android:background="@drawable/bg_pill_solid"
-            android:textColor="@color/default_white"
-            android:padding="0dp" />
-    </LinearLayout>
-
-    <!-- Filtres avancés : auteur + période -->
-    <LinearLayout
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="12dp">
+        android:background="@android:color/transparent"
+        app:elevation="0dp">
 
-        <EditText
-            android:id="@+id/et_filter_author"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="44dp"
-            android:hint="Par auteur"
-            android:paddingHorizontal="12dp"
-            android:background="@drawable/bg_input"
-            android:textColor="@color/ink"
-            android:textSize="13sp"
-            android:inputType="text"
-            android:imeOptions="actionSearch"
-            android:layout_marginEnd="8dp"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="@dimen/space_xl"
+            android:paddingTop="@dimen/space_xl"
+            android:paddingEnd="@dimen/space_xl"
+            android:paddingBottom="@dimen/space_md">
 
-        <EditText
-            android:id="@+id/et_filter_date_start"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="44dp"
-            android:hint="Depuis (AAAA-MM-JJ)"
-            android:paddingHorizontal="12dp"
-            android:background="@drawable/bg_input"
-            android:textColor="@color/ink"
-            android:textSize="12sp"
-            android:inputType="text"
-            android:layout_marginEnd="8dp"/>
+            <!-- Title Section -->
+            <TextView
+                style="@style/TextAppearance.Travelshare.HeadlineLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/explorer_title"
+                android:textColor="@color/default_white"
+                android:textSize="32sp"
+                android:textStyle="bold" />
 
-        <EditText
-            android:id="@+id/et_filter_date_end"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="44dp"
-            android:hint="Jusqu'à"
-            android:paddingHorizontal="12dp"
-            android:background="@drawable/bg_input"
-            android:textColor="@color/ink"
-            android:textSize="12sp"
-            android:inputType="text"/>
-    </LinearLayout>
+            <TextView
+                style="@style/TextAppearance.Travelshare.BodyMedium"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:text="Trouvez votre prochaine destination"
+                android:textColor="@color/sheet_muted" />
 
-    <!-- Chips de catégorie — rangée 1 -->
-    <LinearLayout
+            <!-- Search Bar integrated with Random Button -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/search_height"
+                android:layout_marginTop="@dimen/space_lg"
+                app:cardBackgroundColor="@color/surface_card"
+                app:cardCornerRadius="@dimen/radius_lg"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/border_light"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="@dimen/space_md"
+                    android:paddingEnd="@dimen/space_xs">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:contentDescription="@string/search_hint"
+                        android:src="@drawable/ic_ms_search"
+                        app:tint="@color/sheet_muted" />
+
+                    <EditText
+                        android:id="@+id/et_search_query"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:hint="@string/search_hint"
+                        android:imeOptions="actionSearch"
+                        android:inputType="text"
+                        android:paddingStart="@dimen/space_sm"
+                        android:paddingEnd="@dimen/space_sm"
+                        android:textColor="@color/default_white"
+                        android:textColorHint="@color/ink_faint"
+                        android:textSize="16sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_random_feed"
+                        android:layout_width="@dimen/touch_target"
+                        android:layout_height="@dimen/touch_target"
+                        android:layout_marginEnd="4dp"
+                        android:contentDescription="Random Feed"
+                        android:insetBottom="0dp"
+                        android:insetTop="0dp"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp"
+                        android:padding="0dp"
+                        android:text="✦"
+                        android:textColor="@color/coral"
+                        android:textSize="20sp"
+                        app:backgroundTint="@color/coral_soft"
+                        app:cornerRadius="@dimen/radius_pill" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_voice_search"
+                        android:layout_width="@dimen/touch_target"
+                        android:layout_height="@dimen/touch_target"
+                        android:contentDescription="@string/voice_search"
+                        android:insetBottom="0dp"
+                        android:insetTop="0dp"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp"
+                        android:padding="0dp"
+                        android:text="🎙"
+                        android:textColor="@color/default_white"
+                        android:textSize="20sp"
+                        app:backgroundTint="@color/coral"
+                        app:cornerRadius="@dimen/radius_pill" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="6dp">
+        android:fillViewport="false"
+        android:overScrollMode="never">
 
-        <TextView
-            android:id="@+id/chip_all"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="34dp"
-            android:gravity="center"
-            android:text="Tout"
-            android:textSize="12sp"
-            android:background="@drawable/bg_pill_solid"
-            android:textColor="@color/default_white"
-            android:layout_marginEnd="6dp"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="@dimen/space_md">
 
-        <TextView
-            android:id="@+id/chip_nature"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="34dp"
-            android:gravity="center"
-            android:text="Nature"
-            android:textSize="12sp"
-            android:background="@drawable/bg_pill_outline"
-            android:textColor="@color/ink_muted"
-            android:layout_marginEnd="6dp"/>
+            <!-- Chips / Quick Filters -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipToPadding="false"
+                android:overScrollMode="never"
+                android:paddingStart="@dimen/space_xl"
+                android:paddingEnd="@dimen/space_xl"
+                android:scrollbars="none">
 
-        <TextView
-            android:id="@+id/chip_urbain"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="34dp"
-            android:gravity="center"
-            android:text="Urbain"
-            android:textSize="12sp"
-            android:background="@drawable/bg_pill_outline"
-            android:textColor="@color/ink_muted"
-            android:layout_marginEnd="6dp"/>
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/chip_culture"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="34dp"
-            android:gravity="center"
-            android:text="Culture"
-            android:textSize="12sp"
-            android:background="@drawable/bg_pill_outline"
-            android:textColor="@color/ink_muted"/>
+                    <TextView
+                        android:id="@+id/chip_all"
+                        style="@style/TextAppearance.Travelshare.LabelSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:layout_marginEnd="@dimen/space_xs"
+                        android:background="@drawable/bg_pill_solid"
+                        android:gravity="center"
+                        android:paddingStart="@dimen/space_md"
+                        android:paddingEnd="@dimen/space_md"
+                        android:text="@string/chip_all"
+                        android:textColor="@color/default_white" />
 
-    </LinearLayout>
+                    <TextView
+                        android:id="@+id/chip_nature"
+                        style="@style/TextAppearance.Travelshare.LabelSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:layout_marginEnd="@dimen/space_xs"
+                        android:background="@drawable/bg_collection_card"
+                        android:gravity="center"
+                        android:paddingStart="@dimen/space_md"
+                        android:paddingEnd="@dimen/space_md"
+                        android:text="🌿 Nature" />
 
-    <!-- Chips de catégorie — rangée 2 -->
-    <LinearLayout
+                    <TextView
+                        android:id="@+id/chip_culture"
+                        style="@style/TextAppearance.Travelshare.LabelSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:layout_marginEnd="@dimen/space_xs"
+                        android:background="@drawable/bg_collection_card"
+                        android:gravity="center"
+                        android:paddingStart="@dimen/space_md"
+                        android:paddingEnd="@dimen/space_md"
+                        android:text="🏛 Culture" />
+
+                    <TextView
+                        android:id="@+id/chip_magasin"
+                        style="@style/TextAppearance.Travelshare.LabelSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:layout_marginEnd="@dimen/space_xs"
+                        android:background="@drawable/bg_collection_card"
+                        android:gravity="center"
+                        android:paddingStart="@dimen/space_md"
+                        android:paddingEnd="@dimen/space_md"
+                        android:text="🍽 Food" />
+
+                    <TextView
+                        android:id="@+id/chip_urbain"
+                        style="@style/TextAppearance.Travelshare.LabelSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:layout_marginEnd="@dimen/space_xs"
+                        android:background="@drawable/bg_collection_card"
+                        android:gravity="center"
+                        android:paddingStart="@dimen/space_md"
+                        android:paddingEnd="@dimen/space_md"
+                        android:text="🎭 Leisure" />
+
+                    <TextView
+                        android:id="@+id/chip_nearby"
+                        style="@style/TextAppearance.Travelshare.LabelSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:layout_marginEnd="@dimen/space_xs"
+                        android:background="@drawable/bg_collection_card"
+                        android:gravity="center"
+                        android:paddingStart="@dimen/space_md"
+                        android:paddingEnd="@dimen/space_md"
+                        android:text="📍 Nearby" />
+
+                    <TextView
+                        android:id="@+id/chip_likes"
+                        style="@style/TextAppearance.Travelshare.LabelSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:background="@drawable/bg_collection_card"
+                        android:gravity="center"
+                        android:paddingStart="@dimen/space_md"
+                        android:paddingEnd="@dimen/space_md"
+                        android:text="@string/chip_likes" />
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <!-- Quick Actions -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/space_xl"
+                android:layout_marginTop="@dimen/space_md"
+                android:layout_marginEnd="@dimen/space_xl"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_explorer_travelpath"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="start|center_vertical"
+                    android:text="@string/plan_trip"
+                    android:textAllCaps="false"
+                    android:textColor="@color/coral"
+                    android:textSize="16sp"
+                    app:icon="@drawable/ic_ms_explore"
+                    app:iconTint="@color/coral" />
+
+                <TextView
+                    android:id="@+id/btn_toggle_view"
+                    style="@style/TextAppearance.Travelshare.LabelSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:background="@drawable/bg_pill_outline"
+                    android:gravity="center"
+                    android:paddingStart="@dimen/space_md"
+                    android:paddingEnd="@dimen/space_md"
+                    android:text="@string/toggle_grid"
+                    android:textColor="@color/sand" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <com.facebook.shimmer.ShimmerFrameLayout
+        android:id="@+id/shimmer_feed"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="12dp">
+        android:paddingStart="@dimen/space_md"
+        android:paddingEnd="@dimen/space_md"
+        android:visibility="gone"
+        app:shimmer_auto_start="true">
 
-        <TextView
-            android:id="@+id/chip_magasin"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="34dp"
-            android:gravity="center"
-            android:text="Magasin"
-            android:textSize="12sp"
-            android:background="@drawable/bg_pill_outline"
-            android:textColor="@color/ink_muted"
-            android:layout_marginEnd="6dp"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/chip_nearby"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="34dp"
-            android:gravity="center"
-            android:text="📍 Autour"
-            android:textSize="12sp"
-            android:background="@drawable/bg_pill_outline"
-            android:textColor="@color/ink_muted"
-            android:layout_marginEnd="6dp"/>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/photo_card_height"
+                android:layout_marginBottom="@dimen/space_sm"
+                android:background="@drawable/bg_card_md" />
 
-        <TextView
-            android:id="@+id/chip_likes"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="34dp"
-            android:gravity="center"
-            android:text="❤️ Likes"
-            android:textSize="12sp"
-            android:background="@drawable/bg_pill_outline"
-            android:textColor="@color/ink_muted"
-            android:layout_marginEnd="6dp"/>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/photo_card_height"
+                android:background="@drawable/bg_card_md" />
+        </LinearLayout>
+    </com.facebook.shimmer.ShimmerFrameLayout>
 
-        <TextView
-            android:id="@+id/btn_random_feed"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="34dp"
-            android:gravity="center"
-            android:text="🎲 Aléat."
-            android:textSize="12sp"
-            android:background="@drawable/bg_pill_outline"
-            android:textColor="@color/ink_muted"/>
-
-    </LinearLayout>
-
-    <!-- Toggle liste / grille -->
-    <LinearLayout
+    <FrameLayout
+        android:id="@+id/empty_feed_state"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="end"
-        android:layout_marginBottom="8dp">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone">
 
-        <TextView
-            android:id="@+id/btn_toggle_view"
-            android:layout_width="wrap_content"
-            android:layout_height="32dp"
-            android:paddingHorizontal="14dp"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
             android:gravity="center"
-            android:text="☰ Liste"
-            android:textSize="12sp"
-            android:background="@drawable/bg_pill_outline"
-            android:textColor="@color/ink_muted"/>
-    </LinearLayout>
+            android:orientation="vertical"
+            android:padding="@dimen/space_xl">
+
+            <ImageView
+                android:layout_width="@dimen/empty_illustration_size"
+                android:layout_height="@dimen/empty_illustration_size"
+                android:contentDescription="@string/empty_headline"
+                android:src="@drawable/bg_empty_illustration" />
+
+            <TextView
+                style="@style/TextAppearance.Travelshare.TitleMedium"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_md"
+                android:gravity="center"
+                android:text="@string/empty_headline" />
+
+            <TextView
+                style="@style/TextAppearance.Travelshare.BodyMedium"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:gravity="center"
+                android:text="@string/empty_subtext" />
+
+            <com.google.android.material.button.MaterialButton
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/button_height"
+                android:layout_marginTop="@dimen/space_md"
+                android:text="@string/retry"
+                android:textAllCaps="false"
+                android:textColor="@color/default_white"
+                app:backgroundTint="@color/coral"
+                app:cornerRadius="@dimen/radius_md" />
+        </LinearLayout>
+    </FrameLayout>
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipe_refresh"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_view_photos"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
-            android:paddingBottom="80dp"/>
-
+            android:paddingBottom="@dimen/bottom_nav_height" />
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
-
 </LinearLayout>

@@ -33,7 +33,7 @@
             android:textColor="@color/navy"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:fontFamily="serif"/>
+            android:fontFamily="sans"/>
     </LinearLayout>
 
     <!-- Header profil -->
@@ -65,7 +65,7 @@
                     android:textSize="28sp"
                     android:textColor="@color/default_white"
                     android:textStyle="bold"
-                    android:background="@color/teal"/>
+                    android:background="@drawable/bg_pill_solid"/>
 
                 <ImageView
                     android:id="@+id/iv_avatar"

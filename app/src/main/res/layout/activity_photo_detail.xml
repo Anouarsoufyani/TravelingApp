@@ -1,430 +1,407 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/warm_white">
+    android:background="@color/background_color"
+    android:orientation="vertical">
 
-<androidx.core.widget.NestedScrollView
-    android:layout_width="match_parent"
-    android:layout_height="0dp"
-    android:layout_weight="1"
-    android:fillViewport="true"
-    android:background="@color/warm_white">
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:overScrollMode="never">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/hero_detail_height">
+
+                <ImageView
+                    android:id="@+id/iv_detail_hero"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_photo_placeholder"
+                    android:contentDescription="@string/photo_content_description"
+                    android:scaleType="centerCrop" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/photo_overlay_height"
+                    android:layout_gravity="bottom"
+                    android:background="@drawable/bg_photo_overlay_gradient" />
+
+                <ImageButton
+                    android:id="@+id/btn_back"
+                    android:layout_width="@dimen/touch_target"
+                    android:layout_height="@dimen/touch_target"
+                    android:layout_gravity="top|start"
+                    android:layout_marginStart="@dimen/space_md"
+                    android:layout_marginTop="@dimen/space_lg"
+                    android:background="@drawable/bg_icon_surface"
+                    android:contentDescription="@string/back_content_description"
+                    android:padding="@dimen/space_sm"
+                    android:src="@drawable/ic_ms_arrow_back" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:orientation="vertical"
+                    android:padding="@dimen/space_lg">
+
+                    <TextView
+                        android:id="@+id/tv_detail_location"
+                        style="@style/TextAppearance.Travelshare.LabelSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_pill_outline"
+                        android:drawableStart="@drawable/ic_ms_location"
+                        android:drawablePadding="@dimen/space_xs"
+                        android:paddingStart="@dimen/space_sm"
+                        android:paddingTop="@dimen/space_xxs"
+                        android:paddingEnd="@dimen/space_sm"
+                        android:paddingBottom="@dimen/space_xxs"
+                        android:textColor="@color/default_white" />
+
+                    <TextView
+                        android:id="@+id/tv_detail_title"
+                        style="@style/TextAppearance.Travelshare.HeadlineLarge"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_xs"
+                        android:maxLines="2" />
+                </LinearLayout>
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_sheet_top"
+                android:orientation="vertical"
+                android:padding="@dimen/space_lg">
+
+                <TextView
+                    android:id="@+id/tv_detail_author_date"
+                    style="@style/TextAppearance.Travelshare.BodyMedium"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/sheet_muted" />
+
+                <TextView
+                    android:id="@+id/tv_detail_category_tags"
+                    style="@style/TextAppearance.Travelshare.LabelSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_md"
+                    android:background="@drawable/bg_pill_outline"
+                    android:paddingStart="@dimen/space_md"
+                    android:paddingTop="@dimen/space_xs"
+                    android:paddingEnd="@dimen/space_md"
+                    android:paddingBottom="@dimen/space_xs"
+                    android:textColor="@color/sheet_text" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_lg"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:id="@+id/block_coord"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="@dimen/space_xs"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_stat_tile"
+                        android:orientation="vertical"
+                        android:padding="@dimen/space_sm">
+
+                        <TextView
+                            style="@style/TextAppearance.Travelshare.LabelSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="COORD."
+                            android:textColor="@color/sand" />
+
+                        <TextView
+                            android:id="@+id/tv_detail_coord"
+                            style="@style/TextAppearance.Travelshare.LabelSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/default_white" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="@dimen/space_xs"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_stat_tile"
+                        android:orientation="vertical"
+                        android:padding="@dimen/space_sm">
+
+                        <TextView
+                            style="@style/TextAppearance.Travelshare.LabelSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="PÉRIODE"
+                            android:textColor="@color/sand" />
+
+                        <TextView
+                            android:id="@+id/tv_detail_period"
+                            style="@style/TextAppearance.Travelshare.LabelSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/default_white" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_stat_tile"
+                        android:orientation="vertical"
+                        android:padding="@dimen/space_sm">
+
+                        <TextView
+                            style="@style/TextAppearance.Travelshare.LabelSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="ACCÈS"
+                            android:textColor="@color/sand" />
+
+                        <TextView
+                            android:id="@+id/tv_detail_access"
+                            style="@style/TextAppearance.Travelshare.LabelSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/default_white" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_lg"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_detail_like"
+                        android:layout_width="wrap_content"
+                        android:layout_height="@dimen/touch_target"
+                        android:text="♡ Like"
+                        android:textAllCaps="false"
+                        android:textColor="@color/coral"
+                        app:backgroundTint="@color/coral_soft"
+                        app:cornerRadius="@dimen/radius_md" />
+
+                    <TextView
+                        android:id="@+id/tv_likes_count"
+                        style="@style/TextAppearance.Travelshare.BodyMedium"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/space_sm"
+                        android:layout_weight="1"
+                        android:textColor="@color/sheet_muted" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_detail_route"
+                        android:layout_width="wrap_content"
+                        android:layout_height="@dimen/touch_target"
+                        android:layout_marginEnd="@dimen/space_xs"
+                        android:text="@string/route_cta"
+                        android:textAllCaps="false"
+                        android:textColor="@color/default_white"
+                        app:backgroundTint="@color/coral"
+                        app:cornerRadius="@dimen/radius_md" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_detail_share"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="@dimen/touch_target"
+                        android:text="@string/share_cta"
+                        android:textAllCaps="false"
+                        android:textColor="@color/sheet_text"
+                        app:cornerRadius="@dimen/radius_md"
+                        app:strokeColor="@color/sand" />
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_share_to_group"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/touch_target"
+                    android:layout_marginTop="@dimen/space_md"
+                    android:text="@string/share_group"
+                    android:textAllCaps="false"
+                    android:textColor="@color/sheet_text"
+                    app:cornerRadius="@dimen/radius_md"
+                    app:strokeColor="@color/sand" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_detail_report"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/touch_target"
+                    android:text="@string/report_cta"
+                    android:textAllCaps="false"
+                    android:textColor="@color/sheet_muted" />
+
+                <LinearLayout
+                    android:id="@+id/layout_owner_actions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_xs"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_edit_title"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="@dimen/touch_target"
+                        android:layout_marginEnd="@dimen/space_xs"
+                        android:layout_weight="1"
+                        android:text="@string/edit_title_cta"
+                        android:textAllCaps="false"
+                        android:textColor="@color/sheet_text"
+                        app:cornerRadius="@dimen/radius_md"
+                        app:strokeColor="@color/sand" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_delete_post"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="@dimen/touch_target"
+                        android:layout_weight="1"
+                        android:text="@string/delete_post_cta"
+                        android:textAllCaps="false"
+                        android:textColor="@color/coral"
+                        app:cornerRadius="@dimen/radius_md"
+                        app:strokeColor="@color/coral" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/layout_voice_note"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_md"
+                    android:background="@drawable/bg_card_md"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/space_md"
+                    android:visibility="gone">
+
+                    <TextView
+                        style="@style/TextAppearance.Travelshare.TitleMedium"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/voice_note" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_play_voice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="@dimen/touch_target"
+                        android:text="@string/play_voice"
+                        android:textAllCaps="false"
+                        android:textColor="@color/default_white"
+                        app:backgroundTint="@color/coral"
+                        app:cornerRadius="@dimen/radius_md" />
+                </LinearLayout>
+
+                <TextView
+                    style="@style/TextAppearance.Travelshare.LabelSmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_lg"
+                    android:text="@string/similar_photos"
+                    android:textColor="@color/sheet_muted" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_similar_photos"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/similar_strip_height"
+                    android:layout_marginTop="@dimen/space_xs"
+                    android:clipToPadding="false"
+                    android:orientation="horizontal" />
+
+                <TextView
+                    style="@style/TextAppearance.Travelshare.LabelSmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_lg"
+                    android:text="@string/comments"
+                    android:textColor="@color/sheet_muted" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_comments"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_xs"
+                    android:nestedScrollingEnabled="false" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:background="@color/navy"
+        android:elevation="@dimen/bottom_bar_elevation"
+        android:orientation="vertical"
+        android:padding="@dimen/space_xs">
 
-        <!-- Hero image -->
-        <FrameLayout
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_detail_travelpath"
             android:layout_width="match_parent"
-            android:layout_height="220dp">
+            android:layout_height="@dimen/button_height"
+            android:text="@string/travelpath_cta"
+            android:textAllCaps="false"
+            android:textColor="@color/default_white"
+            android:textSize="@dimen/title_medium_size"
+            app:backgroundTint="@color/coral"
+            app:cornerRadius="@dimen/radius_md" />
 
-            <ImageView
-                android:id="@+id/iv_detail_hero"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:background="@color/navy_light" />
-
-            <!-- Overlay gradient bas -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="120dp"
-                android:layout_gravity="bottom"
-                android:background="#99000000" />
-
-            <!-- Bouton retour -->
-            <TextView
-                android:id="@+id/btn_back"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_margin="14dp"
-                android:gravity="center"
-                android:text="←"
-                android:textColor="@color/default_white"
-                android:textSize="18sp"
-                android:background="#55000000"
-                android:layout_gravity="top|start" />
-
-            <!-- Lieu pill en bas -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:id="@+id/tv_detail_location"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="#55FFFFFF"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="5dp"
-                    android:textColor="@color/default_white"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-        </FrameLayout>
-
-        <!-- Corps -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="20dp"
-            android:background="@color/warm_white">
+            android:layout_marginTop="@dimen/space_xs"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-            <!-- Titre -->
-            <TextView
-                android:id="@+id/tv_detail_title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/ink"
-                android:textSize="22sp"
-                android:fontFamily="serif"
-                android:layout_marginBottom="4dp" />
+            <EditText
+                android:id="@+id/et_comment_input"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/touch_target"
+                android:layout_marginEnd="@dimen/space_xs"
+                android:layout_weight="1"
+                android:background="@drawable/bg_input"
+                android:hint="@string/comment_hint"
+                android:inputType="text"
+                android:paddingStart="@dimen/space_md"
+                android:paddingEnd="@dimen/space_md"
+                android:textColor="@color/default_white"
+                android:textColorHint="@color/ink_faint"
+                android:textSize="@dimen/body_medium_size" />
 
-            <!-- Auteur + date -->
-            <TextView
-                android:id="@+id/tv_detail_author_date"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/ink_faint"
-                android:textSize="11sp"
-                android:layout_marginBottom="12dp" />
-
-            <!-- Tags row -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="14dp">
-
-                <TextView
-                    android:id="@+id/tv_detail_category_tags"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/bg_pill_outline"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="4dp"
-                    android:textColor="@color/teal"
-                    android:textSize="12sp" />
-            </LinearLayout>
-
-            <!-- Info blocks : Coord · Période · Accès -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="16dp">
-
-                <LinearLayout
-                    android:id="@+id/block_coord"
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:background="@color/sand"
-                    android:padding="10dp"
-                    android:layout_marginEnd="6dp">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="COORD."
-                        android:textSize="9sp"
-                        android:textColor="@color/ink_faint"
-                        android:letterSpacing="0.08" />
-                    <TextView
-                        android:id="@+id/tv_detail_coord"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textSize="11sp"
-                        android:textColor="@color/ink"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:background="@color/sand"
-                    android:padding="10dp"
-                    android:layout_marginEnd="6dp">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="PÉRIODE"
-                        android:textSize="9sp"
-                        android:textColor="@color/ink_faint"
-                        android:letterSpacing="0.08" />
-                    <TextView
-                        android:id="@+id/tv_detail_period"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textSize="11sp"
-                        android:textColor="@color/ink"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:background="@color/sand"
-                    android:padding="10dp">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="ACCÈS"
-                        android:textSize="9sp"
-                        android:textColor="@color/ink_faint"
-                        android:letterSpacing="0.08" />
-                    <TextView
-                        android:id="@+id/tv_detail_access"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textSize="11sp"
-                        android:textColor="@color/ink"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Likes + Y aller -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingVertical="12dp"
-                android:layout_marginBottom="16dp">
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btn_detail_like"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:text="♡ Like"
-                    android:textAllCaps="false"
-                    android:textColor="@color/terracotta"
-                    android:background="#1FC4603A"
-                    android:paddingHorizontal="16dp"
-                    android:textSize="12sp" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="wrap_content"
-                    android:id="@+id/tv_likes_count"
-                    android:textColor="@color/ink_muted"
-                    android:textSize="12sp"
-                    android:layout_marginStart="10dp" />
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btn_detail_route"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:text="Y aller →"
-                    android:textAllCaps="false"
-                    android:textColor="@color/default_white"
-                    android:background="@drawable/bg_pill_solid"
-                    android:paddingHorizontal="16dp"
-                    android:textSize="12sp"
-                    android:layout_marginEnd="6dp" />
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btn_detail_share"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:text="↗ Partager"
-                    android:textAllCaps="false"
-                    android:textColor="@color/teal"
-                    android:background="#1F2A7D6F"
-                    android:paddingHorizontal="14dp"
-                    android:textSize="12sp" />
-            </LinearLayout>
-
-            <!-- Partager dans un groupe -->
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btn_share_to_group"
-                android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:text="👥 Partager dans un groupe"
-                android:textAllCaps="false"
-                android:textColor="@color/navy"
-                android:background="@color/sand"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp" />
-
-            <!-- Passerelle TravelPath -->
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btn_detail_travelpath"
-                android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:text="Planifier un voyage ici — TravelPath"
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_send_comment"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/touch_target"
+                android:text="@string/send_comment"
                 android:textAllCaps="false"
                 android:textColor="@color/default_white"
-                android:background="@color/navy"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp" />
-
-            <!-- Signaler -->
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btn_detail_report"
-                android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:text="Signaler ce contenu"
-                android:textAllCaps="false"
-                android:textColor="@color/ink_faint"
-                android:background="@android:color/transparent"
-                android:layout_marginBottom="4dp" />
-
-            <!-- Actions propriétaire (visible uniquement si auteur) -->
-            <LinearLayout
-                android:id="@+id/layout_owner_actions"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="8dp"
-                android:visibility="gone">
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btn_edit_title"
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="40dp"
-                    android:text="✏ Modifier le titre"
-                    android:textAllCaps="false"
-                    android:textColor="@color/navy"
-                    android:background="@color/sand"
-                    android:textSize="12sp"
-                    android:layout_marginEnd="6dp" />
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btn_delete_post"
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="40dp"
-                    android:text="🗑 Supprimer"
-                    android:textAllCaps="false"
-                    android:textColor="@color/terracotta"
-                    android:background="@color/sand"
-                    android:textSize="12sp" />
-            </LinearLayout>
-
-            <!-- Note vocale -->
-            <LinearLayout
-                android:id="@+id/layout_voice_note"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:background="@color/sand"
-                android:padding="12dp"
-                android:layout_marginBottom="16dp"
-                android:visibility="gone">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="wrap_content"
-                    android:text="🎙 Note vocale"
-                    android:textColor="@color/ink"
-                    android:textSize="13sp" />
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btn_play_voice"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:text="▶ Écouter"
-                    android:textAllCaps="false"
-                    android:textColor="@color/default_white"
-                    android:background="@drawable/bg_pill_solid"
-                    android:paddingHorizontal="14dp"
-                    android:textSize="12sp" />
-            </LinearLayout>
-
-            <!-- Photos similaires -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="PHOTOS SIMILAIRES"
-                android:textSize="10sp"
-                android:textColor="@color/ink_faint"
-                android:letterSpacing="0.1"
-                android:paddingHorizontal="4dp"
-                android:layout_marginBottom="8dp" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rv_similar_photos"
-                android:layout_width="match_parent"
-                android:layout_height="160dp"
-                android:orientation="horizontal"
-                android:layout_marginBottom="16dp"
-                android:clipToPadding="false"
-                android:paddingHorizontal="4dp" />
-
-            <!-- Commentaires -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="COMMENTAIRES"
-                android:textSize="10sp"
-                android:textColor="@color/ink_faint"
-                android:letterSpacing="0.1"
-                android:paddingHorizontal="4dp"
-                android:layout_marginBottom="8dp" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rv_comments"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false"
-                android:layout_marginBottom="8dp" />
-
+                app:backgroundTint="@color/coral"
+                app:cornerRadius="@dimen/radius_md" />
         </LinearLayout>
     </LinearLayout>
-</androidx.core.widget.NestedScrollView>
-
-<!-- Barre de commentaire fixe en bas -->
-<LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:gravity="center_vertical"
-    android:padding="8dp"
-    android:background="@color/warm_white"
-    android:elevation="4dp">
-
-    <EditText
-        android:id="@+id/et_comment_input"
-        android:layout_width="0dp"
-        android:layout_weight="1"
-        android:layout_height="44dp"
-        android:hint="Ajouter un commentaire…"
-        android:paddingHorizontal="16dp"
-        android:background="@color/sand"
-        android:textColor="@color/ink"
-        android:textSize="13sp"
-        android:inputType="text"
-        android:layout_marginEnd="8dp" />
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_send_comment"
-        android:layout_width="wrap_content"
-        android:layout_height="44dp"
-        android:text="Envoyer"
-        android:textAllCaps="false"
-        android:textColor="@color/default_white"
-        android:background="@drawable/bg_pill_solid"
-        android:paddingHorizontal="14dp"
-        android:textSize="12sp" />
-</LinearLayout>
-
 </LinearLayout>

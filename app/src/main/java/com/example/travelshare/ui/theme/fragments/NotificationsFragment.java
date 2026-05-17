@@ -106,6 +106,7 @@ public class NotificationsFragment extends Fragment {
                 case "GROUP_MESSAGE": h.tvIcon.setText("👥"); break;
                 case "JOIN_REQUEST":  h.tvIcon.setText("🔔"); break;
                 case "JOIN_ACCEPTED": h.tvIcon.setText("✅"); break;
+                case "GROUP_INVITE":  h.tvIcon.setText("✉️"); break;
                 default:              h.tvIcon.setText("🔔"); break;
             }
             h.tvMessage.setText(n.message);
@@ -138,6 +139,31 @@ public class NotificationsFragment extends Fragment {
                             });
                         }
                         break;
+
+                    case "GROUP_INVITE": {
+                        String groupName = n.groupName != null && !n.groupName.isEmpty()
+                                ? n.groupName : extractQuotedGroupName(n.message);
+                        if (groupName == null || groupName.isEmpty()) {
+                            Toast.makeText(v.getContext(), "Invitation invalide.", Toast.LENGTH_SHORT).show();
+                            break;
+                        }
+                        SessionManager session = new SessionManager(v.getContext());
+                        new AlertDialog.Builder(v.getContext())
+                                .setTitle("Invitation de groupe")
+                                .setMessage(n.message)
+                                .setPositiveButton("Accepter", (d, w) -> {
+                                    FirebaseRepository.getInstance()
+                                            .acceptGroupInvitation(groupName, session.getUsername());
+                                    Toast.makeText(v.getContext(), "Invitation acceptée.", Toast.LENGTH_SHORT).show();
+                                })
+                                .setNegativeButton("Refuser", (d, w) -> {
+                                    FirebaseRepository.getInstance()
+                                            .declineGroupInvitation(groupName, session.getUsername());
+                                    Toast.makeText(v.getContext(), "Invitation refusée.", Toast.LENGTH_SHORT).show();
+                                })
+                                .show();
+                        break;
+                    }
 
                     case "JOIN_REQUEST":
 
@@ -183,6 +209,14 @@ public class NotificationsFragment extends Fragment {
         }
 
         @Override public int getItemCount() { return notifs.size(); }
+
+        private static String extractQuotedGroupName(String message) {
+            if (message == null) return "";
+            int start = message.indexOf('"');
+            int end = message.lastIndexOf('"');
+            if (start >= 0 && end > start) return message.substring(start + 1, end);
+            return "";
+        }
 
         void setNotifs(List<AppNotification> list) {
             this.notifs = list != null ? list : new ArrayList<>();
