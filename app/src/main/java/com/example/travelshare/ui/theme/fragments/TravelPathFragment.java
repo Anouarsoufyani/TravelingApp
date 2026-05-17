@@ -22,6 +22,7 @@ import com.example.travelshare.R;
 import com.example.travelshare.data.models.TravelPlan;
 import com.example.travelshare.utils.SessionManager;
 import com.example.travelshare.viewmodels.TravelPathViewModel;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
@@ -120,6 +121,8 @@ public class TravelPathFragment extends Fragment {
         SeekBar sbDuration = view.findViewById(R.id.seekbar_tp_duration);
         TextView tvBudget  = view.findViewById(R.id.tv_tp_budget_value);
         TextView tvDur     = view.findViewById(R.id.tv_tp_duration_value);
+        MaterialButton btnGenerate = view.findViewById(R.id.btn_tp_generate);
+        View progressGenerate = view.findViewById(R.id.progress_tp_generate);
 
         sbBudget.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar sb, int p, boolean u) {
@@ -138,7 +141,7 @@ public class TravelPathFragment extends Fragment {
             @Override public void onStopTrackingTouch(SeekBar sb) {}
         });
 
-        view.findViewById(R.id.btn_tp_generate).setOnClickListener(v -> {
+        btnGenerate.setOnClickListener(v -> {
             String city = etCity.getText().toString().trim();
             if (city.isEmpty()) {
                 Toast.makeText(getContext(), "Entrez une destination", Toast.LENGTH_SHORT).show();
@@ -166,16 +169,27 @@ public class TravelPathFragment extends Fragment {
             if (rbId == R.id.rb_modere) effort = "Modéré";
             else if (rbId == R.id.rb_intense) effort = "Intense";
 
-            view.findViewById(R.id.btn_tp_generate).setEnabled(false);
+            btnGenerate.setEnabled(false);
+            btnGenerate.setText("Génération...");
+            progressGenerate.setVisibility(View.VISIBLE);
             Toast.makeText(getContext(), "Génération en cours…", Toast.LENGTH_SHORT).show();
 
-            viewModel.generatePlans(userId, city, activities, budget, duration, effort, reqPlaces, null, () -> {
+            viewModel.generatePlans(userId, city, activities, budget, duration, effort, reqPlaces, null, createdCount -> {
                 if (!isAdded() || getActivity() == null) return;
                 
                 getActivity().runOnUiThread(() -> {
                     if (!isAdded() || getActivity() == null) return;
                     
-                    view.findViewById(R.id.btn_tp_generate).setEnabled(true);
+                    btnGenerate.setEnabled(true);
+                    btnGenerate.setText("Générer mes parcours");
+                    progressGenerate.setVisibility(View.GONE);
+
+                    if (createdCount <= 0) {
+                        Toast.makeText(getContext(),
+                                "Aucun lieu réel trouvé pour ces critères. Réessayez dans quelques secondes ou élargissez les activités.",
+                                Toast.LENGTH_LONG).show();
+                        return;
+                    }
                     
                     // Switch to Results tab
                     if (tabLayout != null) {
@@ -183,7 +197,7 @@ public class TravelPathFragment extends Fragment {
                         if (resultsTab != null) resultsTab.select();
                     }
                     
-                    Toast.makeText(getContext(), "Parcours prêts !", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), createdCount + " parcours généré(s) !", Toast.LENGTH_SHORT).show();
                 });
             });
         });

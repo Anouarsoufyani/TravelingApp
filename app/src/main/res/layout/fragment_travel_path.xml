@@ -163,16 +163,32 @@
                             <RadioButton android:id="@+id/rb_intense" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Intense" android:textColor="@color/default_white" android:buttonTint="@color/coral"/>
                         </RadioGroup>
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btn_tp_generate"
+                        <FrameLayout
                             android:layout_width="match_parent"
-                            android:layout_height="64dp"
-                            android:text="Générer mes parcours"
-                            android:textAllCaps="false"
-                            android:textColor="@color/default_white"
-                            android:textStyle="bold"
-                            app:backgroundTint="@color/coral"
-                            app:cornerRadius="@dimen/radius_lg" />
+                            android:layout_height="64dp">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_tp_generate"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:text="Générer mes parcours"
+                                android:textAllCaps="false"
+                                android:textColor="@color/default_white"
+                                android:textStyle="bold"
+                                app:backgroundTint="@color/coral"
+                                app:cornerRadius="@dimen/radius_lg" />
+
+                            <ProgressBar
+                                android:id="@+id/progress_tp_generate"
+                                style="?android:attr/progressBarStyleSmall"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:layout_gravity="start|center_vertical"
+                                android:layout_marginStart="28dp"
+                                android:indeterminate="true"
+                                android:indeterminateTint="@color/default_white"
+                                android:visibility="gone" />
+                        </FrameLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>

@@ -29,6 +29,10 @@ import java.util.Set;
 
 public class TravelPathViewModel extends AndroidViewModel {
 
+    public interface GenerationCallback {
+        void onDone(int createdCount);
+    }
+
     private final TravelPlanDao planDao;
     private final PlanStepDao stepDao;
 
@@ -86,7 +90,7 @@ public class TravelPathViewModel extends AndroidViewModel {
     public void generatePlans(long userId, String city, Set<String> activities,
                                int budgetMax, int durationHours, String effort,
                                String requiredPlaces, Set<String> weatherTolerances,
-                               Runnable onDone) {
+                               GenerationCallback onDone) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             Set<String> safeActivities = activities != null ? activities : Collections.emptySet();
             String date = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
@@ -106,34 +110,25 @@ public class TravelPathViewModel extends AndroidViewModel {
             boolean sensitiveWeather = weatherTolerances != null && !weatherTolerances.isEmpty();
 
             Map<String, String[][]> overpassCache = new java.util.concurrent.ConcurrentHashMap<>();
-            if (!safeActivities.isEmpty() && (cityCenter[0] != 0 || cityCenter[1] != 0)) {
-                java.util.concurrent.ExecutorService overpassPool =
-                        java.util.concurrent.Executors.newFixedThreadPool(Math.min(safeActivities.size(), 5));
-                List<java.util.concurrent.Future<?>> futures = new ArrayList<>();
+            if (!safeActivities.isEmpty()) {
                 final double cLat = cityCenter[0], cLng = cityCenter[1];
                 for (String activity : safeActivities) {
-                    final String act = activity;
-                    futures.add(overpassPool.submit(() -> {
-
-                        String[][] places = fetchRealPlaces(city, cLat, cLng, act, sensitiveWeather, 5);
-                        if (places != null && places.length > 0) {
-
-                            overpassCache.put(act + "_economique",
-                                    new String[][]{places[Math.min(0, places.length-1)]});
-                            overpassCache.put(act + "_equilibre",
-                                    new String[][]{places[Math.min(2, places.length-1)]});
-                            overpassCache.put(act + "_confort",
-                                    new String[][]{places[Math.min(4, places.length-1)]});
-                        }
-                    }));
+                    String[][] places = (cLat != 0 || cLng != 0)
+                            ? fetchRealPlaces(city, cLat, cLng, activity, sensitiveWeather, 8)
+                            : fetchNominatimFallback(city, cLat, cLng, activity, sensitiveWeather, 8);
+                    if (places != null && places.length > 0) {
+                        overpassCache.put(activity + "_economique",
+                                new String[][]{places[Math.min(0, places.length - 1)]});
+                        overpassCache.put(activity + "_equilibre",
+                                new String[][]{places[Math.min(2, places.length - 1)]});
+                        overpassCache.put(activity + "_confort",
+                                new String[][]{places[Math.min(4, places.length - 1)]});
+                    }
+                    sleepQuietly(1100);
                 }
-                for (java.util.concurrent.Future<?> f : futures) {
-                    try { f.get(25, java.util.concurrent.TimeUnit.SECONDS); }
-                    catch (Exception ignored) {}
-                }
-                overpassPool.shutdown();
             }
 
+            int createdCount = 0;
             String[] types = {"economique", "equilibre", "confort"};
             for (String type : types) {
                 List<PlanStep> finalSteps = new ArrayList<>();
@@ -240,8 +235,9 @@ public class TravelPathViewModel extends AndroidViewModel {
                     step.planId = planId;
                     stepDao.insertStep(step);
                 }
+                createdCount++;
             }
-            if (onDone != null) onDone.run();
+            if (onDone != null) onDone.onDone(createdCount);
         });
     }
 
@@ -328,15 +324,27 @@ public class TravelPathViewModel extends AndroidViewModel {
             case "Shopping":     keyword = "centre commercial"; break;
             default:             keyword = activity;
         }
-        double d = 0.20;
-        String viewbox = String.format(Locale.US,
-                "&viewbox=%.4f,%.4f,%.4f,%.4f&bounded=1", lng-d, lat-d, lng+d, lat+d);
+        List<String[]> results = new ArrayList<>();
+        if (lat != 0 || lng != 0) {
+            double d = 0.20;
+            String viewbox = String.format(Locale.US,
+                    "&viewbox=%.4f,%.4f,%.4f,%.4f&bounded=1", lng-d, lat-d, lng+d, lat+d);
+            results = fetchNominatimPlaces(keyword + " " + city, count, viewbox);
+        }
+        if (results.isEmpty()) {
+            sleepQuietly(1100);
+            results = fetchNominatimPlaces(keyword + " " + city, count, "");
+        }
+        return results.isEmpty() ? null : results.toArray(new String[0][]);
+    }
+
+    private List<String[]> fetchNominatimPlaces(String query, int count, String extraParams) {
         List<String[]> results = new ArrayList<>();
         try {
-            String encoded = java.net.URLEncoder.encode(keyword + " " + city, "UTF-8");
+            String encoded = java.net.URLEncoder.encode(query, "UTF-8");
             java.net.URL url = new java.net.URL(
                     "https://nominatim.openstreetmap.org/search?q=" + encoded
-                    + "&format=json&limit=" + count + viewbox);
+                    + "&format=json&limit=" + count + extraParams);
             java.net.HttpURLConnection con = (java.net.HttpURLConnection) url.openConnection();
             con.setRequestMethod("GET");
             con.setRequestProperty("User-Agent", "TravelingApp/1.0");
@@ -365,7 +373,11 @@ public class TravelPathViewModel extends AndroidViewModel {
                 }
             }
         } catch (Exception ignored) {}
-        return results.isEmpty() ? null : results.toArray(new String[0][]);
+        return results;
+    }
+
+    private void sleepQuietly(long millis) {
+        try { Thread.sleep(millis); } catch (InterruptedException ignored) {}
     }
 
     private String[][] fetchTopPlaces(double centerLat, double centerLng,
