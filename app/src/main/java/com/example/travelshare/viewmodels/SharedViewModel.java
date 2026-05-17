@@ -59,8 +59,6 @@ public class SharedViewModel extends AndroidViewModel {
         allGroups = groupDao.getAllGroups();
     }
 
-    // ── PHOTOS ──────────────────────────────────────────────────────────────
-
     public LiveData<List<Photo>> getAllPhotos() { return allPhotos; }
     public LiveData<List<Photo>> getPublicPhotos() { return publicPhotos; }
 
@@ -161,8 +159,6 @@ public class SharedViewModel extends AndroidViewModel {
         AppDatabase.databaseWriteExecutor.execute(() -> userDao.updateUserProfile(userId, avatarUri, bio));
     }
 
-    // ── COMMENTAIRES ────────────────────────────────────────────────────────
-
     public LiveData<List<Comment>> getCommentsForPhoto(long photoId) {
         return commentDao.getCommentsForPhoto(photoId);
     }
@@ -181,8 +177,6 @@ public class SharedViewModel extends AndroidViewModel {
         });
     }
 
-    // ── GROUPES ─────────────────────────────────────────────────────────────
-
     public LiveData<List<Group>> getAllGroups() { return allGroups; }
 
     public LiveData<List<Group>> getGroupsForUser(long userId) {
@@ -193,7 +187,6 @@ public class SharedViewModel extends AndroidViewModel {
         AppDatabase.databaseWriteExecutor.execute(() -> groupDao.insertGroup(group));
     }
 
-    /** Rejoint directement avec status=MEMBER (créateur, ou auto-join) */
     public void joinGroup(long groupId, long userId, String userName) {
         GroupMember m = new GroupMember();
         m.groupId  = groupId;
@@ -203,7 +196,6 @@ public class SharedViewModel extends AndroidViewModel {
         AppDatabase.databaseWriteExecutor.execute(() -> groupMemberDao.joinGroup(m));
     }
 
-    /** Envoie une demande d'adhésion (status=PENDING) */
     public void requestJoinGroup(long groupId, long userId, String userName) {
         GroupMember m = new GroupMember();
         m.groupId  = groupId;
@@ -213,12 +205,10 @@ public class SharedViewModel extends AndroidViewModel {
         AppDatabase.databaseWriteExecutor.execute(() -> groupMemberDao.joinGroup(m));
     }
 
-    /** Accepte une demande → status MEMBER */
     public void acceptJoinRequest(long groupId, long userId) {
         AppDatabase.databaseWriteExecutor.execute(() -> groupMemberDao.acceptRequest(groupId, userId));
     }
 
-    /** Refuse / expulse un membre */
     public void rejectOrLeaveGroup(long groupId, long userId) {
         AppDatabase.databaseWriteExecutor.execute(() -> groupMemberDao.leaveGroup(groupId, userId));
     }
@@ -247,13 +237,9 @@ public class SharedViewModel extends AndroidViewModel {
         AppDatabase.databaseWriteExecutor.execute(() -> callback.accept(groupDao.getGroupById(groupId)));
     }
 
-    // ── SIGNALEMENTS ────────────────────────────────────────────────────────
-
     public void insertReport(Report report) {
         AppDatabase.databaseWriteExecutor.execute(() -> reportDao.insertReport(report));
     }
-
-    // ── PRÉFÉRENCES DE NOTIFICATIONS ────────────────────────────────────────
 
     public LiveData<List<NotificationPreference>> getPreferencesForUser(long userId) {
         return prefDao.getPreferencesForUser(userId);
@@ -270,8 +256,6 @@ public class SharedViewModel extends AndroidViewModel {
     public List<NotificationPreference> getPreferencesSync(long userId) {
         return prefDao.getPreferencesForUserSync(userId);
     }
-
-    // ── NOTIFICATIONS IN-APP ────────────────────────────────────────────────
 
     public LiveData<List<AppNotification>> getAppNotificationsForUser(long userId) {
         return appNotificationDao.getForUser(userId);
@@ -301,8 +285,6 @@ public class SharedViewModel extends AndroidViewModel {
         AppDatabase.databaseWriteExecutor.execute(() ->
                 appNotificationDao.markGroupMessagesRead(userId, groupId));
     }
-
-    // ── MESSAGES DE GROUPE ──────────────────────────────────────────────────
 
     public LiveData<List<GroupMessage>> getGroupMessages(long groupId) {
         return groupMessageDao.getMessagesForGroup(groupId);

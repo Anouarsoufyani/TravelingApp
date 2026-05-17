@@ -18,7 +18,6 @@ import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.Toast;
 
-
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -63,17 +62,16 @@ public class PublishFragment extends Fragment {
     private ImageView ivPreview;
     private List<String> mlKitLabels = new ArrayList<>();
 
-    // ── Enregistrement audio ───────────────────────────────────────────────
     private enum VoiceState { IDLE, RECORDING, RECORDED }
     private VoiceState voiceState = VoiceState.IDLE;
     private MediaRecorder mediaRecorder;
     private MediaPlayer   mediaPlayer;
-    private String        voiceNotePath; // chemin du fichier enregistré
+    private String        voiceNotePath;
 
     private ActivityResultLauncher<String> galleryLauncher;
     private ActivityResultLauncher<Uri>    cameraLauncher;
     private ActivityResultLauncher<String> audioPermLauncher;
-    private Button btnVoiceCached; // référence pour le callback de permission
+    private Button btnVoiceCached;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -151,7 +149,6 @@ public class PublishFragment extends Fragment {
             Toast.makeText(getContext(), "Vous devez être connecté pour publier.", Toast.LENGTH_SHORT).show();
         }
 
-        // ── Sélecteur de photo ─────────────────────────────────────────────
         ivPreview = view.findViewById(R.id.iv_photo_preview);
         view.findViewById(R.id.layout_photo_picker).setOnClickListener(v ->
                 new AlertDialog.Builder(requireContext())
@@ -165,7 +162,6 @@ public class PublishFragment extends Fragment {
                             }
                         }).show());
 
-        // ── Spinner groupes ────────────────────────────────────────────────
         ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(requireContext(),
                 android.R.layout.simple_spinner_item, new ArrayList<>());
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -204,7 +200,6 @@ public class PublishFragment extends Fragment {
                     .setNegativeButton("Annuler", null).show();
         });
 
-        // ── Message vocal réel (MediaRecorder) ────────────────────────────
         btnVoice.setOnClickListener(v -> {
             switch (voiceState) {
                 case IDLE:
@@ -225,7 +220,6 @@ public class PublishFragment extends Fragment {
             }
         });
 
-        // ── Tags automatiques (mots-clés + ML Kit IA) ────────────────────
         btnTags.setOnClickListener(v -> {
             String title    = etTitle.getText().toString().trim();
             String location = etLocation.getText().toString().trim();
@@ -241,7 +235,6 @@ public class PublishFragment extends Fragment {
             }
         });
 
-        // ── Publication ────────────────────────────────────────────────────
         btnPublish.setOnClickListener(v -> {
             if (!sessionManager.isLoggedIn()) {
                 Toast.makeText(getContext(), "Action refusée : Mode Anonyme", Toast.LENGTH_LONG).show();
@@ -279,7 +272,7 @@ public class PublishFragment extends Fragment {
             boolean approxChecked = checkApprox.isChecked();
             com.example.travelshare.data.AppDatabase.databaseWriteExecutor.execute(() -> {
                 double[] coords = geocodeLocation(finalLocation);
-                // Si lieu approximatif : arrondi à 1 décimale (~11 km)
+
                 if (approxChecked) {
                     coords[0] = Math.round(coords[0] * 10.0) / 10.0;
                     coords[1] = Math.round(coords[1] * 10.0) / 10.0;
@@ -311,13 +304,9 @@ public class PublishFragment extends Fragment {
         return view;
     }
 
-    // ── Firestore ──────────────────────────────────────────────────────────
-
     private void savePhotoToFirestore(Photo photo, long roomId) {
         FirebaseRepository.getInstance().savePhoto(photo, roomId);
     }
-
-    // ── Enregistrement vocal ───────────────────────────────────────────────
 
     private void startVoiceRecording(Button btn) {
         try {
@@ -416,8 +405,6 @@ public class PublishFragment extends Fragment {
         stopMediaPlayer();
     }
 
-    // ── ML Kit — analyse IA de l'image ────────────────────────────────────
-
     private void runMlKit(Uri imageUri) {
         mlKitLabels.clear();
         try {
@@ -444,8 +431,6 @@ public class PublishFragment extends Fragment {
         }
     }
 
-    // ── Tags ───────────────────────────────────────────────────────────────
-
     private StringBuilder buildBaseTags(String title, String location, String category) {
         StringBuilder sb = new StringBuilder();
         if (!location.isEmpty()) sb.append("#").append(location.replaceAll("\\s+", "")).append(" ");
@@ -465,8 +450,6 @@ public class PublishFragment extends Fragment {
         sb.append("#Voyage #TravelShare");
         return sb;
     }
-
-    // ── Géocodage ──────────────────────────────────────────────────────────
 
     private Uri createImageUri() {
         File dir = new File(requireContext().getExternalCacheDir(), "images");
@@ -502,8 +485,6 @@ public class PublishFragment extends Fragment {
         } catch (Exception ignored) {}
         return new double[]{0, 0};
     }
-
-    // ── Notifications ──────────────────────────────────────────────────────
 
     private void triggerNotificationsForPublish(String author, String location, String category, String tags) {
         com.example.travelshare.data.AppDatabase db =

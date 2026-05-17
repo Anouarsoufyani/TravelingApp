@@ -23,7 +23,6 @@ import java.util.List;
 
 public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHolder> {
 
-
     private static final int[][] GRADIENTS = {
         {0xFF1B3A5C, 0xFF2D5480},
         {0xFF2A5C3A, 0xFF3A7C50},
@@ -64,11 +63,9 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
     public void onBindViewHolder(@NonNull PhotoViewHolder h, int position) {
         Photo p = photos.get(position);
 
-        // Couleur de fond déterministe selon la position (fallback si pas d'image)
         int[] colors = GRADIENTS[position % GRADIENTS.length];
         h.gradientBg.setBackgroundColor(colors[0]);
 
-        // Charger l'image si disponible
         String imageUri = p.getImageUri();
         if (imageUri != null && !imageUri.isEmpty()) {
             h.ivPhoto.setVisibility(View.VISIBLE);

@@ -61,7 +61,6 @@ public class GroupChatFragment extends Fragment {
         return f;
     }
 
-    // Élément unifié du flux (message OU post OU photo partagée)
     static class ChatItem implements Comparable<ChatItem> {
         static final int TYPE_MESSAGE = 0;
         static final int TYPE_POST    = 1;
@@ -111,7 +110,6 @@ public class GroupChatFragment extends Fragment {
         view.findViewById(R.id.btn_chat_back).setOnClickListener(v ->
                 requireActivity().getSupportFragmentManager().popBackStack());
 
-        // ── Section demandes (créateur uniquement) ─────────────────────────
         View layoutRequests = view.findViewById(R.id.layout_requests);
         TextView tvBadge    = view.findViewById(R.id.tv_requests_badge);
         RecyclerView rvReqs = view.findViewById(R.id.rv_requests);
@@ -129,15 +127,13 @@ public class GroupChatFragment extends Fragment {
             viewModel.getPendingForGroup(groupId).observe(getViewLifecycleOwner(), reqAdapter::setRequests);
         }
 
-        // ── Flux unifié messages + posts ───────────────────────────────────
         RecyclerView rv = view.findViewById(R.id.rv_chat_messages);
         LinearLayoutManager llm = new LinearLayoutManager(getContext());
-        llm.setStackFromEnd(true); // scroll vers le bas automatiquement
+        llm.setStackFromEnd(true);
         rv.setLayoutManager(llm);
         ChatAdapter chatAdapter = new ChatAdapter(session.getUserId(), session.getUsername());
         rv.setAdapter(chatAdapter);
 
-        // MediatorLiveData pour fusionner messages + posts
         MediatorLiveData<List<ChatItem>> merged = new MediatorLiveData<>();
         final List<GroupMessage>[] latestMessages = new List[]{new ArrayList<>()};
         final List<Photo>[] latestPosts = new List[]{new ArrayList<>()};
@@ -156,17 +152,14 @@ public class GroupChatFragment extends Fragment {
             if (!items.isEmpty()) rv.scrollToPosition(items.size() - 1);
         });
 
-        // Listener Firestore temps réel pour les messages des autres utilisateurs
         chatListener = FirebaseRepository.getInstance().listenToMessages(
                 groupName, AppDatabase.getInstance(requireContext()), groupId);
 
-        // Listener Firestore temps réel pour les demandes d'adhésion (créateur uniquement)
         if (isCreator) {
             membersListener = FirebaseRepository.getInstance().listenToPendingMembers(
                     groupName, AppDatabase.getInstance(requireContext()), groupId);
         }
 
-        // ── Envoi de message ───────────────────────────────────────────────
         EditText etInput = view.findViewById(R.id.et_chat_input);
         view.findViewById(R.id.btn_chat_send).setOnClickListener(v -> {
             if (!session.isLoggedIn()) {
@@ -211,7 +204,6 @@ public class GroupChatFragment extends Fragment {
         if (membersListener != null) { membersListener.remove(); membersListener = null; }
     }
 
-    /** Fusionne messages et posts triés par date */
     private List<ChatItem> buildFeed(List<GroupMessage> messages, List<Photo> posts) {
         List<ChatItem> items = new ArrayList<>();
         for (GroupMessage m : messages) items.add(ChatItem.fromMessage(m));
@@ -219,8 +211,6 @@ public class GroupChatFragment extends Fragment {
         Collections.sort(items);
         return items;
     }
-
-    // ── Adapter demandes ──────────────────────────────────────────────────
 
     static class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RVH> {
         private List<GroupMember> requests = new ArrayList<>();
@@ -285,8 +275,6 @@ public class GroupChatFragment extends Fragment {
         }
     }
 
-    // ── Adapter flux unifié ───────────────────────────────────────────────
-
     static class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         private List<ChatItem> items = new ArrayList<>();
         private final long currentUserId;
@@ -297,7 +285,6 @@ public class GroupChatFragment extends Fragment {
             this.currentUsername = username != null ? username : "";
         }
 
-        // ViewHolder message texte
         static class MessageVH extends RecyclerView.ViewHolder {
             android.widget.LinearLayout bubble;
             TextView tvAuthor, tvText, tvDate;
@@ -310,7 +297,6 @@ public class GroupChatFragment extends Fragment {
             }
         }
 
-        // ViewHolder photo partagée depuis une fiche
         static class SharedPhotoVH extends RecyclerView.ViewHolder {
             androidx.cardview.widget.CardView card;
             ImageView ivImage;
@@ -327,7 +313,6 @@ public class GroupChatFragment extends Fragment {
             }
         }
 
-        // ViewHolder post photo
         static class PostVH extends RecyclerView.ViewHolder {
             android.widget.FrameLayout cardContainer;
             androidx.cardview.widget.CardView card;
@@ -408,14 +393,12 @@ public class GroupChatFragment extends Fragment {
             h.card.setLayoutParams(lp);
             h.tvAuthor.setText(mine ? "Moi" : "par @" + m.authorName);
 
-            // Extraire titre et lieu depuis le message "📸 titre — 📍 lieu"
             String msg = m.message != null ? m.message : "";
             String displayTitle = msg.replace("📸 ", "").replaceAll(" — 📍.*", "");
             String displayLoc   = msg.contains("📍 ") ? "📍 " + msg.substring(msg.indexOf("📍 ") + 3) : "";
             h.tvTitle.setText(displayTitle);
             h.tvLocation.setText(displayLoc);
 
-            // Charger la photo depuis la DB pour afficher l'image et permettre le clic
             com.example.travelshare.data.AppDatabase.databaseWriteExecutor.execute(() -> {
                 com.example.travelshare.data.models.Photo photo =
                         com.example.travelshare.data.AppDatabase

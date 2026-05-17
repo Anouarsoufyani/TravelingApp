@@ -32,8 +32,6 @@ public class FirebaseRepository {
         return instance;
     }
 
-    // ── Photos ────────────────────────────────────────────────────────────────
-
     public void savePhoto(Photo photo, long roomId) {
         Map<String, Object> data = new HashMap<>();
         data.put("roomId",     roomId);
@@ -57,8 +55,6 @@ public class FirebaseRepository {
                         android.util.Log.w("FirebaseRepository", "savePhoto failed", e));
     }
 
-    // ── Likes ─────────────────────────────────────────────────────────────────
-
     public void updateLikes(long photoId, int likes) {
         Map<String, Object> data = new HashMap<>();
         data.put("likes", likes);
@@ -78,8 +74,6 @@ public class FirebaseRepository {
                         listener.onChanged(doc.getLong("likes").intValue());
                 });
     }
-
-    // ── Commentaires ──────────────────────────────────────────────────────────
 
     public void deleteComment(long photoId, String authorName, String text) {
         db.collection("comments")
@@ -132,8 +126,6 @@ public class FirebaseRepository {
                 });
     }
 
-    // ── Sync photos publiques Firestore → Room ────────────────────────────────
-
     public void syncPublicPhotosToRoom(AppDatabase localDb, Runnable onDone) {
         db.collection("photos")
                 .whereEqualTo("visibility", "PUBLIC")
@@ -173,8 +165,6 @@ public class FirebaseRepository {
         return v != null ? v : "";
     }
 
-    // ── Profil utilisateur ────────────────────────────────────────────────────
-
     public void saveUserProfile(String username, String bio) {
         Map<String, Object> data = new HashMap<>();
         data.put("username",  username);
@@ -194,8 +184,6 @@ public class FirebaseRepository {
                 .addOnSuccessListener(doc -> callback.accept(doc.exists() ? doc.getData() : null))
                 .addOnFailureListener(e -> callback.accept(null));
     }
-
-    // ── Groupes ───────────────────────────────────────────────────────────────
 
     public void saveGroup(String name, String description, String creatorUsername) {
         Map<String, Object> data = new HashMap<>();
@@ -232,8 +220,6 @@ public class FirebaseRepository {
                 })
                 .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "syncGroups failed", e));
     }
-
-    // ── Membres de groupe ─────────────────────────────────────────────────────
 
     public void saveGroupMember(String groupName, String username, String status) {
         Map<String, Object> data = new HashMap<>();
@@ -305,8 +291,6 @@ public class FirebaseRepository {
         return s != null ? s.replaceAll("[^a-zA-Z0-9_-]", "_") : "unknown";
     }
 
-    // ── Messages de groupe ────────────────────────────────────────────────────
-
     public void saveMessage(String groupName, String authorName, String message, String date) {
         Map<String, Object> data = new HashMap<>();
         data.put("groupName",   groupName);
@@ -347,8 +331,6 @@ public class FirebaseRepository {
                 });
     }
 
-    // ── Suppression / mise à jour photo ──────────────────────────────────────
-
     public void deletePhoto(long photoId) {
         db.collection("photos")
                 .document(String.valueOf(photoId))
@@ -362,8 +344,6 @@ public class FirebaseRepository {
                 .update("title", title)
                 .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "updatePhotoTitle failed", e));
     }
-
-    // ── Notifications in-app ─────────────────────────────────────────────────
 
     public void saveNotification(String targetUsername, AppNotification notif) {
         Map<String, Object> data = new HashMap<>();
@@ -408,8 +388,6 @@ public class FirebaseRepository {
                     });
                 });
     }
-
-    // ── Préférences de notifications ──────────────────────────────────────────
 
     public void saveNotificationPreference(String username, String type, String value) {
         Map<String, Object> data = new HashMap<>();
@@ -456,8 +434,6 @@ public class FirebaseRepository {
                 .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "syncNotifPrefs failed", e));
     }
 
-    // ── TravelPath ────────────────────────────────────────────────────────────
-
     public void savePlan(String username, TravelPlan plan) {
         Map<String, Object> data = new HashMap<>();
         data.put("username",      username);
@@ -477,8 +453,6 @@ public class FirebaseRepository {
                 .set(data)
                 .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "savePlan failed", e));
     }
-
-    // ── Callbacks ─────────────────────────────────────────────────────────────
 
     public interface OnLikesChangedListener {
         void onChanged(int newLikes);

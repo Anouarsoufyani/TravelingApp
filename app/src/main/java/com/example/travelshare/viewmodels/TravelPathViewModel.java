@@ -96,8 +96,6 @@ public class TravelPathViewModel extends AndroidViewModel {
             double[] cityCenter = geocode(city);
             boolean sensitiveWeather = weatherTolerances != null && !weatherTolerances.isEmpty();
 
-            // ── 1 requête Overpass par activité (5 max), 5 résultats chacune ──
-            // economique=résultat[0], equilibre=résultat[2], confort=résultat[4]
             Map<String, String[][]> overpassCache = new java.util.concurrent.ConcurrentHashMap<>();
             if (cityCenter[0] != 0 || cityCenter[1] != 0) {
                 java.util.concurrent.ExecutorService overpassPool =
@@ -107,10 +105,10 @@ public class TravelPathViewModel extends AndroidViewModel {
                 for (String activity : activities) {
                     final String act = activity;
                     futures.add(overpassPool.submit(() -> {
-                        // Requête Overpass unique pour l'activité, 5 résultats nommés
+
                         String[][] places = fetchRealPlaces(cLat, cLng, act, sensitiveWeather, 5);
                         if (places != null && places.length > 0) {
-                            // Distribuer selon le budget : 0=eco, 2=equilibre, 4=confort
+
                             overpassCache.put(act + "_economique",
                                     new String[][]{places[Math.min(0, places.length-1)]});
                             overpassCache.put(act + "_equilibre",
@@ -133,7 +131,6 @@ public class TravelPathViewModel extends AndroidViewModel {
                         weatherTolerances, effort, budgetMax, cityCenter, overpassCache);
                 steps = deduplicateSteps(steps, overpassCache, city, type);
 
-                // Lieux obligatoires
                 if (requiredPlaces != null && !requiredPlaces.trim().isEmpty()) {
                     String[] places = requiredPlaces.split(",");
                     int slotIdx = steps.size();
@@ -141,9 +138,9 @@ public class TravelPathViewModel extends AndroidViewModel {
                     for (String place : places) {
                         String p = place.trim();
                         if (p.isEmpty()) continue;
-                        // Recherche par nom exact dans Overpass → coordonnées précises
+
                         String[] placeInfo = searchPlaceByName(p, cityCenter[0], cityCenter[1]);
-                        // Si Overpass ne trouve rien → Nominatim en fallback
+
                         if (placeInfo == null || "0".equals(placeInfo[0])) {
                             placeInfo = geocodeWithType(p + " " + city,
                                     cityCenter[0], cityCenter[1]);
@@ -173,7 +170,6 @@ public class TravelPathViewModel extends AndroidViewModel {
                 int budget = estimateBudget(steps);
                 if (budget > budgetMax && !type.equals("economique")) continue;
 
-                // Géocoder uniquement les étapes sans coordonnées (fallback)
                 geocodeStepsWithCenter(steps, city, cityCenter);
 
                 TravelPlan plan = new TravelPlan();
@@ -200,24 +196,13 @@ public class TravelPathViewModel extends AndroidViewModel {
         });
     }
 
-    // ── Overpass API — vrais lieux ────────────────────────────────────────────
-
-    /**
-     * Interroge Overpass API pour trouver de vrais POIs près du centre ville.
-     * Retourne un tableau de [count] résultats sous la forme {nom, lat, lon}.
-     */
-    /**
-     * Requête Overpass simple : nœuds OSM nommés du type correspondant à l'activité.
-     * Filtre ["name"] obligatoire → seulement des vrais lieux avec un nom.
-     */
     private String[][] fetchRealPlaces(double centerLat, double centerLng,
                                         String activity, boolean sensitiveWeather, int count) {
-        double delta = 0.15; // ~16 km rayon
+        double delta = 0.15;
         String bbox = String.format(Locale.US, "%.4f,%.4f,%.4f,%.4f",
                 centerLat - delta, centerLng - delta,
                 centerLat + delta, centerLng + delta);
 
-        // Tags OSM selon l'activité (nœuds + chemins nommés)
         String osmFilter;
         switch (activity) {
             case "Culture":
@@ -271,11 +256,9 @@ public class TravelPathViewModel extends AndroidViewModel {
             }
         } catch (Exception ignored) {}
 
-        // Fallback Nominatim si Overpass échoue
         return fetchNominatimFallback(centerLat, centerLng, activity, sensitiveWeather, count);
     }
 
-    /** Fallback Nominatim si Overpass est indisponible. */
     private String[][] fetchNominatimFallback(double lat, double lng,
                                                String activity, boolean sensitiveWeather, int count) {
         String keyword;
@@ -306,7 +289,7 @@ public class TravelPathViewModel extends AndroidViewModel {
                 StringBuilder sb = new StringBuilder(); String line;
                 while ((line = br.readLine()) != null) sb.append(line);
                 br.close();
-                // Parse tableau JSON Nominatim
+
                 String json = sb.toString();
                 int idx = 0;
                 while (idx < json.length() && results.size() < count) {
@@ -335,7 +318,7 @@ public class TravelPathViewModel extends AndroidViewModel {
 
         switch (activity) {
             case "Culture":
-                // économique : monuments gratuits / équilibré : musées / confort : galeries d'art
+
                 if ("economique".equals(planType)) {
                     osmTag = "historic"; osmValue = "monument";
                     fallbackTag = "tourism"; fallbackValue = "museum";
@@ -349,7 +332,7 @@ public class TravelPathViewModel extends AndroidViewModel {
                 break;
 
             case "Restauration":
-                // économique : fast food / café / équilibré : restaurant / confort : restaurant (même tag, lieu différent)
+
                 if ("economique".equals(planType)) {
                     osmTag = "amenity"; osmValue = "cafe";
                     fallbackTag = "amenity"; fallbackValue = "fast_food";
@@ -386,7 +369,7 @@ public class TravelPathViewModel extends AndroidViewModel {
                 break;
 
             case "Shopping":
-                // économique : marché / équilibré : centre commercial / confort : boutiques haut de gamme
+
                 if ("economique".equals(planType)) {
                     osmTag = "amenity"; osmValue = "marketplace";
                     fallbackTag = "shop"; fallbackValue = "second_hand";
@@ -412,7 +395,7 @@ public class TravelPathViewModel extends AndroidViewModel {
 
     private String[][] fetchFromOverpass(double centerLat, double centerLng,
                                           String osmTag, String osmValue, int count) {
-        double delta = 0.12; // ~13 km rayon — plus large pour trouver plus de résultats
+        double delta = 0.12;
         String bbox = String.format(Locale.US, "%.4f,%.4f,%.4f,%.4f",
                 centerLat - delta, centerLng - delta,
                 centerLat + delta, centerLng + delta);
@@ -450,7 +433,6 @@ public class TravelPathViewModel extends AndroidViewModel {
         if (elemStart < 0) return null;
         String rest = json.substring(elemStart + 12);
 
-        // Séparer chaque élément OSM
         String[] parts = rest.split("\\{\"type\":");
         for (String part : parts) {
             if (results.size() >= maxCount) break;
@@ -459,13 +441,11 @@ public class TravelPathViewModel extends AndroidViewModel {
 
             double lat = 0, lon = 0;
 
-            // Nœud : lat/lon directs
             String latStr = extractJsonNumber(part, "\"lat\":");
             String lonStr = extractJsonNumber(part, "\"lon\":");
             if (latStr != null) try { lat = Double.parseDouble(latStr); } catch (Exception ignored) {}
             if (lonStr != null) try { lon = Double.parseDouble(lonStr); } catch (Exception ignored) {}
 
-            // Chemin (way) : centre
             if (lat == 0 && part.contains("\"center\":{")) {
                 int ci = part.indexOf("\"center\":{");
                 String cp = part.substring(ci);
@@ -476,7 +456,7 @@ public class TravelPathViewModel extends AndroidViewModel {
             }
 
             if (lat != 0 && lon != 0) {
-                // Extraire l'adresse depuis les tags OSM si disponible
+
                 String num    = extractJsonString(part, "addr:housenumber");
                 String street = extractJsonString(part, "addr:street");
                 String post   = extractJsonString(part, "addr:postcode");
@@ -490,18 +470,13 @@ public class TravelPathViewModel extends AndroidViewModel {
         return results.toArray(new String[0][]);
     }
 
-    /**
-     * Cherche un lieu par son nom exact (ou approché) dans Overpass.
-     * Retourne {lat, lon, class, type} ou null si introuvable.
-     * Ex : "McDonald's" → trouve le vrai restaurant avec ses coordonnées GPS.
-     */
     private String[] searchPlaceByName(String name, double centerLat, double centerLng) {
         if (centerLat == 0 && centerLng == 0) return null;
         double delta = 0.15;
         String bbox = String.format(Locale.US, "%.4f,%.4f,%.4f,%.4f",
                 centerLat - delta, centerLng - delta,
                 centerLat + delta, centerLng + delta);
-        // Recherche insensible à la casse, partielle (~ = regex)
+
         String safeName = name.replace("\"", "").replace("'", ".");
         String query = "[out:json][timeout:15];\n"
                 + "(\n"
@@ -528,13 +503,13 @@ public class TravelPathViewModel extends AndroidViewModel {
                 if (!json.contains("\"elements\":[]")) {
                     String[][] results = parseOverpassResult(json, 1);
                     if (results != null && results.length > 0 && results[0] != null) {
-                        // Détecter le type depuis les tags OSM
+
                         String osmClass = extractJsonString(json, "amenity");
                         if (osmClass == null) osmClass = extractJsonString(json, "tourism");
                         if (osmClass == null) osmClass = extractJsonString(json, "leisure");
                         if (osmClass == null) osmClass = extractJsonString(json, "shop");
                         String[] r = results[0];
-                        // {lat, lon, class, type} pour compatibilité avec geocodeWithType
+
                         return new String[]{r[1], r[2],
                                 osmClass != null ? "amenity" : "",
                                 osmClass != null ? osmClass : ""};
@@ -572,7 +547,7 @@ public class TravelPathViewModel extends AndroidViewModel {
         if (idx < 0) return null;
         idx += key.length();
         while (idx < json.length() && json.charAt(idx) == ' ') idx++;
-        // Le signe négatif est au début, pas en milieu de nombre
+
         int start = idx;
         if (idx < json.length() && json.charAt(idx) == '-') idx++;
         int end = idx;
@@ -580,8 +555,6 @@ public class TravelPathViewModel extends AndroidViewModel {
         if (end <= start) return null;
         return json.substring(start, end);
     }
-
-    // ── Construction des étapes ───────────────────────────────────────────────
 
     private List<PlanStep> buildSteps(String city, Set<String> activities, String type,
                                        int durationHours, Set<String> weatherTolerances,
@@ -591,13 +564,10 @@ public class TravelPathViewModel extends AndroidViewModel {
         List<PlanStep> steps = new ArrayList<>();
         boolean sensitiveWeather = weatherTolerances != null && !weatherTolerances.isEmpty();
 
-        // Nombre max d'étapes selon durée + effort
         int maxSteps = maxStepsFor(durationHours, effort);
 
-        // Durée par étape selon effort
         int stepDurationMin = stepDurationFor(effort);
 
-        // Budget par étape : économique=25%, équilibré=60%, confort=90% du budget max
         double budgetRatio = "economique".equals(type) ? 0.25
                 : "equilibre".equals(type) ? 0.60 : 0.90;
         int totalBudget   = (int) (budgetMax * budgetRatio);
@@ -613,7 +583,6 @@ public class TravelPathViewModel extends AndroidViewModel {
             if (step != null) { steps.add(step); order++; slotIdx++; }
         }
 
-        // Restauration automatique si durée > 3h et pas sélectionnée
         if (durationHours > 3 && order < maxSteps
                 && !activities.contains("Restauration") && slotIdx < allSlots.length) {
             PlanStep meal = stepFor(city, "Restauration", type, allSlots[slotIdx], order,
@@ -624,7 +593,6 @@ public class TravelPathViewModel extends AndroidViewModel {
         return steps;
     }
 
-    /** Nombre d'étapes selon durée et effort. */
     private int maxStepsFor(int durationHours, String effort) {
         int base = durationHours <= 2 ? 2
                 : durationHours <= 4 ? 3
@@ -634,7 +602,6 @@ public class TravelPathViewModel extends AndroidViewModel {
         return base;
     }
 
-    /** Durée par étape selon effort. */
     private int stepDurationFor(String effort) {
         if ("Facile".equals(effort))  return 40;
         if ("Intense".equals(effort)) return 90;
@@ -652,7 +619,6 @@ public class TravelPathViewModel extends AndroidViewModel {
         s.lat       = 0;
         s.lng       = 0;
 
-        // ── Remplir avec un vrai lieu depuis Overpass ────────────────────────
         String[][] places = cache.get(activity + "_" + type);
         if (places != null && places.length > 0) {
             String[] place = places[0];
@@ -662,16 +628,13 @@ public class TravelPathViewModel extends AndroidViewModel {
                     s.lat = Double.parseDouble(place[1]);
                     s.lng = Double.parseDouble(place[2]);
                 } catch (Exception ignored) {}
-                // Adresse extraite depuis les tags OSM (peut être vide)
+
                 if (place.length > 3 && place[3] != null && !place[3].isEmpty()) {
                     s.address = place[3];
                 }
             }
         }
 
-        // ── Compléter nom (fallback), durée réelle, coût adapté au budget ──
-        // La durée de base est ajustée par l'effort (stepDurationMin)
-        // Le coût est proportionnel au budget utilisateur (perStepBudget)
         switch (activity) {
             case "Culture":
                 if (s.name == null) s.name = "economique".equals(type)
@@ -679,12 +642,12 @@ public class TravelPathViewModel extends AndroidViewModel {
                         : "equilibre".equals(type) ? "Musée de " + city
                         : "Visite guidée – " + city;
                 s.description = "Découverte culturelle de " + city + ".";
-                // Durée : monuments = courte, musées = normale, visite guidée = longue
+
                 s.durationMin = "economique".equals(type)
                         ? (int)(stepDurationMin * 0.9)
                         : "equilibre".equals(type) ? stepDurationMin
                         : (int)(stepDurationMin * 1.4);
-                // Coût : monuments souvent gratuits, musées ~30% du budget/étape, confort ~70%
+
                 s.costEur = "economique".equals(type) ? 0
                         : "equilibre".equals(type) ? (int)(perStepBudget * 0.4)
                         : (int)(perStepBudget * 0.8);
@@ -700,7 +663,7 @@ public class TravelPathViewModel extends AndroidViewModel {
                         ? (int)(stepDurationMin * 0.7)
                         : "equilibre".equals(type) ? (int)(stepDurationMin * 0.9)
                         : (int)(stepDurationMin * 1.3);
-                // Restauration : 20% (éco), 45% (équil), 75% (confort) du budget/étape
+
                 s.costEur = "economique".equals(type) ? Math.max(5, (int)(perStepBudget * 0.2))
                         : "equilibre".equals(type) ? (int)(perStepBudget * 0.45)
                         : (int)(perStepBudget * 0.75);
@@ -740,7 +703,7 @@ public class TravelPathViewModel extends AndroidViewModel {
                         : "Boutiques";
                 s.description = "Shopping à " + city + ".";
                 s.durationMin = (int)(stepDurationMin * 1.1);
-                // Shopping : coût = le plus variable — directement proportionnel au budget
+
                 s.costEur = "economique".equals(type) ? (int)(perStepBudget * 0.3)
                         : "equilibre".equals(type) ? (int)(perStepBudget * 0.7)
                         : perStepBudget;
@@ -765,11 +728,9 @@ public class TravelPathViewModel extends AndroidViewModel {
         }
     }
 
-    // ── Géocodage Nominatim (fallback pour les étapes sans coordonnées) ──────
-
     private void geocodeStepsWithCenter(List<PlanStep> steps, String city, double[] cityCenter) {
         if (cityCenter[0] == 0 && cityCenter[1] == 0) {
-            // Ville inconnue : fallback Nominatim basique
+
             for (PlanStep step : steps) {
                 if (step.lat != 0 || step.lng != 0) continue;
                 double[] coords = geocode(typeToKeyword(step.type) + " " + city);
@@ -779,30 +740,26 @@ public class TravelPathViewModel extends AndroidViewModel {
             return;
         }
         for (PlanStep step : steps) {
-            if (step.lat != 0 || step.lng != 0) continue; // déjà géocodé par Overpass
+            if (step.lat != 0 || step.lng != 0) continue;
 
             double[] coords = new double[]{0, 0};
             boolean usedNominatim = false;
 
-            // 1. Nominatim avec le nom réel + ville
             if (step.name != null && !step.name.isEmpty()) {
                 coords = geocodeNear(step.name + " " + city, cityCenter[0], cityCenter[1]);
                 usedNominatim = true;
             }
 
-            // 2. Nominatim avec le type générique
             if (coords[0] == 0) {
                 coords = geocodeNear(typeToKeyword(step.type) + " " + city,
                         cityCenter[0], cityCenter[1]);
                 usedNominatim = true;
             }
 
-            // Sleep CGU Nominatim seulement si on a vraiment appelé Nominatim
             if (usedNominatim) {
                 try { Thread.sleep(1100); } catch (InterruptedException ignored) {}
             }
 
-            // 3. Dernier recours : centre-ville (pas de sleep nécessaire)
             if (coords[0] == 0 || distanceKm(coords[0], coords[1], cityCenter[0], cityCenter[1]) >= 80) {
                 coords = cityCenter;
             }
@@ -909,10 +866,6 @@ public class TravelPathViewModel extends AndroidViewModel {
         return new double[]{0, 0};
     }
 
-    /**
-     * Géocode un lieu et retourne {lat, lon, class, type} depuis Nominatim.
-     * Ex : {"48.856", "2.352", "amenity", "restaurant"}
-     */
     private String[] geocodeWithType(String query, double centerLat, double centerLng) {
         String[] result = {"0", "0", "", ""};
         try {
@@ -951,7 +904,6 @@ public class TravelPathViewModel extends AndroidViewModel {
         return result;
     }
 
-    /** Convertit les tags OSM class/type en type d'étape TravelPath. */
     private String osmClassToStepType(String osmClass, String osmType) {
         if (osmClass == null || osmType == null) return "Découverte";
         switch (osmClass) {
@@ -1020,10 +972,6 @@ public class TravelPathViewModel extends AndroidViewModel {
         }
     }
 
-    /**
-     * Si deux étapes ont le même nom (doublon Overpass), remplace la deuxième
-     * par le résultat suivant disponible dans le cache, ou laisse le nom template.
-     */
     private List<PlanStep> deduplicateSteps(List<PlanStep> steps,
                                              Map<String, String[][]> cache,
                                              String city, String type) {
@@ -1032,7 +980,7 @@ public class TravelPathViewModel extends AndroidViewModel {
             if (step.name == null) continue;
             String key = step.name.trim().toLowerCase();
             if (usedNames.contains(key)) {
-                // Chercher un résultat alternatif dans le cache pour cette activité
+
                 String cacheKey = step.type + "_" + type;
                 String[][] places = cache.get(cacheKey);
                 boolean replaced = false;
@@ -1053,7 +1001,7 @@ public class TravelPathViewModel extends AndroidViewModel {
                     }
                 }
                 if (!replaced) {
-                    // Pas d'alternatif → nom générique court
+
                     step.name = step.type + " — " + city;
                     step.lat = 0; step.lng = 0;
                     usedNames.add(step.name.trim().toLowerCase());

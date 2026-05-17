@@ -77,7 +77,6 @@ public class PlanDetailFragment extends Fragment {
         long planId = getArguments() != null ? getArguments().getLong(ARG_PLAN_ID, -1) : -1;
         viewModel = new ViewModelProvider(this).get(TravelPathViewModel.class);
 
-        // ── Carte ──────────────────────────────────────────────────────────
         mapView       = view.findViewById(R.id.map_plan);
         blockRouteTime = view.findViewById(R.id.block_route_time);
         tvRouteTime    = view.findViewById(R.id.tv_pd_route_time);
@@ -85,7 +84,6 @@ public class PlanDetailFragment extends Fragment {
         mapView.setMultiTouchControls(true);
         mapView.getController().setZoom(13.0);
 
-        // Permettre le déplacement/zoom sur la carte sans que le ScrollView intercepte
         mapView.setOnTouchListener((v, event) -> {
             switch (event.getAction()) {
                 case android.view.MotionEvent.ACTION_DOWN:
@@ -110,7 +108,6 @@ public class PlanDetailFragment extends Fragment {
         android.widget.Button btnLike = view.findViewById(R.id.btn_pd_like);
         android.widget.Button btnRegen = view.findViewById(R.id.btn_pd_regenerate);
 
-        // ── Charger le plan ────────────────────────────────────────────────
         AppDatabase.databaseWriteExecutor.execute(() -> {
             AppDatabase db = AppDatabase.getInstance(requireContext());
             TravelPlan plan = db.travelPlanDao().getPlanById(planId);
@@ -136,7 +133,6 @@ public class PlanDetailFragment extends Fragment {
                             Toast.LENGTH_SHORT).show();
                 });
 
-                // Régénérer : retourne au formulaire pré-rempli avec les mêmes paramètres
                 btnRegen.setOnClickListener(v -> {
                     TravelPathFragment tpFragment = TravelPathFragment.newInstanceForRegen(plan);
                     requireActivity().getSupportFragmentManager().popBackStack();
@@ -153,7 +149,6 @@ public class PlanDetailFragment extends Fragment {
             });
         });
 
-        // ── Étapes ─────────────────────────────────────────────────────────
         RecyclerView rv = view.findViewById(R.id.rv_plan_steps);
         rv.setLayoutManager(new LinearLayoutManager(getContext()));
         StepAdapter stepAdapter = new StepAdapter(this);
@@ -164,7 +159,6 @@ public class PlanDetailFragment extends Fragment {
             addMarkersAndRoute(steps);
         });
 
-        // ── Export PDF ─────────────────────────────────────────────────────
         view.findViewById(R.id.btn_pd_export_pdf).setOnClickListener(v ->
             AppDatabase.databaseWriteExecutor.execute(() -> {
                 AppDatabase db = AppDatabase.getInstance(requireContext());
@@ -175,7 +169,6 @@ public class PlanDetailFragment extends Fragment {
             })
         );
 
-        // ── Partager ───────────────────────────────────────────────────────
         view.findViewById(R.id.btn_pd_share).setOnClickListener(v ->
             AppDatabase.databaseWriteExecutor.execute(() -> {
                 AppDatabase db = AppDatabase.getInstance(requireContext());
@@ -202,13 +195,10 @@ public class PlanDetailFragment extends Fragment {
         return view;
     }
 
-    // ── Marqueurs + route GPS ──────────────────────────────────────────────
-
     private void addMarkersAndRoute(List<PlanStep> steps) {
         if (mapView == null) return;
         mapView.getOverlays().clear();
 
-        // Remettre la route si déjà calculée
         if (routeOverlay != null) {
             mapView.getOverlays().add(0, routeOverlay);
         }
@@ -229,7 +219,6 @@ public class PlanDetailFragment extends Fragment {
             mapView.getOverlays().add(marker);
         }
 
-        // Auto-zoom pour montrer tous les marqueurs
         if (allPoints.size() > 1) {
             double north = -90, south = 90, east = -180, west = 180;
             for (GeoPoint p : allPoints) {
@@ -248,7 +237,7 @@ public class PlanDetailFragment extends Fragment {
         } else if (!allPoints.isEmpty()) {
             mapView.getController().setCenter(allPoints.get(0));
         } else if (currentPlan != null) {
-            // Aucun pin valide → centrer sur la ville du plan
+
             final String city = currentPlan.city;
             AppDatabase.databaseWriteExecutor.execute(() -> {
                 try {
@@ -283,13 +272,11 @@ public class PlanDetailFragment extends Fragment {
 
         mapView.invalidate();
 
-        // Lancer la route OSRM si pas encore calculée
         if (routeOverlay == null && validSteps.size() >= 2) {
             fetchOsrmRoute(validSteps);
         }
     }
 
-    /** Appelle OSRM (gratuit, open-source) pour obtenir l'itinéraire routier entre les étapes. */
     private void fetchOsrmRoute(List<PlanStep> steps) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             try {
@@ -363,7 +350,6 @@ public class PlanDetailFragment extends Fragment {
         });
     }
 
-    /** Reverse geocoding Nominatim — retourne "15 Rue de Rivoli, 75001 Paris" ou null. */
     private static String reverseGeocode(double lat, double lng) {
         try {
             String url = String.format(java.util.Locale.US,
@@ -380,7 +366,7 @@ public class PlanDetailFragment extends Fragment {
                 while ((line = br.readLine()) != null) sb.append(line);
                 br.close();
                 String json = sb.toString();
-                // Extraire numéro + rue + code postal + ville
+
                 String num  = extractTag(json, "house_number");
                 String road = extractTag(json, "road");
                 String post = extractTag(json, "postcode");
@@ -421,7 +407,6 @@ public class PlanDetailFragment extends Fragment {
         return m > 0 ? h + "h" + String.format(Locale.US, "%02d", m) : h + "h";
     }
 
-    /** Dessine la polyline de l'itinéraire sous les marqueurs. */
     private void drawRoutePolyline(List<GeoPoint> points) {
         if (mapView == null || points.size() < 2) return;
 
@@ -433,12 +418,9 @@ public class PlanDetailFragment extends Fragment {
         routeOverlay.getOutlinePaint().setStrokeCap(Paint.Cap.ROUND);
         routeOverlay.getOutlinePaint().setStrokeJoin(Paint.Join.ROUND);
 
-        // Insérer en index 0 → dessiné sous les marqueurs
         mapView.getOverlays().add(0, routeOverlay);
         mapView.invalidate();
     }
-
-    // ── Météo ──────────────────────────────────────────────────────────────
 
     private void fetchWeather(View view, String city) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
@@ -491,8 +473,6 @@ public class PlanDetailFragment extends Fragment {
             } catch (Exception ignored) {}
         });
     }
-
-    // ── Export PDF ─────────────────────────────────────────────────────────
 
     private void exportToPdf(TravelPlan plan, List<PlanStep> steps) {
         if (!isAdded()) return;
@@ -562,8 +542,6 @@ public class PlanDetailFragment extends Fragment {
         }
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────────
-
     private String readResponse(java.net.HttpURLConnection con) {
         try {
             if (con.getResponseCode() != 200) return null;
@@ -587,8 +565,6 @@ public class PlanDetailFragment extends Fragment {
 
     @Override public void onResume() { super.onResume(); if (mapView != null) mapView.onResume(); }
     @Override public void onPause()  { super.onPause();  if (mapView != null) mapView.onPause(); }
-
-    // ── Adapter étapes ─────────────────────────────────────────────────────
 
     static class StepAdapter extends RecyclerView.Adapter<StepAdapter.SVH> {
         private List<PlanStep> steps = new ArrayList<>();
@@ -644,12 +620,11 @@ public class PlanDetailFragment extends Fragment {
             h.tvDuration.setText(s.durationMin + " min");
             h.tvName.setText(s.name);
 
-            // ── Adresse ───────────────────────────────────────────────────
             if (s.address != null && !s.address.isEmpty()) {
                 h.tvAddress.setText("📍 " + s.address);
                 h.tvAddress.setVisibility(View.VISIBLE);
             } else if (s.lat != 0 && s.lng != 0) {
-                // Lazy reverse geocoding si pas d'adresse mais coordonnées valides
+
                 h.tvAddress.setText("📍 Chargement...");
                 h.tvAddress.setVisibility(View.VISIBLE);
                 final long stepId = s.id;
@@ -681,7 +656,6 @@ public class PlanDetailFragment extends Fragment {
             h.rvPhotos.setVisibility(View.GONE);
             h.tvSeePhotos.setVisibility(View.VISIBLE);
 
-            // Bouton vidéo : ouvre YouTube avec le nom de l'étape
             if (h.tvVideo != null) {
                 h.tvVideo.setOnClickListener(v -> {
                     String query = Uri.encode(s.name + " " + (s.type != null ? s.type : ""));
@@ -691,7 +665,6 @@ public class PlanDetailFragment extends Fragment {
                 });
             }
 
-            // Passerelle → TravelShare : ouvrir l'Explorer filtré sur le lieu de l'étape
             h.tvSeePhotos.setOnClickListener(v -> {
                 ExplorerFragment explorer = new ExplorerFragment();
                 Bundle args = new Bundle();
@@ -724,8 +697,6 @@ public class PlanDetailFragment extends Fragment {
             notifyDataSetChanged();
         }
     }
-
-    // ── Adapter mini-galerie photos ────────────────────────────────────────
 
     static class PhotoMiniAdapter extends RecyclerView.Adapter<PhotoMiniAdapter.PMVH> {
         private final List<com.example.travelshare.data.models.Photo> photos;

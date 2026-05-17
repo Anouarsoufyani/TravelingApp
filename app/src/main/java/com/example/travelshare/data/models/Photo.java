@@ -11,8 +11,7 @@ public class Photo {
     private String location;
     private String author;
     private int likes;
-    
-    // Nouveaux champs
+
     private double latitude;
     private double longitude;
     private String date;
@@ -22,7 +21,6 @@ public class Photo {
     private long groupId;
     private String imageUri;
     private String voiceUri;
-
 
     public Photo(String title, String location, String author, int likes,
                  double latitude, double longitude, String date, String category,
@@ -39,7 +37,6 @@ public class Photo {
         this.visibility = visibility;
     }
 
-
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
     public String getTitle() { return title; }
@@ -48,7 +45,7 @@ public class Photo {
     public String getAuthor() { return author; }
     public int getLikes() { return likes; }
     public void setLikes(int likes) { this.likes = likes; }
-    
+
     public double getLatitude() { return latitude; }
     public double getLongitude() { return longitude; }
     public String getDate() { return date; }

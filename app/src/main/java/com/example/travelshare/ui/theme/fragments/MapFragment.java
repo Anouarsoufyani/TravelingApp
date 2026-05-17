@@ -34,20 +34,17 @@ public class MapFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
 
-
         View view = inflater.inflate(R.layout.fragment_map, container, false);
 
         mapView = view.findViewById(R.id.map_view);
         mapView.setTileSource(TileSourceFactory.MAPNIK);
         mapView.setMultiTouchControls(true);
 
-        // Vue initiale centrée sur la France
         mapView.getController().setZoom(5.5);
         mapView.getController().setCenter(new GeoPoint(46.5, 2.5));
 
         TextView tvCount = view.findViewById(R.id.tv_map_count);
 
-        // Observer les photos et placer les markers
         SharedViewModel viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
         viewModel.getAllPhotos().observe(getViewLifecycleOwner(), photos -> {
             addMarkers(photos);
@@ -55,7 +52,6 @@ public class MapFragment extends Fragment {
                 tvCount.setText(photos.size() + " photo" + (photos.size() > 1 ? "s" : ""));
             }
         });
-
 
         return view;
     }
@@ -68,7 +64,6 @@ public class MapFragment extends Fragment {
             double lat = photo.getLatitude();
             double lng = photo.getLongitude();
 
-            // Ignorer les photos sans coordonnées
             if (lat == 0.0 && lng == 0.0) continue;
 
             Marker marker = new Marker(mapView);
@@ -77,7 +72,6 @@ public class MapFragment extends Fragment {
             marker.setSnippet("📍 " + photo.getLocation() + "  •  " + photo.getAuthor());
             marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
 
-            // Clic direct sur le marker → ouvrir la fiche détaillée
             marker.setOnMarkerClickListener((m, mv) -> {
                 Intent intent = new Intent(requireContext(), PhotoDetailActivity.class);
                 intent.putExtra(PhotoDetailActivity.EXTRA_PHOTO_ID, photo.getId());

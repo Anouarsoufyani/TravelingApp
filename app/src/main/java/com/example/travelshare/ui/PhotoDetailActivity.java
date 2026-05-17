@@ -85,7 +85,6 @@ public class PhotoDetailActivity extends AppCompatActivity {
                 new ActivityResultContracts.RequestPermission(),
                 granted -> { if (granted) fetchRouteToPhoto(); });
 
-
         Intent intent = getIntent();
         photoId      = intent.getIntExtra(EXTRA_PHOTO_ID, -1);
         String title    = intent.getStringExtra(EXTRA_TITLE);
@@ -101,7 +100,6 @@ public class PhotoDetailActivity extends AppCompatActivity {
         String imageUri  = intent.getStringExtra(EXTRA_IMAGE_URI);
         String voiceUri  = intent.getStringExtra(EXTRA_VOICE_URI);
 
-
         final String finalAuthor = author;
         if (finalAuthor != null) {
             viewModel.getUserByLogin(finalAuthor, user -> {
@@ -109,7 +107,6 @@ public class PhotoDetailActivity extends AppCompatActivity {
             });
         }
 
-        // Hero image
         ImageView ivHero = findViewById(R.id.iv_detail_hero);
         if (imageUri != null && !imageUri.isEmpty()) {
             Glide.with(this).load(Uri.parse(imageUri)).centerCrop().into(ivHero);
@@ -128,7 +125,6 @@ public class PhotoDetailActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.tv_detail_category_tags)).setText(category + "  ·  " + tags);
         ((TextView) findViewById(R.id.tv_detail_location)).setText("📍 " + location);
 
-        // Info blocks
         boolean isApprox = lat != 0 && Math.abs(lat - Math.round(lat * 10.0) / 10.0) < 0.001
                 && Math.abs(lat % 0.1) < 0.001;
         ((TextView) findViewById(R.id.tv_detail_coord)).setText(isApprox
@@ -149,7 +145,6 @@ public class PhotoDetailActivity extends AppCompatActivity {
             tvAccess.setText("Maps →");
         }
 
-        // Bouton retour
         findViewById(R.id.btn_back).setOnClickListener(v -> finish());
 
         Button btnLike   = findViewById(R.id.btn_detail_like);
@@ -158,14 +153,12 @@ public class PhotoDetailActivity extends AppCompatActivity {
         TextView tvLikesCount = findViewById(R.id.tv_likes_count);
         tvLikesCount.setText(currentLikes + " personnes ont aimé");
 
-        // Listener temps réel sur les likes via Repository
         likesListener = FirebaseRepository.getInstance().listenToLikes(photoId, newLikes -> {
             currentLikes = newLikes;
             tvLikesCount.setText(currentLikes + " personnes ont aimé");
             viewModel.updateLikes(photoId, currentLikes);
         });
 
-        // Restaurer état like depuis SharedPreferences — clé par utilisateur
         String likeKey = "liked_ids_" + sessionManager.getUsername().toLowerCase();
         android.content.SharedPreferences likePrefs = getSharedPreferences("likes", MODE_PRIVATE);
         java.util.Set<String> likedSet = new java.util.HashSet<>(
@@ -173,7 +166,6 @@ public class PhotoDetailActivity extends AppCompatActivity {
         isLiked = likedSet.contains(String.valueOf(photoId));
         btnLike.setText(isLiked ? "♥ Aimé" : "♡ Like");
 
-        // ── Like / Unlike persisté (accessible en mode anonyme) ───────────
         btnLike.setOnClickListener(v -> {
             isLiked = !isLiked;
             currentLikes = Math.max(0, currentLikes + (isLiked ? 1 : -1));
@@ -182,7 +174,6 @@ public class PhotoDetailActivity extends AppCompatActivity {
             viewModel.updateLikes(photoId, currentLikes);
             FirebaseRepository.getInstance().updateLikes(photoId, currentLikes);
 
-            // Sauvegarder dans SharedPreferences
             java.util.Set<String> ids = new java.util.HashSet<>(
                     getSharedPreferences("likes", MODE_PRIVATE).getStringSet(likeKey, new java.util.HashSet<>()));
             if (isLiked) ids.add(String.valueOf(photoId)); else ids.remove(String.valueOf(photoId));
@@ -192,7 +183,7 @@ public class PhotoDetailActivity extends AppCompatActivity {
                 String liker    = sessionManager.isLoggedIn() ? sessionManager.getUsername() : "Quelqu'un";
                 String likeDate = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
                 AppNotification notif = new AppNotification();
-                notif.targetUserId = authorId; // notif envoyée à l'auteur du post
+                notif.targetUserId = authorId;
                 notif.type    = "LIKE";
                 notif.message = liker + " a aimé \"" + title + "\"";
                 notif.photoId = photoId;
@@ -203,7 +194,6 @@ public class PhotoDetailActivity extends AppCompatActivity {
             }
         });
 
-        // ── Partager dans un groupe ───────────────────────────────────────
         findViewById(R.id.btn_share_to_group).setOnClickListener(v -> {
             if (!sessionManager.isLoggedIn()) {
                 Toast.makeText(this, "Connectez-vous pour partager dans un groupe", Toast.LENGTH_SHORT).show();
@@ -240,7 +230,6 @@ public class PhotoDetailActivity extends AppCompatActivity {
             });
         });
 
-        // ── Partage externe ───────────────────────────────────────────────
         findViewById(R.id.btn_detail_share).setOnClickListener(v -> {
             String text = title + "\n📍 " + location + "\n" + category + "  ·  " + tags
                     + "\nVia Traveling";
@@ -250,7 +239,6 @@ public class PhotoDetailActivity extends AppCompatActivity {
             startActivity(Intent.createChooser(shareIntent, "Partager via…"));
         });
 
-        // ── Actions propriétaire ──────────────────────────────────────────
         boolean isOwner = sessionManager.isLoggedIn()
                 && sessionManager.getUsername() != null
                 && sessionManager.getUsername().equals(author);
@@ -292,7 +280,6 @@ public class PhotoDetailActivity extends AppCompatActivity {
             });
         }
 
-        // ── Passerelle TravelPath ─────────────────────────────────────────
         String cityForPlan = location != null ? location : "";
         findViewById(R.id.btn_detail_travelpath).setOnClickListener(v -> {
             Intent tpIntent = new Intent(this, MainActivity.class);
@@ -302,7 +289,6 @@ public class PhotoDetailActivity extends AppCompatActivity {
             startActivity(tpIntent);
         });
 
-        // ── Signalement persisté (accessible en mode anonyme) ─────────────
         btnReport.setOnClickListener(v -> {
             Report report = new Report();
             report.photoId = photoId;
@@ -313,7 +299,6 @@ public class PhotoDetailActivity extends AppCompatActivity {
             btnReport.setEnabled(false);
         });
 
-        // ── Itinéraire Google Maps ─────────────────────────────────────────
         btnRoute.setOnClickListener(v -> {
             String uri = "geo:" + lat + "," + lng + "?q=" + lat + "," + lng
                     + "(" + Uri.encode(location) + ")";
@@ -326,7 +311,6 @@ public class PhotoDetailActivity extends AppCompatActivity {
             }
         });
 
-        // ── Note vocale ───────────────────────────────────────────────────
         View layoutVoice = findViewById(R.id.layout_voice_note);
         Button btnPlayVoice = findViewById(R.id.btn_play_voice);
         if (voiceUri != null && !voiceUri.isEmpty()) {
@@ -357,7 +341,6 @@ public class PhotoDetailActivity extends AppCompatActivity {
             });
         }
 
-        // ── Photos similaires (tags puis catégorie) ───────────────────────
         RecyclerView rvSimilar = findViewById(R.id.rv_similar_photos);
         rvSimilar.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         PhotoAdapter similarAdapter = new PhotoAdapter();
@@ -398,7 +381,6 @@ public class PhotoDetailActivity extends AppCompatActivity {
             });
         }
 
-        // ── Commentaires ───────────────────────────────────────────────────
         RecyclerView rvComments = findViewById(R.id.rv_comments);
         rvComments.setLayoutManager(new LinearLayoutManager(this));
         CommentAdapter commentAdapter = new CommentAdapter();
@@ -409,13 +391,11 @@ public class PhotoDetailActivity extends AppCompatActivity {
         viewModel.getCommentsForPhoto((long) photoId)
                 .observe(this, commentAdapter::setComments);
 
-        // Listener temps réel commentaires via Repository
         commentsListener = FirebaseRepository.getInstance()
                 .listenToComments(photoId, AppDatabase.getInstance(this));
 
         Button btnSend   = findViewById(R.id.btn_send_comment);
         EditText etInput = findViewById(R.id.et_comment_input);
-
 
         btnSend.setOnClickListener(v -> {
             String text = etInput.getText().toString().trim();

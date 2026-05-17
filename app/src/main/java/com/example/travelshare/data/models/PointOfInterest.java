@@ -12,15 +12,12 @@ public class PointOfInterest {
     public String category;
     public String description;
 
-
     public double latitude;
     public double longitude;
-
 
     public int estimatedCost;
     public int estimatedDuration;
     public int effortLevel;
-
 
     public boolean isIndoor;
     public boolean needsAC;

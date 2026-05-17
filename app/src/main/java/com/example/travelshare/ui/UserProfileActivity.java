@@ -59,7 +59,6 @@ public class UserProfileActivity extends AppCompatActivity {
             tvPostCount.setText(String.valueOf(photos != null ? photos.size() : 0));
         });
 
-        // Charger bio + avatar depuis la BDD
         AppDatabase.databaseWriteExecutor.execute(() -> {
             AppDatabase db = AppDatabase.getInstance(this);
             User user = db.userDao().getUserByLogin(username);

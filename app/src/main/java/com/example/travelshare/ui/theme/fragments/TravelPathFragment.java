@@ -48,7 +48,6 @@ public class TravelPathFragment extends Fragment {
         return f;
     }
 
-    /** Crée le fragment pré-rempli avec les paramètres d'un plan existant pour régénération. */
     public static TravelPathFragment newInstanceForRegen(com.example.travelshare.data.models.TravelPlan plan) {
         TravelPathFragment f = new TravelPathFragment();
         Bundle args = new Bundle();
@@ -80,19 +79,16 @@ public class TravelPathFragment extends Fragment {
 
         Bundle args = getArguments();
 
-        // Bannière hors-ligne
         TextView tvOfflineBanner = view.findViewById(R.id.tv_tp_offline_banner);
         if (!isOnline()) {
             tvOfflineBanner.setVisibility(View.VISIBLE);
         }
 
-        // Pré-remplir la ville
         String prefillCity = args != null ? args.getString(ARG_CITY, "") : "";
         if (!prefillCity.isEmpty()) {
             ((android.widget.EditText) view.findViewById(R.id.et_tp_city)).setText(prefillCity);
         }
 
-        // Bannière passerelle TravelShare (uniquement si pas de régénération)
         boolean isRegen = args != null && !args.getString(ARG_REGEN_ACTS, "").isEmpty();
         if (!prefillCity.isEmpty() && !isRegen) {
             android.widget.TextView tvBanner = new android.widget.TextView(getContext());
@@ -116,7 +112,6 @@ public class TravelPathFragment extends Fragment {
         adapter = new PlanAdapter(viewModel, this);
         rv.setAdapter(adapter);
 
-        // ── Tout supprimer (parcours non sauvegardés) ───────────────────────
         view.findViewById(R.id.btn_tp_delete_all).setOnClickListener(v ->
             new android.app.AlertDialog.Builder(requireContext())
                     .setTitle("Tout supprimer ?")
@@ -135,7 +130,6 @@ public class TravelPathFragment extends Fragment {
         TextView tvAllTab      = view.findViewById(R.id.tab_tp_all);
         View btnDeleteAll      = view.findViewById(R.id.btn_tp_delete_all);
 
-        // Observer unique — on switche la source selon l'onglet
         androidx.lifecycle.MediatorLiveData<List<TravelPlan>> merged = new androidx.lifecycle.MediatorLiveData<>();
         androidx.lifecycle.LiveData<List<TravelPlan>> allPlans   = viewModel.getPlansForUser(userId);
         androidx.lifecycle.LiveData<List<TravelPlan>> savedPlans = viewModel.getSavedPlansForUser(userId);
@@ -143,12 +137,11 @@ public class TravelPathFragment extends Fragment {
         merged.addSource(savedPlans, list -> { if (showSaved)  merged.setValue(list); });
         merged.observe(getViewLifecycleOwner(), plans -> {
             adapter.setPlans(plans);
-            // Afficher le bouton "Tout supprimer" seulement si des parcours existent
+
             btnDeleteAll.setVisibility(plans != null && !plans.isEmpty() && !showSaved
                     ? View.VISIBLE : View.GONE);
         });
 
-        // ── Gestion des onglets ─────────────────────────────────────────────
         tvAllTab.setOnClickListener(v -> {
             showSaved = false;
             tvAllTab.setBackgroundColor(requireContext().getResources().getColor(R.color.teal, null));
@@ -174,13 +167,11 @@ public class TravelPathFragment extends Fragment {
             merged.setValue(savedPlans.getValue());
         });
 
-        // ── SeekBars ────────────────────────────────────────────────────────
         SeekBar sbBudget   = view.findViewById(R.id.seekbar_tp_budget);
         SeekBar sbDuration = view.findViewById(R.id.seekbar_tp_duration);
         TextView tvBudget  = view.findViewById(R.id.tv_tp_budget_value);
         TextView tvDur     = view.findViewById(R.id.tv_tp_duration_value);
 
-        // ── Restauration pour régénération ──────────────────────────────────
         if (isRegen && args != null) {
             String regenActs = args.getString(ARG_REGEN_ACTS, "");
             for (String a : regenActs.split(",")) {
@@ -234,14 +225,13 @@ public class TravelPathFragment extends Fragment {
             @Override public void onStopTrackingTouch(SeekBar sb) {}
         });
 
-        // ── Génération ──────────────────────────────────────────────────────
         view.findViewById(R.id.btn_tp_generate).setOnClickListener(v -> {
             if (!isOnline()) {
                 tvOfflineBanner.setVisibility(View.VISIBLE);
                 Toast.makeText(getContext(),
                         "Génération impossible sans connexion. Consultez vos plans sauvegardés.",
                         Toast.LENGTH_LONG).show();
-                // Basculer sur l'onglet sauvegardés
+
                 showSaved = true;
                 tvSavedTab.performClick();
                 return;
@@ -290,7 +280,7 @@ public class TravelPathFragment extends Fragment {
                 requireActivity().runOnUiThread(() -> {
                     if (!isAdded()) return;
                     view.findViewById(R.id.btn_tp_generate).setEnabled(true);
-                    // Revenir sur l'onglet "Mes parcours"
+
                     showSaved = false;
                     tvAllTab.setBackgroundColor(requireContext().getResources().getColor(R.color.teal, null));
                     tvAllTab.setTextColor(requireContext().getResources().getColor(R.color.default_white, null));
@@ -306,8 +296,6 @@ public class TravelPathFragment extends Fragment {
 
         return view;
     }
-
-    // ── Adapter ──────────────────────────────────────────────────────────────
 
     static class PlanAdapter extends RecyclerView.Adapter<PlanAdapter.PVH> {
         private List<TravelPlan> plans = new ArrayList<>();
@@ -349,7 +337,6 @@ public class TravelPathFragment extends Fragment {
         public void onBindViewHolder(@NonNull PVH h, int position) {
             TravelPlan p = plans.get(position);
 
-            // Couleur et label selon type
             int color;
             String label;
             switch (p.type) {

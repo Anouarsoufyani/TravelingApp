@@ -96,7 +96,7 @@ public class GroupsFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // Rafraîchir la session et les données à chaque retour (changement de compte)
+
         session = new SessionManager(requireContext());
         adapter.setSession(session);
         switchTab(currentTab);
@@ -120,18 +120,18 @@ public class GroupsFragment extends Fragment {
         adapter.clearMemberships();
 
         if (myTab) {
-            // Sync des statuts acceptés depuis Firestore (cas : demande acceptée sur un autre appareil)
+
             if (session.isLoggedIn()) {
                 viewModel.syncMyMemberStatuses(session.getUsername());
                 observeGroups(viewModel.getGroupsForUser(session.getUserId()));
             } else {
-                // Non connecté → liste vide, jamais getAllGroups()
+
                 if (currentSource != null) currentSource.removeObservers(getViewLifecycleOwner());
                 currentSource = null;
                 adapter.setGroups(new ArrayList<>());
             }
         } else {
-            // Découvrir : sync Firestore → Room puis afficher tous les groupes
+
             viewModel.syncGroupsFromFirestore();
             observeGroups(viewModel.getAllGroups());
         }
@@ -142,7 +142,7 @@ public class GroupsFragment extends Fragment {
         currentSource = source;
         currentSource.observe(getViewLifecycleOwner(), groups -> {
             adapter.setGroups(groups);
-            // En mode Découvrir, résoudre les statuts de membership après avoir reçu la liste
+
             if (currentTab == TAB_DISC && session.isLoggedIn() && groups != null) {
                 for (Group g : groups) {
                     viewModel.getMembership(session.getUserId(), g.id, m -> {
@@ -185,8 +185,6 @@ public class GroupsFragment extends Fragment {
                 .show();
     }
 
-    // ── Adapter ───────────────────────────────────────────────────────────
-
     static class GroupAdapter extends RecyclerView.Adapter<GroupAdapter.GVH> {
 
         static final int MODE_MY       = 0;
@@ -197,7 +195,7 @@ public class GroupsFragment extends Fragment {
         private SessionManager session;
         private final SharedViewModel viewModel;
         private final Fragment fragment;
-        // groupId → status ("MEMBER"/"PENDING"/null) pour le user courant
+
         private final Map<Long, String> memberships = new HashMap<>();
 
         GroupAdapter(SharedViewModel vm, SessionManager s, Fragment f) {
@@ -269,7 +267,21 @@ public class GroupsFragment extends Fragment {
             h.tvAction.setText(isCreator ? "👑 Admin" : "Membre ✓");
             h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(
                     isCreator ? R.color.terracotta : R.color.teal, null));
-            h.tvAction.setOnClickListener(null);
+
+            if (!isCreator) {
+                h.tvAction.setOnClickListener(v ->
+                        new AlertDialog.Builder(v.getContext())
+                                .setTitle("Quitter " + g.name + " ?")
+                                .setPositiveButton("Quitter", (d, w) -> {
+                                    viewModel.rejectOrLeaveGroup(g.id, session.getUserId());
+                                    FirebaseRepository.getInstance().deleteGroupMember(g.name, session.getUsername());
+                                    Toast.makeText(v.getContext(), "Vous avez quitté \"" + g.name + "\"", Toast.LENGTH_SHORT).show();
+                                })
+                                .setNegativeButton("Annuler", null)
+                                .show());
+            } else {
+                h.tvAction.setOnClickListener(null);
+            }
 
             h.tvChat.setVisibility(View.VISIBLE);
             h.tvChat.setOnClickListener(v -> {
@@ -278,7 +290,6 @@ public class GroupsFragment extends Fragment {
                 openChat(v, g);
             });
 
-            // Badge messages non lus
             if (session.isLoggedIn()) {
                 viewModel.getUnreadCountForGroup(session.getUserId(), g.id)
                         .observe((androidx.lifecycle.LifecycleOwner) fragment, count -> {
@@ -340,7 +351,7 @@ public class GroupsFragment extends Fragment {
                     memberships.put(g.id, "PENDING");
                     notifyDataSetChanged();
                     Toast.makeText(v.getContext(), "Demande envoyée !", Toast.LENGTH_SHORT).show();
-                    // Notif au créateur
+
                     AppNotification notif = new AppNotification();
                     notif.targetUserId = g.creatorId;
                     notif.type    = "JOIN_REQUEST";

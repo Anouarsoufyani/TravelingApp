@@ -53,7 +53,6 @@ public class NotificationsFragment extends Fragment {
         view.findViewById(R.id.btn_clear_notifs).setOnClickListener(v ->
                 viewModel.clearNotificationsForUser(userId));
 
-        // Listener Firestore temps réel pour les notifications entrantes
         if (session.isLoggedIn()) {
             notifListener = FirebaseRepository.getInstance().listenToNotifications(
                     session.getUsername(), AppDatabase.getInstance(requireContext()), userId);
@@ -67,8 +66,6 @@ public class NotificationsFragment extends Fragment {
         super.onDestroyView();
         if (notifListener != null) { notifListener.remove(); notifListener = null; }
     }
-
-    // ── Adapter ───────────────────────────────────────────────────────────
 
     static class NotifAdapter extends RecyclerView.Adapter<NotifAdapter.NVH> {
         private List<AppNotification> notifs = new ArrayList<>();
@@ -103,7 +100,6 @@ public class NotificationsFragment extends Fragment {
         public void onBindViewHolder(@NonNull NVH h, int position) {
             AppNotification n = notifs.get(position);
 
-            // Icône selon le type
             switch (n.type != null ? n.type : "") {
                 case "LIKE":          h.tvIcon.setText("❤️"); break;
                 case "COMMENT":       h.tvIcon.setText("💬"); break;
@@ -116,14 +112,13 @@ public class NotificationsFragment extends Fragment {
             h.tvDate.setText(n.date);
             h.dotUnread.setVisibility(n.isRead ? View.INVISIBLE : View.VISIBLE);
 
-            // Navigation au clic selon le type
             h.itemView.setOnClickListener(v -> {
                 viewModel.markNotificationRead(n.id);
 
                 switch (n.type != null ? n.type : "") {
                     case "LIKE":
                     case "COMMENT":
-                        // → ouvrir la fiche photo
+
                         if (n.photoId > 0) {
                             viewModel.getPhotoById(n.photoId, photo -> {
                                 if (photo == null) return;
@@ -145,7 +140,7 @@ public class NotificationsFragment extends Fragment {
                         break;
 
                     case "JOIN_REQUEST":
-                        // → ouvrir le canal du groupe (admin voit les demandes + accepte/refuse)
+
                         if (n.groupId > 0) {
                             viewModel.getGroupById(n.groupId, group -> {
                                 if (group == null) {
@@ -166,7 +161,7 @@ public class NotificationsFragment extends Fragment {
 
                     case "JOIN_ACCEPTED":
                     case "GROUP_MESSAGE":
-                        // → ouvrir le canal du groupe
+
                         if (n.groupId > 0) {
                             viewModel.getGroupById(n.groupId, group -> {
                                 if (group == null) return;

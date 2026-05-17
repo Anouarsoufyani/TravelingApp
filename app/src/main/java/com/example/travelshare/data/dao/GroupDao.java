@@ -32,7 +32,6 @@ public interface GroupDao {
     @Query("SELECT * FROM `groups` WHERE name LIKE '%' || :query || '%' ORDER BY id DESC")
     LiveData<List<Group>> searchGroups(String query);
 
-    /** Groupes où l'utilisateur est créateur OU membre accepté */
     @Query("SELECT DISTINCT g.* FROM `groups` g " +
            "LEFT JOIN group_members gm ON g.id = gm.groupId " +
            "WHERE g.creatorId = :userId OR (gm.userId = :userId AND gm.status = 'MEMBER') " +

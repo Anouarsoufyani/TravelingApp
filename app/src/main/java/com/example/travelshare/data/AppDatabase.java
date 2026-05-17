@@ -33,7 +33,7 @@ import java.util.concurrent.Executors;
 
 @Database(
     entities = {User.class, Planning.class, Photo.class, Comment.class, Group.class, GroupMember.class, GroupMessage.class, Report.class, NotificationPreference.class, AppNotification.class, TravelPlan.class, PlanStep.class},
-    version = 20,
+    version = 21,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {

@@ -52,24 +52,19 @@ public class PathPreferencesFragment extends Fragment {
             int budget   = Integer.parseInt(budgetStr);
             int duration = Integer.parseInt(durStr);
 
-            // Convertir durée (minutes) → heures arrondi au supérieur
             int durationHours = Math.max(1, (int) Math.ceil(duration / 60.0));
 
-            // Effort selon la position du curseur (0-4 → 5 niveaux)
             int effortLevel = seekEffort.getProgress();
             String effort = effortLevel <= 1 ? "Facile" : effortLevel <= 3 ? "Modéré" : "Intense";
 
-            // Activités sélectionnées
             StringBuilder acts = new StringBuilder();
             if (checkCulture.isChecked()) { if (acts.length() > 0) acts.append(","); acts.append("Culture"); }
             if (checkResto.isChecked())   { if (acts.length() > 0) acts.append(","); acts.append("Restauration"); }
             if (checkLoisirs.isChecked()) { if (acts.length() > 0) acts.append(","); acts.append("Loisirs"); }
             if (acts.length() == 0) acts.append("Découverte");
 
-            // Tolérance météo si intérieur coché
             String weather = checkIndoor.isChecked() ? "froid,chaleur,humidité" : "";
 
-            // Construire un plan "fantôme" pour préremplir TravelPathFragment
             TravelPlan prefill = new TravelPlan();
             prefill.city              = city;
             prefill.budgetEur         = budget;

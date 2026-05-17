@@ -86,10 +86,13 @@ public class InscriptionFragment extends Fragment {
             editPassword.setError("Doit contenir au moins 6 caractères");
             return;
         }
+        if (email.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            editEmail.setError("Email invalide");
+            return;
+        }
 
         AppDatabase db = AppDatabase.getInstance(getContext());
 
-        // Vérifier login existant en Room
         Executors.newSingleThreadExecutor().execute(() -> {
             User existant = db.userDao().getUserByLogin(login);
             if (existant != null) {
@@ -99,16 +102,13 @@ public class InscriptionFragment extends Fragment {
                 return;
             }
 
-            // Créer compte Firebase Auth avec email fake
-            String firebaseEmail = SessionManager.toFirebaseEmail(login);
             if (getActivity() != null) {
                 getActivity().runOnUiThread(() ->
-                    mAuth.createUserWithEmailAndPassword(firebaseEmail, password)
+                    mAuth.createUserWithEmailAndPassword(email, password)
                         .addOnSuccessListener(authResult -> {
-                            // Insérer dans Room
+
                             User newUser = new User();
                             newUser.login         = login;
-                            newUser.password      = password;
                             newUser.nom           = nom;
                             newUser.prenom        = prenom;
                             newUser.dateNaissance = dateNaissance;

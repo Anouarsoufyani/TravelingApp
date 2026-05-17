@@ -43,8 +43,4 @@ public class SessionManager {
         return pref.getInt(KEY_USER_ID, -1);
     }
 
-    // Email Firebase : login@traveling.app
-    public static String toFirebaseEmail(String login) {
-        return login.toLowerCase() + "@traveling.app";
-    }
 }

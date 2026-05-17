@@ -39,11 +39,9 @@ public class NotificationPreferencesFragment extends Fragment {
         SessionManager session = new SessionManager(requireContext());
         long userId = session.getUserId();
 
-        // Bouton retour
         view.findViewById(R.id.btn_pref_back).setOnClickListener(v ->
                 requireActivity().getSupportFragmentManager().popBackStack());
 
-        // Spinner type
         Spinner spinnerType = view.findViewById(R.id.spinner_pref_type);
         String[] types = {"AUTEUR", "LIEU", "TAG", "GROUPE"};
         ArrayAdapter<String> typeAdapter = new ArrayAdapter<>(requireContext(),
@@ -51,7 +49,6 @@ public class NotificationPreferencesFragment extends Fragment {
         typeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerType.setAdapter(typeAdapter);
 
-        // Hint dynamique selon le type sélectionné
         EditText etValueHint = view.findViewById(R.id.et_pref_value);
         spinnerType.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             @Override
@@ -66,7 +63,6 @@ public class NotificationPreferencesFragment extends Fragment {
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
 
-        // Liste des préférences
         RecyclerView rv = view.findViewById(R.id.rv_prefs);
         rv.setLayoutManager(new LinearLayoutManager(getContext()));
         PrefAdapter adapter = new PrefAdapter(viewModel, session.getUsername());
@@ -74,13 +70,11 @@ public class NotificationPreferencesFragment extends Fragment {
 
         viewModel.getPreferencesForUser(userId).observe(getViewLifecycleOwner(), adapter::setPrefs);
 
-        // Sync préférences depuis Firestore au démarrage
         if (session.isLoggedIn()) {
             FirebaseRepository.getInstance().syncNotificationPreferences(
                     session.getUsername(), AppDatabase.getInstance(requireContext()), userId, null);
         }
 
-        // Bouton ajouter
         EditText etValue = view.findViewById(R.id.et_pref_value);
         view.findViewById(R.id.btn_add_pref).setOnClickListener(v -> {
             String value = etValue.getText().toString().trim();
@@ -101,8 +95,6 @@ public class NotificationPreferencesFragment extends Fragment {
 
         return view;
     }
-
-    // ── Adapter ───────────────────────────────────────────────────────────
 
     static class PrefAdapter extends RecyclerView.Adapter<PrefAdapter.PVH> {
         private List<NotificationPreference> prefs = new ArrayList<>();

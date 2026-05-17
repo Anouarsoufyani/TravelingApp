@@ -31,12 +31,10 @@ public class MainActivity extends AppCompatActivity implements InscriptionFragme
 
         bottomNav = findViewById(R.id.bottom_navigation);
 
-        // ── Cache OSMDroid pour le mode hors-ligne ─────────────────────────
         org.osmdroid.config.Configuration.getInstance().setUserAgentValue(getPackageName());
         org.osmdroid.config.Configuration.getInstance().setOsmdroidTileCache(
                 new java.io.File(getCacheDir(), "osmdroid_tiles"));
 
-        // Vérifier que l'utilisateur en session existe encore en base (après reset DB)
         com.example.travelshare.utils.SessionManager sessionCheck =
                 new com.example.travelshare.utils.SessionManager(this);
         if (sessionCheck.isLoggedIn()) {
@@ -93,7 +91,6 @@ public class MainActivity extends AppCompatActivity implements InscriptionFragme
                 selectedFragment = new ProfileFragment();
             }
 
-            // Cacher la cloche sur la page Groupes et la Carte
             boolean hideBell = itemId == R.id.nav_groups || itemId == R.id.nav_map;
             btnBellContainer.setVisibility(hideBell ? View.GONE : View.VISIBLE);
 
@@ -104,7 +101,6 @@ public class MainActivity extends AppCompatActivity implements InscriptionFragme
             return false;
         });
 
-        // ── Cloche de notifications ────────────────────────────────────────
         View badge = findViewById(R.id.notif_badge);
         SharedViewModel viewModel = new ViewModelProvider(this).get(SharedViewModel.class);
         long userId = new com.example.travelshare.utils.SessionManager(this).getUserId();

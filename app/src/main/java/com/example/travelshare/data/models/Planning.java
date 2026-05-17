@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey;
 public class Planning {
     @PrimaryKey(autoGenerate = true)
     public int id;
-    
+
     public long userId;
     public String creneau8_10;
     public String creneau10_12;

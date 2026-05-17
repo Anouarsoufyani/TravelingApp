@@ -13,12 +13,12 @@ public interface UserDao {
     @Query("SELECT * FROM users WHERE login = :login")
     User getUserByLogin(String login);
 
+    @Query("SELECT * FROM users WHERE email = :email LIMIT 1")
+    User getUserByEmail(String email);
+
     @Query("SELECT * FROM users WHERE id = :userId")
     User getUserById(long userId);
 
-    @Query("SELECT * FROM users WHERE login =:login AND password =:password")
-    User login(String login, String password);
-
-    @Query("UPDATE users SET avatarUri = :avatarUri, bio = :bio WHERE id = :userId")
+@Query("UPDATE users SET avatarUri = :avatarUri, bio = :bio WHERE id = :userId")
     void updateUserProfile(long userId, String avatarUri, String bio);
 }

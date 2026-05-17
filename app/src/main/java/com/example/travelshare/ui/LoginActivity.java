@@ -15,7 +15,7 @@ import com.google.firebase.auth.FirebaseAuth;
 
 public class LoginActivity extends AppCompatActivity {
 
-    private EditText etUsername;
+    private EditText etEmail;
     private EditText etPassword;
     private SessionManager sessionManager;
     private FirebaseAuth mAuth;
@@ -27,7 +27,6 @@ public class LoginActivity extends AppCompatActivity {
         mAuth          = FirebaseAuth.getInstance();
         sessionManager = new SessionManager(this);
 
-        // Si Firebase a déjà une session active, aller direct à MainActivity
         if (mAuth.getCurrentUser() != null && sessionManager.getUserId() != -1) {
             goToMain();
             return;
@@ -38,7 +37,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void setupLoginForm() {
-        etUsername = findViewById(R.id.et_username);
+        etEmail    = findViewById(R.id.et_email);
         etPassword = findViewById(R.id.et_password);
         Button btnLogin     = findViewById(R.id.btn_login);
         Button btnRegister  = findViewById(R.id.btn_register);
@@ -60,21 +59,19 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void loginUser() {
-        String login    = etUsername.getText().toString().trim();
+        String email    = etEmail.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
 
-        if (login.isEmpty() || password.isEmpty()) {
+        if (email.isEmpty() || password.isEmpty()) {
             Toast.makeText(this, "Veuillez remplir tous les champs", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        String email = SessionManager.toFirebaseEmail(login);
-
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnSuccessListener(authResult -> {
-                    // Récupérer userId depuis Room
+
                     AppDatabase.databaseWriteExecutor.execute(() -> {
-                        User user = AppDatabase.getInstance(this).userDao().getUserByLogin(login);
+                        User user = AppDatabase.getInstance(this).userDao().getUserByEmail(email);
                         runOnUiThread(() -> {
                             if (user != null) {
                                 sessionManager.createLoginSession(user.id, user.login);

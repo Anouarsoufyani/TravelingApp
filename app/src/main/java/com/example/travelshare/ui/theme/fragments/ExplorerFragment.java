@@ -49,7 +49,6 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
     private static final int REQUEST_VOICE = 101;
     private static final int PAGE_SIZE = 20;
 
-    // ── Capteur accéléromètre (détection du shake) ─────────────────────────
     private SensorManager sensorManager;
     private Sensor accelerometer;
     private float lastX, lastY, lastZ;
@@ -62,13 +61,11 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
     private LiveData<List<Photo>> currentSource;
     private boolean isGridView = true;
 
-    // ── Pagination ─────────────────────────────────────────────────────────
     private int currentOffset = 0;
     private boolean isPaginationMode = false;
     private boolean isLoadingMore = false;
     private SwipeRefreshLayout swipeRefresh;
 
-    // Chips
     private final int[] CHIP_IDS = {R.id.chip_all, R.id.chip_nature, R.id.chip_urbain, R.id.chip_culture, R.id.chip_magasin, R.id.chip_nearby, R.id.chip_likes};
     private View chipRoot;
 
@@ -155,7 +152,6 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
         adapter = new PhotoAdapter();
         recyclerView.setAdapter(adapter);
 
-        // ── Pull-to-refresh ────────────────────────────────────────────────
         swipeRefresh = view.findViewById(R.id.swipe_refresh);
         swipeRefresh.setOnRefreshListener(() -> {
             if (isPaginationMode) {
@@ -167,7 +163,6 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
             }
         });
 
-        // ── Infinite scroll ────────────────────────────────────────────────
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
@@ -185,7 +180,6 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
             }
         });
 
-        // ── Toggle liste / grille ──────────────────────────────────────────
         TextView btnToggle = view.findViewById(R.id.btn_toggle_view);
         btnToggle.setOnClickListener(v -> {
             isGridView = !isGridView;
@@ -201,10 +195,8 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
         viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
         chipRoot = view;
 
-        // Sync silencieuse des photos publiques depuis Firestore
         viewModel.syncPhotosFromFirestore();
 
-        // Chargement initial
         String prefillQuery = getArguments() != null ? getArguments().getString(ARG_SEARCH_QUERY, "") : "";
         if (!prefillQuery.isEmpty()) {
             EditText etSearch = view.findViewById(R.id.et_search_query);
@@ -215,7 +207,6 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
         }
         setActiveChip(R.id.chip_all);
 
-        // ── Recherche texte ────────────────────────────────────────────────
         EditText etSearch = view.findViewById(R.id.et_search_query);
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
@@ -231,7 +222,6 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
             @Override public void afterTextChanged(Editable s) {}
         });
 
-        // ── Recherche vocale ───────────────────────────────────────────────
         view.findViewById(R.id.btn_voice_search).setOnClickListener(v -> {
             Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
             intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
@@ -244,7 +234,6 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
             }
         });
 
-        // ── Filtre auteur ──────────────────────────────────────────────────
         EditText etAuthor = view.findViewById(R.id.et_filter_author);
         etAuthor.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
@@ -260,7 +249,6 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
             @Override public void afterTextChanged(Editable s) {}
         });
 
-        // ── Filtre par période ─────────────────────────────────────────────
         EditText etDateStart = view.findViewById(R.id.et_filter_date_start);
         EditText etDateEnd   = view.findViewById(R.id.et_filter_date_end);
         View.OnFocusChangeListener dateListener = (v, hasFocus) -> {
@@ -275,7 +263,6 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
         etDateStart.setOnFocusChangeListener(dateListener);
         etDateEnd.setOnFocusChangeListener(dateListener);
 
-        // ── Chips de catégorie ─────────────────────────────────────────────
         view.findViewById(R.id.chip_all).setOnClickListener(v -> {
             setActiveChip(R.id.chip_all);
             enterPaginationMode();
@@ -285,7 +272,6 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
         setupChip(view, R.id.chip_culture, "Culture");
         setupChip(view, R.id.chip_magasin, "Magasin");
 
-        // ── Chip Autour de moi (GPS) ───────────────────────────────────────
         view.findViewById(R.id.chip_nearby).setOnClickListener(v -> {
             setActiveChip(R.id.chip_nearby);
             if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
@@ -296,7 +282,6 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
             }
         });
 
-        // ── Mes Likes ──────────────────────────────────────────────────────
         view.findViewById(R.id.chip_likes).setOnClickListener(v -> {
             setActiveChip(R.id.chip_likes);
             List<Integer> likedIds = getLikedPhotoIds();
@@ -308,13 +293,11 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
             }
         });
 
-        // ── Flux aléatoire ─────────────────────────────────────────────────
         view.findViewById(R.id.btn_random_feed).setOnClickListener(v -> {
             setActiveChip(-1);
             observeSource(viewModel.getRandomPhotos(10));
         });
 
-        // ── TravelPath ─────────────────────────────────────────────────────
         view.findViewById(R.id.btn_explorer_travelpath).setOnClickListener(v ->
             requireActivity().getSupportFragmentManager()
                     .beginTransaction()
@@ -325,8 +308,6 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
 
         return view;
     }
-
-    // ── Pagination ─────────────────────────────────────────────────────────
 
     private void enterPaginationMode() {
         isPaginationMode = true;
@@ -354,8 +335,6 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
             });
         });
     }
-
-    // ── Sources LiveData (filtres) ──────────────────────────────────────────
 
     private void setupChip(View root, int chipId, @Nullable String category) {
         root.findViewById(chipId).setOnClickListener(v -> {

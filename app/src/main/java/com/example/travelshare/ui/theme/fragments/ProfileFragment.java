@@ -57,7 +57,7 @@ public class ProfileFragment extends Fragment {
                     currentAvatarUri = uri.toString();
                     ivAvatar.setVisibility(View.VISIBLE);
                     Glide.with(this).load(uri).centerCrop().into(ivAvatar);
-                    // Auto-save avatar
+
                     String bio = etBio != null ? etBio.getText().toString().trim() : "";
                     viewModel.updateUserProfile(session.getUserId(), currentAvatarUri, bio);
                 }
@@ -73,7 +73,6 @@ public class ProfileFragment extends Fragment {
         session = new SessionManager(requireContext());
         viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
 
-        // ── Infos utilisateur ──────────────────────────────────────────────
         TextView tvName   = view.findViewById(R.id.tv_profile_name);
         TextView tvHandle = view.findViewById(R.id.tv_profile_handle);
         TextView tvAvatar = view.findViewById(R.id.tv_profile_avatar);
@@ -87,7 +86,6 @@ public class ProfileFragment extends Fragment {
             tvAvatar.setText(username.length() > 0
                     ? String.valueOf(username.charAt(0)).toUpperCase() : "?");
 
-            // Charger avatar + bio depuis la DB
             viewModel.getUserByLogin(username, user -> {
                 if (user == null || !isAdded()) return;
                 requireActivity().runOnUiThread(() -> {
@@ -102,7 +100,7 @@ public class ProfileFragment extends Fragment {
                     }
                 });
             });
-            // Charger bio depuis Firestore (mise à jour si plus récente)
+
             FirebaseRepository.getInstance().loadUserProfile(username, data -> {
                 if (data == null || !isAdded()) return;
                 String firebaseBio = data.get("bio") instanceof String ? (String) data.get("bio") : null;
@@ -123,13 +121,11 @@ public class ProfileFragment extends Fragment {
             etBio.setHint("Connectez-vous pour rédiger une bio");
         }
 
-        // ── Avatar — clic pour changer la photo ───────────────────────────
         view.findViewById(R.id.frame_avatar).setOnClickListener(v -> {
             if (!session.isLoggedIn()) return;
             avatarPickerLauncher.launch("image/*");
         });
 
-        // ── Sauvegarde bio ────────────────────────────────────────────────
         view.findViewById(R.id.btn_save_bio).setOnClickListener(v -> {
             if (!session.isLoggedIn()) return;
             String bio = etBio.getText().toString().trim();
@@ -138,7 +134,6 @@ public class ProfileFragment extends Fragment {
             Toast.makeText(getContext(), "Profil mis à jour ✓", Toast.LENGTH_SHORT).show();
         });
 
-        // ── Stats : photos publiées ────────────────────────────────────────
         TextView tvStatPhotos = view.findViewById(R.id.tv_stat_photos);
         TextView tvStatLikes  = view.findViewById(R.id.tv_stat_likes);
         TextView tvStatGroups = view.findViewById(R.id.tv_stat_groups);
@@ -156,7 +151,6 @@ public class ProfileFragment extends Fragment {
             tvStatLikes.setText(String.valueOf(myLikes));
         });
 
-        // ── Mes publications (avec suppression) ────────────────────────────
         RecyclerView rvMyPhotos = view.findViewById(R.id.rv_my_photos);
         rvMyPhotos.setLayoutManager(new LinearLayoutManager(getContext()));
         MyPhotosAdapter myPhotosAdapter = new MyPhotosAdapter(viewModel);
@@ -166,7 +160,6 @@ public class ProfileFragment extends Fragment {
                     .observe(getViewLifecycleOwner(), myPhotosAdapter::setPhotos);
         }
 
-        // ── Stats groupes + liste preview ──────────────────────────────────
         RecyclerView rvGroups = view.findViewById(R.id.rv_profile_groups);
         rvGroups.setLayoutManager(new LinearLayoutManager(getContext()));
         ProfileGroupAdapter groupAdapter = new ProfileGroupAdapter();
@@ -180,7 +173,6 @@ public class ProfileFragment extends Fragment {
             tvStatGroups.setText("0");
         }
 
-        // ── Aperçu alertes ─────────────────────────────────────────────────
         TextView tvAlertsPreview = view.findViewById(R.id.tv_alerts_preview);
         if (session.isLoggedIn()) {
             viewModel.getPreferencesForUser(session.getUserId())
@@ -224,8 +216,6 @@ public class ProfileFragment extends Fragment {
         return view;
     }
 
-    // ── Adapter mes publications ───────────────────────────────────────────
-
     static class MyPhotosAdapter extends RecyclerView.Adapter<MyPhotosAdapter.MPVH> {
         private List<Photo> photos = new ArrayList<>();
         private final SharedViewModel viewModel;
@@ -261,8 +251,6 @@ public class ProfileFragment extends Fragment {
 
         void setPhotos(List<Photo> list) { this.photos = list != null ? list : new ArrayList<>(); notifyDataSetChanged(); }
     }
-
-    // ── Adapter mini groupes ───────────────────────────────────────────────
 
     static class ProfileGroupAdapter extends RecyclerView.Adapter<ProfileGroupAdapter.GVH> {
         private List<Group> groups = new ArrayList<>();
