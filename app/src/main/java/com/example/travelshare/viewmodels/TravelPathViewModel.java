@@ -14,6 +14,9 @@ import com.example.travelshare.data.models.TravelPlan;
 import com.example.travelshare.data.repository.FirebaseRepository;
 import com.example.travelshare.utils.SessionManager;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -142,10 +145,11 @@ public class TravelPathViewModel extends AndroidViewModel {
                         String p = pName.trim();
                         if (p.isEmpty()) continue;
                         
-                        String[] placeInfo = searchPlaceByName(p + " " + city, cityCenter[0], cityCenter[1]);
+                        String[] placeInfo = searchPlaceByName(p, city, cityCenter[0], cityCenter[1]);
                         if (placeInfo == null || "0".equals(placeInfo[0])) {
                             placeInfo = geocodeWithType(p + " " + city, cityCenter[0], cityCenter[1]);
                         }
+                        if (placeInfo == null || "0".equals(placeInfo[0])) continue;
                         
                         PlanStep step = new PlanStep();
                         step.name = p;
@@ -252,11 +256,14 @@ public class TravelPathViewModel extends AndroidViewModel {
         switch (activity) {
             case "Culture":
                 osmFilter = "node[\"tourism\"=\"museum\"][\"name\"](" + bbox + ");\n"
-                          + "way[\"tourism\"=\"museum\"][\"name\"](" + bbox + ");";
+                          + "way[\"tourism\"=\"museum\"][\"name\"](" + bbox + ");\n"
+                          + "relation[\"tourism\"=\"museum\"][\"name\"](" + bbox + ");";
                 break;
             case "Restauration":
                 osmFilter = "node[\"amenity\"=\"restaurant\"][\"name\"](" + bbox + ");\n"
-                          + "node[\"amenity\"=\"cafe\"][\"name\"](" + bbox + ");";
+                          + "way[\"amenity\"=\"restaurant\"][\"name\"](" + bbox + ");\n"
+                          + "node[\"amenity\"=\"cafe\"][\"name\"](" + bbox + ");\n"
+                          + "way[\"amenity\"=\"cafe\"][\"name\"](" + bbox + ");";
                 break;
             case "Loisirs":
                 if (sensitiveWeather)
@@ -264,16 +271,22 @@ public class TravelPathViewModel extends AndroidViewModel {
                               + "node[\"amenity\"=\"theatre\"][\"name\"](" + bbox + ");";
                 else
                     osmFilter = "way[\"leisure\"=\"park\"][\"name\"](" + bbox + ");\n"
-                              + "node[\"leisure\"=\"park\"][\"name\"](" + bbox + ");";
+                              + "node[\"leisure\"=\"park\"][\"name\"](" + bbox + ");\n"
+                              + "relation[\"leisure\"=\"park\"][\"name\"](" + bbox + ");";
                 break;
             case "Découverte":
                 osmFilter = "node[\"tourism\"=\"attraction\"][\"name\"](" + bbox + ");\n"
-                          + "node[\"historic\"=\"monument\"][\"name\"](" + bbox + ");";
+                          + "way[\"tourism\"=\"attraction\"][\"name\"](" + bbox + ");\n"
+                          + "relation[\"tourism\"=\"attraction\"][\"name\"](" + bbox + ");\n"
+                          + "node[\"historic\"=\"monument\"][\"name\"](" + bbox + ");\n"
+                          + "way[\"historic\"=\"monument\"][\"name\"](" + bbox + ");\n"
+                          + "relation[\"historic\"=\"monument\"][\"name\"](" + bbox + ");";
                 break;
             case "Shopping":
                 osmFilter = "node[\"shop\"=\"mall\"][\"name\"](" + bbox + ");\n"
                           + "way[\"shop\"=\"mall\"][\"name\"](" + bbox + ");\n"
-                          + "node[\"amenity\"=\"marketplace\"][\"name\"](" + bbox + ");";
+                          + "node[\"amenity\"=\"marketplace\"][\"name\"](" + bbox + ");\n"
+                          + "way[\"amenity\"=\"marketplace\"][\"name\"](" + bbox + ");";
                 break;
             default:
                 osmFilter = "node[\"tourism\"=\"attraction\"][\"name\"](" + bbox + ");";
@@ -335,21 +348,20 @@ public class TravelPathViewModel extends AndroidViewModel {
                 while ((line = br.readLine()) != null) sb.append(line);
                 br.close();
 
-                String json = sb.toString();
-                int idx = 0;
-                while (idx < json.length() && results.size() < count) {
-                    int start = json.indexOf("{\"place_id\":", idx);
-                    if (start < 0) break;
-                    int end = json.indexOf("}", start) + 1;
-                    String elem = json.substring(start, Math.min(end + 200, json.length()));
-                    String name = extractJsonString(elem, "display_name");
-                    if (name != null && name.contains(",")) name = name.substring(0, name.indexOf(",")).trim();
-                    String latS = extractJsonString(elem, "lat");
-                    String lonS = extractJsonString(elem, "lon");
-                    if (name != null && !name.isEmpty() && latS != null && lonS != null) {
-                        results.add(new String[]{name, latS, lonS});
+                JSONArray array = new JSONArray(sb.toString());
+                for (int i = 0; i < array.length() && results.size() < count; i++) {
+                    JSONObject item = array.getJSONObject(i);
+                    String name = item.optString("name", "");
+                    if (name.isEmpty()) {
+                        name = item.optString("display_name", "");
+                        int comma = name.indexOf(",");
+                        if (comma > 0) name = name.substring(0, comma).trim();
                     }
-                    idx = start + 1;
+                    String latS = item.optString("lat", "");
+                    String lonS = item.optString("lon", "");
+                    if (!name.isEmpty() && !latS.isEmpty() && !lonS.isEmpty()) {
+                        results.add(new String[]{name, latS, lonS, ""});
+                    }
                 }
             }
         } catch (Exception ignored) {}
@@ -474,54 +486,46 @@ public class TravelPathViewModel extends AndroidViewModel {
 
     private String[][] parseOverpassResult(String json, int maxCount) {
         List<String[]> results = new ArrayList<>();
-        int elemStart = json.indexOf("\"elements\":[");
-        if (elemStart < 0) return null;
-        String rest = json.substring(elemStart + 12);
+        try {
+            JSONArray elements = new JSONObject(json).optJSONArray("elements");
+            if (elements == null) return null;
+            for (int i = 0; i < elements.length() && results.size() < maxCount; i++) {
+                JSONObject element = elements.getJSONObject(i);
+                JSONObject tags = element.optJSONObject("tags");
+                if (tags == null) continue;
+                String name = tags.optString("name", "");
+                if (name.isEmpty()) continue;
 
-        String[] parts = rest.split("\\{\"type\":");
-        for (String part : parts) {
-            if (results.size() >= maxCount) break;
-            String name = extractJsonString(part, "name");
-            if (name == null || name.isEmpty()) continue;
+                double lat = element.optDouble("lat", 0);
+                double lon = element.optDouble("lon", 0);
+                JSONObject center = element.optJSONObject("center");
+                if ((lat == 0 || lon == 0) && center != null) {
+                    lat = center.optDouble("lat", 0);
+                    lon = center.optDouble("lon", 0);
+                }
+                if (lat == 0 || lon == 0) continue;
 
-            double lat = 0, lon = 0;
-
-            String latStr = extractJsonNumber(part, "\"lat\":");
-            String lonStr = extractJsonNumber(part, "\"lon\":");
-            if (latStr != null) try { lat = Double.parseDouble(latStr); } catch (Exception ignored) {}
-            if (lonStr != null) try { lon = Double.parseDouble(lonStr); } catch (Exception ignored) {}
-
-            if (lat == 0 && part.contains("\"center\":{")) {
-                int ci = part.indexOf("\"center\":{");
-                String cp = part.substring(ci);
-                String cLat = extractJsonNumber(cp, "\"lat\":");
-                String cLon = extractJsonNumber(cp, "\"lon\":");
-                if (cLat != null) try { lat = Double.parseDouble(cLat); } catch (Exception ignored) {}
-                if (cLon != null) try { lon = Double.parseDouble(cLon); } catch (Exception ignored) {}
-            }
-
-            if (lat != 0 && lon != 0) {
-
-                String num    = extractJsonString(part, "addr:housenumber");
-                String street = extractJsonString(part, "addr:street");
-                String post   = extractJsonString(part, "addr:postcode");
-                String addrCity = extractJsonString(part, "addr:city");
-                String address = buildAddress(num, street, post, addrCity);
+                String address = buildAddress(
+                        tags.optString("addr:housenumber", ""),
+                        tags.optString("addr:street", ""),
+                        tags.optString("addr:postcode", ""),
+                        tags.optString("addr:city", ""));
                 results.add(new String[]{name, String.valueOf(lat), String.valueOf(lon), address});
             }
-        }
+        } catch (Exception ignored) {}
 
         if (results.isEmpty()) return null;
         return results.toArray(new String[0][]);
     }
 
-    private String[] searchPlaceByName(String name, double centerLat, double centerLng) {
-        // Step 1: Bounded search (accurate within city)
-        String[] result = searchPlaceInternal(name, centerLat, centerLng, 0.2);
+    private String[] searchPlaceByName(String placeName, String city, double centerLat, double centerLng) {
+        String[] result = geocodeWithType(placeName + " " + city, centerLat, centerLng);
         if (result != null && !"0".equals(result[0])) return result;
 
-        // Step 2: Global search (fallback if monument is outside city bounds)
-        return searchPlaceInternal(name, 0, 0, 0);
+        result = searchPlaceInternal(placeName, centerLat, centerLng, 0.25);
+        if (result != null && !"0".equals(result[0])) return result;
+
+        return searchPlaceInternal(placeName, 0, 0, 0);
     }
 
     private String[] searchPlaceInternal(String name, double lat, double lng, double delta) {
@@ -947,7 +951,6 @@ public class TravelPathViewModel extends AndroidViewModel {
         String[] result = {"0", "0", "", ""};
         try {
             String encoded = java.net.URLEncoder.encode(query, "UTF-8");
-            // Try Nominatim without strict bounding box for monuments
             java.net.URL url = new java.net.URL(
                     "https://nominatim.openstreetmap.org/search?q=" + encoded
                     + "&format=json&limit=1&addressdetails=1");
@@ -961,16 +964,13 @@ public class TravelPathViewModel extends AndroidViewModel {
                 StringBuilder sb = new StringBuilder(); String line;
                 while ((line = br.readLine()) != null) sb.append(line);
                 br.close();
-                String json = sb.toString();
-                if (!json.equals("[]") && json.contains("\"lat\"")) {
-                    int li = json.indexOf("\"lat\":\"") + 7;
-                    result[0] = json.substring(li, json.indexOf("\"", li));
-                    int loi = json.indexOf("\"lon\":\"") + 7;
-                    result[1] = json.substring(loi, json.indexOf("\"", loi));
-                    String cls = extractJsonString(json, "class");
-                    String typ = extractJsonString(json, "type");
-                    result[2] = cls != null ? cls : "";
-                    result[3] = typ != null ? typ : "";
+                JSONArray array = new JSONArray(sb.toString());
+                if (array.length() > 0) {
+                    JSONObject item = array.getJSONObject(0);
+                    result[0] = item.optString("lat", "0");
+                    result[1] = item.optString("lon", "0");
+                    result[2] = item.optString("class", "");
+                    result[3] = item.optString("type", "");
                 }
             }
         } catch (Exception ignored) {}

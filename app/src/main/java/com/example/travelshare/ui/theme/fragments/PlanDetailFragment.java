@@ -667,7 +667,7 @@ public class PlanDetailFragment extends Fragment {
         StepAdapter(Fragment f) { this.fragment = f; }
 
         static class SVH extends RecyclerView.ViewHolder {
-            TextView tvIcon, tvSlot, tvDuration, tvName, tvAddress, tvDesc, tvCost, tvSeePhotos, tvHours, tvVideo;
+            TextView tvIcon, tvSlot, tvDuration, tvName, tvAddress, tvDesc, tvCost, tvSeePhotos, tvHours;
             RecyclerView rvPhotos;
             SVH(View v) {
                 super(v);
@@ -680,7 +680,6 @@ public class PlanDetailFragment extends Fragment {
                 tvCost      = v.findViewById(R.id.tv_step_cost);
                 tvSeePhotos = v.findViewById(R.id.tv_step_see_photos);
                 tvHours     = v.findViewById(R.id.tv_step_opening_hours);
-                tvVideo     = v.findViewById(R.id.tv_step_video);
                 rvPhotos    = v.findViewById(R.id.rv_step_photos);
             }
         }
@@ -748,15 +747,6 @@ public class PlanDetailFragment extends Fragment {
 
             h.rvPhotos.setVisibility(View.GONE);
             h.tvSeePhotos.setVisibility(View.VISIBLE);
-
-            if (h.tvVideo != null) {
-                h.tvVideo.setOnClickListener(v -> {
-                    String query = Uri.encode(s.name + " " + (s.type != null ? s.type : ""));
-                    Intent yt = new Intent(Intent.ACTION_VIEW,
-                            Uri.parse("https://www.youtube.com/results?search_query=" + query));
-                    h.itemView.getContext().startActivity(yt);
-                });
-            }
 
             h.tvSeePhotos.setOnClickListener(v -> {
                 ExplorerFragment explorer = new ExplorerFragment();
