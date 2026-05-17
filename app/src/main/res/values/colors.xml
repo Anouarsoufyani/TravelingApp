@@ -31,9 +31,9 @@
     <color name="accent_soft">#26E8C99A</color>
     <color name="coral_soft">#33FF6B6B</color>
     <color name="success_soft">#1F4BAF8F</color>
-    <color name="sheet_light">#FFFFFFFF</color>
-    <color name="sheet_text">#0D1B2A</color>
-    <color name="sheet_muted">#617084</color>
+    <color name="sheet_light">#0D1B2A</color>
+    <color name="sheet_text">#FFFFFFFF</color>
+    <color name="sheet_muted">#93A4B4</color>
 
     <color name="default_black">#FF000000</color>
     <color name="default_white">#FFFFFFFF</color>

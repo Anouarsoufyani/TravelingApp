@@ -7,8 +7,14 @@ import com.cloudinary.android.callback.ErrorInfo;
 import com.cloudinary.android.callback.UploadCallback;
 import java.util.HashMap;
 import java.util.Map;
+
+/**
+ * Helper class for Cloudinary integration.
+ * Manage initialization and provides a simplified upload method.
+ */
 public class CloudinaryHelper {
 
+    // IMPORTANT: Remplacer par vos vraies clés Cloudinary
     private static final String CLOUD_NAME = "db68oxg2m";
     private static final String UPLOAD_PRESET = "ml_default";
 
