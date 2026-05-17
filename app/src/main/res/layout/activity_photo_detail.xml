@@ -22,13 +22,23 @@
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/hero_detail_height">
 
-                <ImageView
-                    android:id="@+id/iv_detail_hero"
+                <androidx.viewpager2.widget.ViewPager2
+                    android:id="@+id/vp_detail_carousel"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:background="@drawable/bg_photo_placeholder"
-                    android:contentDescription="@string/photo_content_description"
-                    android:scaleType="centerCrop" />
+                    android:background="@color/navy" />
+
+                <com.google.android.material.tabs.TabLayout
+                    android:id="@+id/tab_carousel_indicator"
+                    android:layout_width="wrap_content"
+                    android:layout_height="24dp"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="@dimen/space_md"
+                    android:background="@android:color/transparent"
+                    app:tabBackground="@drawable/dot_selector"
+                    app:tabIndicatorHeight="0dp"
+                    app:tabMaxWidth="12dp"
+                    app:tabRippleColor="@null" />
 
                 <View
                     android:layout_width="match_parent"
@@ -225,26 +235,15 @@
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_detail_share"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="@dimen/touch_target"
+                        android:layout_weight="1"
                         android:text="@string/share_cta"
                         android:textAllCaps="false"
                         android:textColor="@color/sheet_text"
                         app:cornerRadius="@dimen/radius_md"
                         app:strokeColor="@color/sand" />
                 </LinearLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_share_to_group"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="@dimen/touch_target"
-                    android:layout_marginTop="@dimen/space_md"
-                    android:text="@string/share_group"
-                    android:textAllCaps="false"
-                    android:textColor="@color/sheet_text"
-                    app:cornerRadius="@dimen/radius_md"
-                    app:strokeColor="@color/sand" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_detail_report"

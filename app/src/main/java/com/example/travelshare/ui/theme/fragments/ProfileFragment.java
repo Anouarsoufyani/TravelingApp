@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -26,10 +25,12 @@ import com.example.travelshare.R;
 import com.example.travelshare.data.models.Group;
 import com.example.travelshare.data.models.NotificationPreference;
 import com.example.travelshare.data.models.Photo;
+import com.example.travelshare.data.models.TravelPlan;
 import com.example.travelshare.data.repository.FirebaseRepository;
 import com.example.travelshare.ui.LoginActivity;
 import com.example.travelshare.utils.SessionManager;
 import com.example.travelshare.viewmodels.SharedViewModel;
+import com.example.travelshare.viewmodels.TravelPathViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +43,7 @@ public class ProfileFragment extends Fragment {
     private EditText etBio;
     private SessionManager session;
     private SharedViewModel viewModel;
+    private TravelPathViewModel pathViewModel;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -85,6 +87,7 @@ public class ProfileFragment extends Fragment {
 
         session = new SessionManager(requireContext());
         viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+        pathViewModel = new ViewModelProvider(this).get(TravelPathViewModel.class);
 
         TextView tvName   = view.findViewById(R.id.tv_profile_name);
         TextView tvHandle = view.findViewById(R.id.tv_profile_handle);
@@ -114,9 +117,9 @@ public class ProfileFragment extends Fragment {
                 });
             });
 
-            FirebaseRepository.getInstance().loadUserProfile(username, data -> {
-                if (data == null || !isAdded()) return;
-                String firebaseBio = data.get("bio") instanceof String ? (String) data.get("bio") : null;
+            FirebaseRepository.getInstance().getUserProfile(username, doc -> {
+                if (doc == null || !doc.exists() || !isAdded()) return;
+                String firebaseBio = doc.getString("bio");
                 if (firebaseBio != null && !firebaseBio.isEmpty()) {
                     requireActivity().runOnUiThread(() -> {
                         if (!isAdded() || etBio == null) return;
@@ -126,12 +129,6 @@ public class ProfileFragment extends Fragment {
                     });
                 }
             });
-        } else {
-            tvName.setText("Anonyme");
-            tvHandle.setText("Mode anonyme");
-            tvAvatar.setText("?");
-            etBio.setEnabled(false);
-            etBio.setHint("Connectez-vous pour rédiger une bio");
         }
 
         view.findViewById(R.id.frame_avatar).setOnClickListener(v -> {
@@ -164,13 +161,14 @@ public class ProfileFragment extends Fragment {
             tvStatLikes.setText(String.valueOf(myLikes));
         });
 
-        RecyclerView rvMyPhotos = view.findViewById(R.id.rv_my_photos);
-        rvMyPhotos.setLayoutManager(new LinearLayoutManager(getContext()));
-        MyPhotosAdapter myPhotosAdapter = new MyPhotosAdapter(viewModel);
-        rvMyPhotos.setAdapter(myPhotosAdapter);
+        // Saved Plans
+        RecyclerView rvSavedPlans = view.findViewById(R.id.rv_saved_plans);
+        rvSavedPlans.setLayoutManager(new LinearLayoutManager(getContext()));
+        TravelPathFragment.PlanAdapter plansAdapter = new TravelPathFragment.PlanAdapter(pathViewModel, this);
+        rvSavedPlans.setAdapter(plansAdapter);
         if (session.isLoggedIn()) {
-            viewModel.getPhotosByAuthor(session.getUsername())
-                    .observe(getViewLifecycleOwner(), myPhotosAdapter::setPhotos);
+            pathViewModel.getSavedPlansForUser(session.getUserId())
+                    .observe(getViewLifecycleOwner(), plansAdapter::setPlans);
         }
 
         RecyclerView rvGroups = view.findViewById(R.id.rv_profile_groups);
@@ -182,8 +180,6 @@ public class ProfileFragment extends Fragment {
                 tvStatGroups.setText(groups != null ? String.valueOf(groups.size()) : "0");
                 groupAdapter.setGroups(groups);
             });
-        } else {
-            tvStatGroups.setText("0");
         }
 
         TextView tvAlertsPreview = view.findViewById(R.id.tv_alerts_preview);
@@ -227,42 +223,6 @@ public class ProfileFragment extends Fragment {
         });
 
         return view;
-    }
-
-    static class MyPhotosAdapter extends RecyclerView.Adapter<MyPhotosAdapter.MPVH> {
-        private List<Photo> photos = new ArrayList<>();
-        private final SharedViewModel viewModel;
-
-        MyPhotosAdapter(SharedViewModel vm) { this.viewModel = vm; }
-
-        static class MPVH extends RecyclerView.ViewHolder {
-            TextView tvTitle, tvMeta, btnDelete;
-            MPVH(View v) {
-                super(v);
-                tvTitle   = v.findViewById(R.id.tv_my_photo_title);
-                tvMeta    = v.findViewById(R.id.tv_my_photo_meta);
-                btnDelete = v.findViewById(R.id.btn_delete_photo);
-            }
-        }
-
-        @NonNull @Override
-        public MPVH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View v = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_my_photo, parent, false);
-            return new MPVH(v);
-        }
-
-        @Override
-        public void onBindViewHolder(@NonNull MPVH h, int position) {
-            Photo p = photos.get(position);
-            h.tvTitle.setText(p.getTitle());
-            h.tvMeta.setText(p.getLocation() + "  ·  " + p.getDate());
-            h.btnDelete.setOnClickListener(v -> viewModel.deletePhoto(p.getId()));
-        }
-
-        @Override public int getItemCount() { return photos.size(); }
-
-        void setPhotos(List<Photo> list) { this.photos = list != null ? list : new ArrayList<>(); notifyDataSetChanged(); }
     }
 
     static class ProfileGroupAdapter extends RecyclerView.Adapter<ProfileGroupAdapter.GVH> {

@@ -54,7 +54,7 @@ public class MainActivity extends AppCompatActivity implements InscriptionFragme
                 loadFragment(new InscriptionFragment());
             } else if (openTravelPath) {
                 bottomNav.setVisibility(View.VISIBLE);
-                bottomNav.setSelectedItemId(R.id.nav_profile);
+                bottomNav.setSelectedItemId(R.id.nav_map);
                 String city = travelPathCity != null ? travelPathCity : "";
                 loadFragment(TravelPathFragment.newInstance(city));
             } else {
@@ -108,6 +108,14 @@ public class MainActivity extends AppCompatActivity implements InscriptionFragme
             String city = intent.getStringExtra("TRAVELPATH_CITY");
             bottomNav.setVisibility(View.VISIBLE);
             loadFragment(TravelPathFragment.newInstance(city != null ? city : ""));
+        }
+        
+        boolean openDirectChat = intent.getBooleanExtra("OPEN_DIRECT_CHAT", false);
+        if (openDirectChat) {
+            String target = intent.getStringExtra("DIRECT_CHAT_USER");
+            if (target != null) {
+                loadFragment(com.example.travelshare.ui.theme.fragments.DirectChatFragment.newInstance(target));
+            }
         }
     }
 

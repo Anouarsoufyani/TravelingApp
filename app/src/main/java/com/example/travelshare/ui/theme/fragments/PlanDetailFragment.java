@@ -49,6 +49,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import com.example.travelshare.viewmodels.SharedViewModel;
+import com.example.travelshare.data.models.GroupMessage;
+import com.example.travelshare.utils.SessionManager;
+import com.example.travelshare.data.models.AppNotification;
+import com.example.travelshare.data.repository.FirebaseRepository;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 public class PlanDetailFragment extends Fragment {
 
     private static final String ARG_PLAN_ID = "plan_id";
@@ -76,10 +85,9 @@ public class PlanDetailFragment extends Fragment {
 
         long planId = getArguments() != null ? getArguments().getLong(ARG_PLAN_ID, -1) : -1;
         viewModel = new ViewModelProvider(this).get(TravelPathViewModel.class);
+        final SharedViewModel sViewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
 
         mapView       = view.findViewById(R.id.map_plan);
-        blockRouteTime = view.findViewById(R.id.block_route_time);
-        tvRouteTime    = view.findViewById(R.id.tv_pd_route_time);
         mapView.setTileSource(TileSourceFactory.MAPNIK);
         mapView.setMultiTouchControls(true);
         mapView.getController().setZoom(13.0);
@@ -134,7 +142,7 @@ public class PlanDetailFragment extends Fragment {
                 });
 
                 btnRegen.setOnClickListener(v -> {
-                    TravelPathFragment tpFragment = TravelPathFragment.newInstanceForRegen(plan);
+                    TravelPathFragment tpFragment = TravelPathFragment.newInstance(plan.city, plan.requiredPlaces);
                     requireActivity().getSupportFragmentManager().popBackStack();
                     requireActivity().getSupportFragmentManager()
                             .beginTransaction()
@@ -169,30 +177,115 @@ public class PlanDetailFragment extends Fragment {
             })
         );
 
-        view.findViewById(R.id.btn_pd_share).setOnClickListener(v ->
-            AppDatabase.databaseWriteExecutor.execute(() -> {
-                AppDatabase db = AppDatabase.getInstance(requireContext());
-                TravelPlan plan = db.travelPlanDao().getPlanById(planId);
-                List<PlanStep> steps = db.planStepDao().getStepsForPlanSync(planId);
-                if (plan == null || !isAdded()) return;
-                StringBuilder sb = new StringBuilder();
-                sb.append("Mon parcours TravelPath à ").append(plan.city).append("\n\n");
-                for (PlanStep s : steps) {
-                    sb.append("[").append(s.timeSlot).append("] ")
-                      .append(s.name).append(" — ")
-                      .append(s.costEur == 0 ? "Gratuit" : s.costEur + "€");
-                    sb.append("\n");
-                }
-                sb.append("\nBudget total : ").append(plan.budgetEur).append(" €");
-                Intent shareIntent = new Intent(Intent.ACTION_SEND);
-                shareIntent.setType("text/plain");
-                shareIntent.putExtra(Intent.EXTRA_TEXT, sb.toString());
-                requireActivity().runOnUiThread(() ->
-                        startActivity(Intent.createChooser(shareIntent, "Partager le parcours")));
-            })
-        );
+        view.findViewById(R.id.btn_pd_share).setOnClickListener(v -> {
+            if (currentPlan == null) return;
+            SessionManager session = new SessionManager(requireContext());
+            if (!session.isLoggedIn()) {
+                Toast.makeText(getContext(), "Connectez-vous pour partager", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            String[] options = {"À un groupe", "À un ami", "Externe (Texte)"};
+            new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    .setTitle("Partager ce parcours…")
+                    .setItems(options, (dialog, which) -> {
+                        if (which == 0) shareToGroup(session, sViewModel, currentPlan);
+                        else if (which == 1) shareToFriend(session, currentPlan);
+                        else shareExternal(currentPlan);
+                    })
+                    .show();
+        });
 
         return view;
+    }
+
+    private void shareToGroup(SessionManager session, SharedViewModel sViewModel, TravelPlan plan) {
+        FirebaseRepository.getInstance().getMyMemberGroups(session.getUsername(), groups -> {
+            requireActivity().runOnUiThread(() -> {
+                if (groups == null || groups.isEmpty()) {
+                    Toast.makeText(getContext(), "Vous n'appartenez à aucun groupe", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                String[] names = new String[groups.size()];
+                for (int i = 0; i < groups.size(); i++) names[i] = groups.get(i).name;
+                new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                        .setTitle("Choisir un groupe")
+                        .setItems(names, (d, which) -> {
+                            String groupName = groups.get(which).name;
+                            String text = "🗺️ Parcours à " + plan.city + " (" + plan.budgetEur + "€)";
+                            String date = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
+                            
+                            GroupMessage msg = new GroupMessage();
+                            msg.groupId = groups.get(which).id;
+                            msg.userId = session.getUserId();
+                            msg.authorName = session.getUsername();
+                            msg.message = text;
+                            msg.planId = plan.id;
+                            msg.date = date;
+                            
+                            sViewModel.sendGroupMessage(msg);
+                            FirebaseRepository.getInstance().saveSharedPlanMessage(groupName, session.getUsername(), text, plan.id, date);
+                            Toast.makeText(getContext(), "Partagé dans \"" + groupName + "\"", Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("Annuler", null)
+                        .show();
+            });
+        });
+    }
+
+    private void shareToFriend(SessionManager session, TravelPlan plan) {
+        FirebaseRepository.getInstance().getFriends(session.getUsername(), friends -> {
+            requireActivity().runOnUiThread(() -> {
+                if (friends == null || friends.isEmpty()) {
+                    Toast.makeText(getContext(), "Vous n'avez pas d'amis (suivis mutuels)", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                String[] names = friends.toArray(new String[0]);
+                new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                        .setTitle("Choisir un ami")
+                        .setItems(names, (d, which) -> {
+                            String target = names[which];
+                            String date = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
+                            String text = "🗺️ Parcours à " + plan.city;
+
+                            // Send direct message
+                            FirebaseRepository.getInstance().saveDirectMessage(
+                                    session.getUsername(), target, text, date, 0, plan.id, -1, null);
+
+                            // Keep notification for alert
+                            AppNotification notif = new AppNotification();
+                            notif.type = "SHARE_PATH";
+                            notif.senderUsername = session.getUsername();
+                            notif.message = session.getUsername() + " vous a partagé un parcours à " + plan.city;
+                            notif.planId = plan.id;
+                            notif.date = date;
+                            FirebaseRepository.getInstance().saveNotification(target, notif);
+                            
+                            Toast.makeText(getContext(), "Parcours partagé avec " + target, Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("Annuler", null)
+                        .show();
+            });
+        });
+    }
+
+    private void shareExternal(TravelPlan plan) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            List<PlanStep> steps = AppDatabase.getInstance(requireContext()).planStepDao().getStepsForPlanSync(plan.id);
+            StringBuilder sb = new StringBuilder();
+            sb.append("Mon parcours TravelPath à ").append(plan.city).append("\n\n");
+            for (PlanStep s : steps) {
+                sb.append("[").append(s.timeSlot).append("] ")
+                  .append(s.name).append(" — ")
+                  .append(s.costEur == 0 ? "Gratuit" : s.costEur + "€\n");
+            }
+            sb.append("\nBudget total : ").append(plan.budgetEur).append(" €");
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("text/plain");
+            shareIntent.putExtra(Intent.EXTRA_TEXT, sb.toString());
+            requireActivity().runOnUiThread(() ->
+                    startActivity(Intent.createChooser(shareIntent, "Partager le parcours")));
+        });
     }
 
     private void addMarkersAndRoute(List<PlanStep> steps) {

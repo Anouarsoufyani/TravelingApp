@@ -32,6 +32,23 @@
             android:scaleType="centerCrop"
             android:visibility="gone" />
 
+        <!-- Multi-photo badge -->
+        <TextView
+            android:id="@+id/tv_multi_photo_badge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_margin="12dp"
+            android:background="@drawable/bg_pill_solid"
+            android:backgroundTint="@color/overlay_soft"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
+            android:text="1/3"
+            android:textColor="@color/default_white"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
         <View
             android:layout_width="match_parent"
             android:layout_height="@dimen/photo_overlay_height"

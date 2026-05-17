@@ -48,8 +48,48 @@ public class GroupsFragment extends Fragment {
     private GroupAdapter adapter;
     private ListenerRegistration groupsListener;
     private ListenerRegistration membershipsListener;
+    private ListenerRegistration directChatsListener;
+    
     private final List<Group> firebaseGroups = new ArrayList<>();
+    private final List<Conversation> directConversations = new ArrayList<>();
     private final Map<String, String> membershipsByName = new HashMap<>();
+
+    public static class Conversation {
+        public boolean isGroup;
+        public long id;
+        public String name;
+        public String description;
+        public String creatorUsername;
+        public String targetUsername; // For direct chats
+        
+        public static Conversation fromGroup(Group g) {
+            Conversation c = new Conversation();
+            c.isGroup = true;
+            c.id = g.id;
+            c.name = g.name;
+            c.description = g.description;
+            c.creatorUsername = g.creatorUsername;
+            return c;
+        }
+
+        public static Conversation fromDirectChat(Map<String, Object> map, String currentUsername) {
+            Conversation c = new Conversation();
+            c.isGroup = false;
+            c.description = (String) map.get("lastMessage");
+            List<String> participants = (List<String>) map.get("participants");
+            if (participants != null) {
+                for (String p : participants) {
+                    if (!p.equalsIgnoreCase(currentUsername)) {
+                        c.name = p;
+                        c.targetUsername = p;
+                        break;
+                    }
+                }
+            }
+            if (c.name == null) c.name = "Inconnu";
+            return c;
+        }
+    }
 
     private View layoutSearch;
     private EditText etSearch;
@@ -97,17 +137,16 @@ public class GroupsFragment extends Fragment {
         });
 
         startFirestoreListeners();
-        // Initial tab state already handled by switchTab or initial TabLayout setup
         return view;
     }
 
     @Override
     public void onResume() {
         super.onResume();
-
         session = new SessionManager(requireContext());
         adapter.setSession(session);
         restartMembershipListener();
+        startDirectChatsListener();
         renderGroups();
     }
 
@@ -116,6 +155,7 @@ public class GroupsFragment extends Fragment {
         super.onDestroyView();
         if (groupsListener != null) { groupsListener.remove(); groupsListener = null; }
         if (membershipsListener != null) { membershipsListener.remove(); membershipsListener = null; }
+        if (directChatsListener != null) { directChatsListener.remove(); directChatsListener = null; }
     }
 
     private void startFirestoreListeners() {
@@ -126,6 +166,22 @@ public class GroupsFragment extends Fragment {
             if (isAdded()) requireActivity().runOnUiThread(this::renderGroups);
         });
         restartMembershipListener();
+        startDirectChatsListener();
+    }
+
+    private void startDirectChatsListener() {
+        if (directChatsListener != null) directChatsListener.remove();
+        if (!session.isLoggedIn()) return;
+        
+        directChatsListener = FirebaseRepository.getInstance().listenToMyDirectChats(session.getUsername(), chats -> {
+            directConversations.clear();
+            if (chats != null) {
+                for (Map<String, Object> m : chats) {
+                    directConversations.add(Conversation.fromDirectChat(m, session.getUsername()));
+                }
+            }
+            if (isAdded()) requireActivity().runOnUiThread(this::renderGroups);
+        });
     }
 
     private void restartMembershipListener() {
@@ -160,29 +216,65 @@ public class GroupsFragment extends Fragment {
     private void renderGroups() {
         if (adapter == null) return;
         adapter.setMemberships(membershipsByName);
-        if (!session.isLoggedIn() && currentTab == TAB_MY) {
-            adapter.setGroups(new ArrayList<>());
-            return;
-        }
-
+        
         String currentUsername = session.getUsername();
         String query = etSearch != null ? etSearch.getText().toString().trim().toLowerCase(Locale.ROOT) : "";
-        List<Group> visible = new ArrayList<>();
-        for (Group g : firebaseGroups) {
-            boolean isCreator = isCreator(g, currentUsername);
-            String status = membershipsByName.get(g.name);
-            boolean isMember = "MEMBER".equals(status);
-            boolean belongsToMe = isCreator || isMember;
-
-            if (currentTab == TAB_MY && !belongsToMe) continue;
-            if (currentTab == TAB_DISC && !query.isEmpty()) {
-                String haystack = ((g.name != null ? g.name : "") + " "
-                        + (g.description != null ? g.description : "")).toLowerCase(Locale.ROOT);
-                if (!haystack.contains(query)) continue;
+        
+        if (currentTab == TAB_MY) {
+            // My Conversations (Direct + Groups I'm in + All Friends)
+            if (!session.isLoggedIn()) {
+                adapter.setConversations(new ArrayList<>());
+                return;
             }
-            visible.add(g);
+
+            FirebaseRepository.getInstance().getFriends(currentUsername, friends -> {
+                List<Conversation> visible = new ArrayList<>();
+                
+                // 1. All Friends (as potential direct chats)
+                if (friends != null) {
+                    for (String friend : friends) {
+                        Conversation c = new Conversation();
+                        c.isGroup = false;
+                        c.name = friend;
+                        c.targetUsername = friend;
+                        c.description = "Ami"; // Default status
+                        
+                        // If we already have a real direct chat with messages, use that instead
+                        for (Conversation existing : directConversations) {
+                            if (friend.equalsIgnoreCase(existing.targetUsername)) {
+                                c.description = existing.description;
+                                break;
+                            }
+                        }
+                        visible.add(c);
+                    }
+                }
+
+                // 2. Groups
+                for (Group g : firebaseGroups) {
+                    boolean isCreator = isCreator(g, currentUsername);
+                    String status = membershipsByName.get(g.name);
+                    boolean isMember = "MEMBER".equals(status);
+                    if (isCreator || isMember) {
+                        visible.add(Conversation.fromGroup(g));
+                    }
+                }
+
+                if (isAdded()) requireActivity().runOnUiThread(() -> adapter.setConversations(visible));
+            });
+        } else {
+            // Groups to Discover (Public groups)
+            List<Conversation> discoverList = new ArrayList<>();
+            for (Group g : firebaseGroups) {
+                if (!query.isEmpty()) {
+                    String haystack = ((g.name != null ? g.name : "") + " "
+                            + (g.description != null ? g.description : "")).toLowerCase(Locale.ROOT);
+                    if (!haystack.contains(query)) continue;
+                }
+                discoverList.add(Conversation.fromGroup(g));
+            }
+            adapter.setConversations(discoverList);
         }
-        adapter.setGroups(visible);
     }
 
     private static boolean isCreator(Group g, String username) {
@@ -244,7 +336,7 @@ public class GroupsFragment extends Fragment {
         static final int MODE_MY       = 0;
         static final int MODE_DISCOVER = 1;
 
-        private List<Group> groups = new ArrayList<>();
+        private List<Conversation> conversations = new ArrayList<>();
         private int mode = MODE_MY;
         private SessionManager session;
         private final SharedViewModel viewModel;
@@ -267,8 +359,8 @@ public class GroupsFragment extends Fragment {
             notifyDataSetChanged();
         }
 
-        void setGroups(List<Group> g) {
-            groups = g != null ? g : new ArrayList<>();
+        void setConversations(List<Conversation> list) {
+            this.conversations = list != null ? list : new ArrayList<>();
             notifyDataSetChanged();
         }
 
@@ -282,148 +374,105 @@ public class GroupsFragment extends Fragment {
                 tvAction      = v.findViewById(R.id.tv_group_action);
                 tvChat        = v.findViewById(R.id.tv_group_chat);
                 tvUnreadBadge = v.findViewById(R.id.tv_unread_badge);
-                View badge = v.findViewById(R.id.tv_pending_badge);
-                if (badge != null) badge.setVisibility(View.GONE);
             }
         }
 
         @NonNull @Override
         public GVH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View v = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_group, parent, false);
-            return new GVH(v);
+            return new GVH(LayoutInflater.from(parent.getContext()).inflate(R.layout.item_group, parent, false));
         }
 
         @Override
         public void onBindViewHolder(@NonNull GVH h, int position) {
-            Group g = groups.get(position);
-            boolean isCreator = session.isLoggedIn()
-                    && g.creatorUsername != null
-                    && g.creatorUsername.equalsIgnoreCase(session.getUsername());
-
-            String initial = (g.name != null && !g.name.isEmpty())
-                    ? String.valueOf(g.name.charAt(0)).toUpperCase() : "G";
-            h.tvAvatar.setText(initial);
-            h.tvName.setText(g.name);
-            String visibility = g.isPublic() ? "Public" : "Privé";
-            String desc = g.description != null && !g.description.isEmpty()
-                    ? g.description : "Aucune description";
-            h.tvDesc.setText(visibility + " · " + desc);
-
+            Conversation c = conversations.get(position);
+            
+            String initial = (c.name != null && !c.name.isEmpty())
+                    ? String.valueOf(c.name.charAt(0)).toUpperCase() : "?";
+            
+            h.tvAvatar.setText(c.isGroup ? "👥" : initial);
+            h.tvAvatar.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                    h.itemView.getContext().getResources().getColor(c.isGroup ? R.color.surface_field : R.color.accent_soft, null)));
+            
+            h.tvName.setText(c.name);
+            
             if (mode == MODE_MY) {
-                bindMyGroup(h, g, isCreator);
+                bindMyConversation(h, c);
             } else {
-                bindDiscoverGroup(h, g, isCreator);
+                // In Discover mode, we only show groups
+                bindDiscoverGroup(h, c);
             }
         }
 
-        private void bindMyGroup(GVH h, Group g, boolean isCreator) {
-            h.tvAction.setVisibility(isCreator ? View.VISIBLE : View.GONE);
+        private void bindMyConversation(GVH h, Conversation c) {
+            if (c.isGroup) {
+                boolean isCreator = session.isLoggedIn() && c.creatorUsername != null && c.creatorUsername.equalsIgnoreCase(session.getUsername());
+                h.tvAction.setVisibility(isCreator ? View.VISIBLE : View.GONE);
+                if (isCreator) {
+                    h.tvAction.setText("👑 Admin");
+                    h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(R.color.sand, null));
+                }
+                h.tvDesc.setText("Groupe · " + (c.description != null ? c.description : ""));
+                h.itemView.setOnClickListener(v -> openGroupChat(v, c));
+            } else {
+                h.tvAction.setVisibility(View.VISIBLE);
+                h.tvAction.setText("Privé");
+                h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(R.color.sheet_muted, null));
+                h.tvDesc.setText(c.description != null ? c.description : "Démarrer la discussion");
+                h.itemView.setOnClickListener(v -> openDirectChat(v, c.targetUsername));
+            }
+            h.tvUnreadBadge.setVisibility(View.GONE); // Simplified for now
+        }
+
+        private void bindDiscoverGroup(GVH h, Conversation c) {
+            h.tvAction.setVisibility(View.VISIBLE);
+            h.tvDesc.setText("Groupe public · " + (c.description != null ? c.description : ""));
+            
+            boolean isCreator = session.isLoggedIn() && c.creatorUsername != null && c.creatorUsername.equalsIgnoreCase(session.getUsername());
             if (isCreator) {
-                h.tvAction.setText("👑 Admin");
+                h.tvAction.setText("👑 Mon groupe");
                 h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(R.color.sand, null));
+                h.itemView.setOnClickListener(v -> openGroupChat(v, c));
+                return;
             }
 
-            // Clicking the whole card opens the chat
-            h.itemView.setOnClickListener(v -> {
-                viewModel.markGroupMessagesRead(session.getUserId(), g.id);
-                h.tvUnreadBadge.setVisibility(View.GONE);
-                openChat(v, g);
-            });
-
-            if (session.isLoggedIn()) {
-                viewModel.getUnreadCountForGroup(session.getUserId(), g.id)
-                        .observe((androidx.lifecycle.LifecycleOwner) fragment, count -> {
-                    if (count != null && count > 0) {
-                        h.tvUnreadBadge.setVisibility(View.VISIBLE);
-                        h.tvUnreadBadge.setText(count > 9 ? "9+" : String.valueOf(count));
-                    } else {
-                        h.tvUnreadBadge.setVisibility(View.GONE);
-                    }
+            String status = memberships.get(c.name);
+            if ("MEMBER".equals(status)) {
+                h.tvAction.setText("Membre ✓");
+                h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(R.color.comfort_green, null));
+                h.itemView.setOnClickListener(v -> openGroupChat(v, c));
+            } else {
+                h.itemView.setOnClickListener(null);
+                h.tvAction.setText("Rejoindre →");
+                h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(R.color.coral, null));
+                h.tvAction.setOnClickListener(v -> {
+                    FirebaseRepository.getInstance().saveGroupMember(c.name, session.getUsername(), "MEMBER");
+                    memberships.put(c.name, "MEMBER");
+                    notifyDataSetChanged();
                 });
             }
         }
 
-        private void bindDiscoverGroup(GVH h, Group g, boolean isCreator) {
-            h.tvAction.setVisibility(View.VISIBLE);
-            
-            if (isCreator) {
-                h.tvAction.setText("👑 Mon groupe");
-                h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(R.color.sand, null));
-                h.itemView.setOnClickListener(v -> openChat(v, g));
-                h.tvAction.setOnClickListener(v -> openChat(v, g));
-                return;
-            }
-
-            String status = memberships.get(g.name);
-
-            if ("MEMBER".equals(status)) {
-                h.tvAction.setText("Membre ✓");
-                h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(R.color.comfort_green, null));
-                h.itemView.setOnClickListener(v -> openChat(v, g));
-                h.tvAction.setOnClickListener(v ->
-                        new AlertDialog.Builder(v.getContext())
-                                .setTitle("Quitter " + g.name + " ?")
-                                .setPositiveButton("Quitter", (d, w) -> {
-                                    FirebaseRepository.getInstance().deleteGroupMember(g.name, session.getUsername());
-                                    memberships.remove(g.name);
-                                    notifyDataSetChanged();
-                                })
-                                .setNegativeButton("Annuler", null)
-                                .show());
-            } else {
-                h.itemView.setOnClickListener(null); // Can't open chat if not a member
-                if ("PENDING".equals(status)) {
-                    h.tvAction.setText("⏳ En attente");
-                    h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(R.color.ink_faint, null));
-                    h.tvAction.setOnClickListener(v ->
-                            Toast.makeText(v.getContext(), "Demande envoyée, en attente d'approbation.", Toast.LENGTH_SHORT).show());
-                } else if ("INVITED".equals(status)) {
-                    h.tvAction.setText("Invitation");
-                    h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(R.color.coral, null));
-                    h.tvAction.setOnClickListener(v ->
-                            new android.app.AlertDialog.Builder(v.getContext())
-                                    .setTitle("Rejoindre " + g.name + " ?")
-                                    .setMessage("Vous avez été invité à rejoindre ce groupe.")
-                                    .setPositiveButton("Accepter", (d, w) -> {
-                                        FirebaseRepository.getInstance().acceptGroupInvitation(g.name, session.getUsername());
-                                        memberships.put(g.name, "MEMBER");
-                                        notifyDataSetChanged();
-                                    })
-                                    .setNegativeButton("Refuser", (d, w) -> {
-                                        FirebaseRepository.getInstance().declineGroupInvitation(g.name, session.getUsername());
-                                        memberships.remove(g.name);
-                                        notifyDataSetChanged();
-                                    })
-                                    .show());
-                } else {
-                    h.tvAction.setText(g.isPublic() ? "Rejoindre →" : "Demander →");
-                    h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(R.color.coral, null));
-                    h.tvAction.setOnClickListener(v -> {
-                        if (!session.isLoggedIn()) {
-                            Toast.makeText(v.getContext(), "Connectez-vous pour rejoindre un groupe.", Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                        String newStatus = g.isPublic() ? "MEMBER" : "PENDING";
-                        FirebaseRepository.getInstance().saveGroupMember(g.name, session.getUsername(), newStatus);
-                        memberships.put(g.name, newStatus);
-                        notifyDataSetChanged();
-                    });
+        private void openGroupChat(View v, Conversation c) {
+            androidx.fragment.app.FragmentActivity activity = (androidx.fragment.app.FragmentActivity) v.getContext();
+            // Look up the actual group ID from firebaseGroups if missing
+            long realId = c.id;
+            if (realId <= 0 && fragment instanceof GroupsFragment) {
+                for (Group g : ((GroupsFragment)fragment).firebaseGroups) {
+                    if (g.name.equals(c.name)) { realId = g.id; break; }
                 }
             }
+            activity.getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, GroupChatFragment.newInstance(realId, c.name, -1, c.creatorUsername))
+                    .addToBackStack(null).commit();
         }
 
-        private void openChat(View v, Group g) {
-            androidx.fragment.app.FragmentActivity activity =
-                    (androidx.fragment.app.FragmentActivity) v.getContext();
-            activity.getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.fragment_container,
-                            GroupChatFragment.newInstance(g.id, g.name, g.creatorId, g.creatorUsername))
-                    .addToBackStack(null)
-                    .commit();
+        private void openDirectChat(View v, String target) {
+            androidx.fragment.app.FragmentActivity activity = (androidx.fragment.app.FragmentActivity) v.getContext();
+            activity.getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, DirectChatFragment.newInstance(target))
+                    .addToBackStack(null).commit();
         }
 
-        @Override public int getItemCount() { return groups.size(); }
+        @Override public int getItemCount() { return conversations.size(); }
     }
 }

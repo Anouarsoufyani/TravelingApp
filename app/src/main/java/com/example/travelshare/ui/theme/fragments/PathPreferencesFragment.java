@@ -74,7 +74,7 @@ public class PathPreferencesFragment extends Fragment {
             prefill.requiredPlaces    = "";
             prefill.weatherTolerances = weather;
 
-            TravelPathFragment tpFragment = TravelPathFragment.newInstanceForRegen(prefill);
+            TravelPathFragment tpFragment = TravelPathFragment.newInstance(prefill.city);
             requireActivity().getSupportFragmentManager()
                     .beginTransaction()
                     .replace(R.id.fragment_container, tpFragment)

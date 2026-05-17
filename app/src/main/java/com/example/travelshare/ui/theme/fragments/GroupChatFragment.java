@@ -72,6 +72,7 @@ public class GroupChatFragment extends Fragment {
         static final int TYPE_MESSAGE = 0;
         static final int TYPE_POST    = 1;
         static final int TYPE_SHARED  = 2;
+        static final int TYPE_PLAN    = 3;
         int type;
         GroupMessage message;
         Photo post;
@@ -79,7 +80,10 @@ public class GroupChatFragment extends Fragment {
 
         static ChatItem fromMessage(GroupMessage m) {
             ChatItem item = new ChatItem();
-            item.type    = m.photoId > 0 ? TYPE_SHARED : TYPE_MESSAGE;
+            if (m.photoId > 0) item.type = TYPE_SHARED;
+            else if (m.planId > 0) item.type = TYPE_PLAN;
+            else item.type = TYPE_MESSAGE;
+            
             item.message = m;
             item.date    = m.date != null ? m.date : "";
             return item;
@@ -117,7 +121,10 @@ public class GroupChatFragment extends Fragment {
                 && ((creatorUsername != null && creatorUsername.equalsIgnoreCase(session.getUsername()))
                 || session.getUserId() == creatorId);
 
-        ((TextView) view.findViewById(R.id.tv_chat_group_name)).setText("💬 " + groupName);
+        TextView tvGroupName = view.findViewById(R.id.tv_chat_group_name);
+        tvGroupName.setText("💬 " + groupName);
+        tvGroupName.setOnClickListener(v -> showGroupDetailsDialog(groupName, creatorUsername));
+
         view.findViewById(R.id.btn_chat_back).setOnClickListener(v ->
                 requireActivity().getSupportFragmentManager().popBackStack());
         view.findViewById(R.id.btn_invite_group).setOnClickListener(v -> {
@@ -214,31 +221,68 @@ public class GroupChatFragment extends Fragment {
         return view;
     }
 
-    private void showInviteDialog(String groupName, long groupId, String inviterUsername) {
-        EditText etUsername = new EditText(requireContext());
-        etUsername.setHint("Nom d'utilisateur à inviter");
-        etUsername.setSingleLine(true);
-        int pad = (int) (24 * getResources().getDisplayMetrics().density);
-        etUsername.setPadding(pad, 8, pad, 0);
+    private void showGroupDetailsDialog(String groupName, String creator) {
+        FirebaseRepository.getInstance().getGroupMembers(groupName, members -> {
+            if (!members.contains(creator) && creator != null) {
+                members.add(0, creator + " (👑)");
+            }
 
-        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                .setTitle("Inviter dans " + groupName)
-                .setMessage("Pour l’instant, entrez le nom d’utilisateur. La liste sera limitée aux amis quand le module amis sera ajouté.")
-                .setView(etUsername)
-                .setPositiveButton("Inviter", (dialog, which) -> {
-                    String target = etUsername.getText().toString().trim();
-                    if (target.isEmpty()) return;
-                    if (target.equalsIgnoreCase(inviterUsername)) {
-                        Toast.makeText(getContext(), "Vous êtes déjà dans ce groupe.", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    String date = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
-                    FirebaseRepository.getInstance().sendGroupInvitation(
-                            groupName, groupId, inviterUsername, target, date);
-                    Toast.makeText(getContext(), "Invitation envoyée à " + target, Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton("Annuler", null)
-                .show();
+            String[] memberArray = members.toArray(new String[0]);
+
+            requireActivity().runOnUiThread(() -> {
+                new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                        .setTitle("Membres de " + groupName)
+                        .setItems(memberArray, (dialog, which) -> {
+                            String selected = memberArray[which].replace(" (👑)", "");
+                            android.content.Intent intent = new android.content.Intent(getContext(), com.example.travelshare.ui.UserProfileActivity.class);
+                            intent.putExtra(com.example.travelshare.ui.UserProfileActivity.EXTRA_USERNAME, selected);
+                            startActivity(intent);
+                        })
+                        .setPositiveButton("Fermer", null)
+                        .show();
+            });
+        });
+    }
+
+    private void showInviteDialog(String groupName, long groupId, String inviterUsername) {
+        FirebaseRepository.getInstance().getFriends(inviterUsername, friends -> {
+            if (friends == null || friends.isEmpty()) {
+                requireActivity().runOnUiThread(() -> 
+                    new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                        .setTitle("Inviter des amis")
+                        .setMessage("Vous n'avez pas encore d'amis (suivis mutuels). Suivez des utilisateurs et attendez qu'ils vous suivent en retour pour les inviter.")
+                        .setPositiveButton("OK", null)
+                        .show());
+                return;
+            }
+
+            String[] friendArray = friends.toArray(new String[0]);
+            boolean[] checkedItems = new boolean[friendArray.length];
+
+            requireActivity().runOnUiThread(() -> {
+                new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                        .setTitle("Inviter des amis dans " + groupName)
+                        .setMultiChoiceItems(friendArray, checkedItems, (dialog, which, isChecked) -> {
+                            checkedItems[which] = isChecked;
+                        })
+                        .setPositiveButton("Inviter", (dialog, which) -> {
+                            String date = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
+                            int count = 0;
+                            for (int i = 0; i < friendArray.length; i++) {
+                                if (checkedItems[i]) {
+                                    FirebaseRepository.getInstance().sendGroupInvitation(
+                                            groupName, groupId, inviterUsername, friendArray[i], date);
+                                    count++;
+                                }
+                            }
+                            if (count > 0) {
+                                Toast.makeText(getContext(), count + " invitation(s) envoyée(s)", Toast.LENGTH_SHORT).show();
+                            }
+                        })
+                        .setNegativeButton("Annuler", null)
+                        .show();
+            });
+        });
     }
 
     @Override
@@ -355,6 +399,18 @@ public class GroupChatFragment extends Fragment {
             }
         }
 
+        static class SharedPlanVH extends RecyclerView.ViewHolder {
+            com.google.android.material.card.MaterialCardView card;
+            TextView tvTitle, tvAuthor;
+            SharedPlanVH(View v) {
+                super(v);
+                card     = v.findViewById(R.id.card_shared);
+                tvTitle  = v.findViewById(R.id.tv_shared_title);
+                tvAuthor = v.findViewById(R.id.tv_shared_author);
+                // We'll reuse item_shared_photo layout but hide/adjust fields if needed
+            }
+        }
+
         static class PostVH extends RecyclerView.ViewHolder {
             android.widget.FrameLayout cardContainer;
             com.google.android.material.card.MaterialCardView card;
@@ -385,6 +441,9 @@ public class GroupChatFragment extends Fragment {
             if (viewType == ChatItem.TYPE_SHARED) {
                 return new SharedPhotoVH(inf.inflate(R.layout.item_shared_photo, parent, false));
             }
+            if (viewType == ChatItem.TYPE_PLAN) {
+                return new SharedPlanVH(inf.inflate(R.layout.item_shared_photo, parent, false));
+            }
             return new MessageVH(inf.inflate(R.layout.item_group_message, parent, false));
         }
 
@@ -395,6 +454,8 @@ public class GroupChatFragment extends Fragment {
                 bindMessage((MessageVH) holder, item.message);
             } else if (item.type == ChatItem.TYPE_SHARED) {
                 bindSharedPhoto((SharedPhotoVH) holder, item.message);
+            } else if (item.type == ChatItem.TYPE_PLAN) {
+                bindSharedPlan((SharedPlanVH) holder, item.message);
             } else {
                 bindPost((PostVH) holder, item.post);
             }
@@ -419,6 +480,14 @@ public class GroupChatFragment extends Fragment {
                     : h.tvAuthor.getContext().getResources().getColor(R.color.sand, null));
             h.tvAuthor.setText(mine ? "Moi" : m.authorName);
             h.tvAuthor.setVisibility(mine ? View.GONE : View.VISIBLE);
+            
+            h.tvAuthor.setOnClickListener(v -> {
+                if (!mine && m.authorName != null) {
+                    android.content.Intent intent = new android.content.Intent(v.getContext(), com.example.travelshare.ui.UserProfileActivity.class);
+                    intent.putExtra(com.example.travelshare.ui.UserProfileActivity.EXTRA_USERNAME, m.authorName);
+                    v.getContext().startActivity(intent);
+                }
+            });
 
             h.tvText.setTextColor(h.tvText.getContext().getResources().getColor(R.color.default_white, null));
             h.tvText.setText(m.message);
@@ -426,6 +495,35 @@ public class GroupChatFragment extends Fragment {
             h.tvDate.setTextColor(mine
                     ? h.tvDate.getContext().getResources().getColor(R.color.default_white, null)
                     : h.tvDate.getContext().getResources().getColor(R.color.ink_faint, null));
+        }
+
+        private void bindSharedPlan(SharedPlanVH h, GroupMessage m) {
+            boolean mine = !currentUsername.isEmpty()
+                    && currentUsername.equalsIgnoreCase(m.authorName);
+
+            android.widget.FrameLayout.LayoutParams lp =
+                    (android.widget.FrameLayout.LayoutParams) h.card.getLayoutParams();
+            lp.gravity = mine ? Gravity.END : Gravity.START;
+            h.card.setLayoutParams(lp);
+
+            h.tvTitle.setText(m.message); // Contains "🗺️ Parcours à..."
+            h.tvAuthor.setText(mine ? "Moi" : m.authorName);
+            
+            // Hide specific photo fields if they exist in item_shared_photo
+            View iv = h.itemView.findViewById(R.id.iv_shared_image);
+            if (iv != null) iv.setVisibility(View.GONE);
+            View loc = h.itemView.findViewById(R.id.tv_shared_location);
+            if (loc != null) loc.setVisibility(View.GONE);
+
+            h.itemView.setOnClickListener(v -> {
+                if (m.planId > 0) {
+                    androidx.fragment.app.FragmentActivity act = (androidx.fragment.app.FragmentActivity) v.getContext();
+                    act.getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_container, PlanDetailFragment.newInstance(m.planId))
+                            .addToBackStack(null)
+                            .commit();
+                }
+            });
         }
 
         private void bindSharedPhoto(SharedPhotoVH h, GroupMessage m) {
@@ -468,6 +566,7 @@ public class GroupChatFragment extends Fragment {
                         intent.putExtra(PhotoDetailActivity.EXTRA_LAT,       photo.getLatitude());
                         intent.putExtra(PhotoDetailActivity.EXTRA_LNG,       photo.getLongitude());
                         intent.putExtra(PhotoDetailActivity.EXTRA_IMAGE_URI, photo.getImageUri());
+                        intent.putExtra(PhotoDetailActivity.EXTRA_VOICE_URI, photo.getVoiceUri());
                         v.getContext().startActivity(intent);
                     });
                 });
@@ -506,6 +605,7 @@ public class GroupChatFragment extends Fragment {
                 intent.putExtra(PhotoDetailActivity.EXTRA_LAT,       p.getLatitude());
                 intent.putExtra(PhotoDetailActivity.EXTRA_LNG,       p.getLongitude());
                 intent.putExtra(PhotoDetailActivity.EXTRA_IMAGE_URI, p.getImageUri());
+                intent.putExtra(PhotoDetailActivity.EXTRA_VOICE_URI, p.getVoiceUri());
                 v.getContext().startActivity(intent);
             });
         }

@@ -1,81 +1,79 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/background_color">
 
-    <!-- Toolbar -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="16dp"
-        android:background="@color/default_white"
-        android:elevation="4dp">
-
-        <TextView
-            android:id="@+id/btn_back"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="←"
-            android:textSize="22sp"
-            android:textColor="@color/navy"
-            android:padding="8dp"
-            android:layout_marginEnd="8dp"/>
-
-        <TextView
-            android:id="@+id/tv_toolbar_username"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"
-            android:textColor="@color/navy"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:fontFamily="sans"/>
-    </LinearLayout>
-
-    <!-- Header profil -->
+    <!-- Header / Toolbar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp"
-        android:background="@color/default_white"
-        android:layout_marginBottom="2dp">
+        android:paddingBottom="@dimen/space_md">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="@dimen/space_md">
+
+            <TextView
+                android:id="@+id/btn_back"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:gravity="center"
+                android:text="←"
+                android:textColor="@color/default_white"
+                android:textSize="24sp"
+                android:background="?attr/selectableItemBackgroundBorderless"/>
+
+            <TextView
+                android:id="@+id/tv_toolbar_username"
+                style="@style/TextAppearance.Travelshare.TitleMedium"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:paddingStart="@dimen/space_sm"
+                android:textColor="@color/default_white" />
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:paddingHorizontal="@dimen/space_xl"
             android:gravity="center_vertical">
 
             <!-- Avatar -->
             <FrameLayout
-                android:layout_width="72dp"
-                android:layout_height="72dp"
-                android:layout_marginEnd="20dp">
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_marginEnd="@dimen/space_lg">
 
                 <TextView
                     android:id="@+id/tv_avatar_initial"
-                    android:layout_width="72dp"
-                    android:layout_height="72dp"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
                     android:gravity="center"
-                    android:textSize="28sp"
+                    android:textSize="32sp"
                     android:textColor="@color/default_white"
                     android:textStyle="bold"
-                    android:background="@drawable/bg_pill_solid"/>
+                    android:background="@drawable/bg_pill_solid"
+                    android:backgroundTint="@color/surface_field" />
 
-                <ImageView
+                <com.google.android.material.imageview.ShapeableImageView
                     android:id="@+id/iv_avatar"
-                    android:layout_width="72dp"
-                    android:layout_height="72dp"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
                     android:scaleType="centerCrop"
-                    android:visibility="gone"/>
+                    android:visibility="gone"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Travelshare.Pill"/>
             </FrameLayout>
 
-            <!-- Stats -->
+            <!-- Stats Row -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_weight="1"
@@ -83,56 +81,92 @@
                 android:orientation="horizontal"
                 android:gravity="center">
 
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center">
+                <LinearLayout style="@style/StatContainer">
+                    <TextView android:id="@+id/tv_post_count" style="@style/StatValue" android:text="0" />
+                    <TextView style="@style/StatLabel" android:text="Posts" />
+                </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/tv_post_count"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/ink"/>
+                <LinearLayout style="@style/StatContainer">
+                    <TextView android:id="@+id/tv_follower_count" style="@style/StatValue" android:text="0" />
+                    <TextView style="@style/StatLabel" android:text="Followers" />
+                </LinearLayout>
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="publications"
-                        android:textSize="12sp"
-                        android:textColor="@color/ink_muted"/>
+                <LinearLayout style="@style/StatContainer">
+                    <TextView android:id="@+id/tv_following_count" style="@style/StatValue" android:text="0" />
+                    <TextView style="@style/StatLabel" android:text="Suivis" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Username + bio -->
-        <TextView
-            android:id="@+id/tv_username"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            android:textColor="@color/ink"
-            android:layout_marginTop="12dp"/>
+            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/space_xl"
+            android:paddingTop="@dimen/space_md">
 
-        <TextView
-            android:id="@+id/tv_bio"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="13sp"
-            android:textColor="@color/ink_muted"
-            android:layout_marginTop="4dp"
-            android:visibility="gone"/>
+            <TextView
+                android:id="@+id/tv_username"
+                style="@style/TextAppearance.Travelshare.TitleMedium"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/default_white" />
+
+            <TextView
+                android:id="@+id/tv_bio"
+                style="@style/TextAppearance.Travelshare.BodyMedium"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/sheet_muted"
+                android:visibility="gone"/>
+
+            <!-- Action Buttons -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_md"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_follow_action"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="@dimen/space_xs"
+                    android:text="Suivre"
+                    android:textAllCaps="false"
+                    android:textColor="@color/navy"
+                    app:backgroundTint="@color/sand"
+                    app:cornerRadius="@dimen/radius_md" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_message_action"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:text="Message"
+                    android:textAllCaps="false"
+                    android:textColor="@color/default_white"
+                    app:cornerRadius="@dimen/radius_md"
+                    app:strokeColor="@color/border_light"
+                    android:visibility="gone"/>
+            </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
 
-    <!-- Grille photos -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/border_light" />
+
+    <!-- Grid -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_user_photos"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"/>
+        android:layout_height="match_parent"
+        android:padding="2dp"
+        android:clipToPadding="false"/>
 
 </LinearLayout>

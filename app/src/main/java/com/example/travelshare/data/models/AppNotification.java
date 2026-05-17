@@ -11,8 +11,10 @@ public class AppNotification {
     public String type;
     public String message;
     public int    photoId;
+    public long   planId;
     public long   groupId;
     public String groupName;
     public String date;
     public boolean isRead;
+    public String  senderUsername;
 }

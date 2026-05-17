@@ -107,6 +107,9 @@ public class NotificationsFragment extends Fragment {
                 case "JOIN_REQUEST":  h.tvIcon.setText("🔔"); break;
                 case "JOIN_ACCEPTED": h.tvIcon.setText("✅"); break;
                 case "GROUP_INVITE":  h.tvIcon.setText("✉️"); break;
+                case "FOLLOW":        h.tvIcon.setText("👤"); break;
+                case "SHARE_POST":    h.tvIcon.setText("📸"); break;
+                case "SHARE_PATH":    h.tvIcon.setText("🗺️"); break;
                 default:              h.tvIcon.setText("🔔"); break;
             }
             h.tvMessage.setText(n.message);
@@ -117,6 +120,23 @@ public class NotificationsFragment extends Fragment {
                 viewModel.markNotificationRead(n.id);
 
                 switch (n.type != null ? n.type : "") {
+                    case "SHARE_POST":
+                        if (n.photoId > 0) {
+                            openPostDetail(v, n.photoId);
+                        }
+                        break;
+                    case "SHARE_PATH":
+                        if (n.planId > 0) {
+                            openPlanDetail(n.planId);
+                        }
+                        break;
+                    case "FOLLOW":
+                        if (n.senderUsername != null && !n.senderUsername.isEmpty()) {
+                            Intent intent = new Intent(v.getContext(), com.example.travelshare.ui.UserProfileActivity.class);
+                            intent.putExtra(com.example.travelshare.ui.UserProfileActivity.EXTRA_USERNAME, n.senderUsername);
+                            v.getContext().startActivity(intent);
+                        }
+                        break;
                     case "LIKE":
                     case "COMMENT":
 
@@ -135,6 +155,7 @@ public class NotificationsFragment extends Fragment {
                                 intent.putExtra(PhotoDetailActivity.EXTRA_LAT,       photo.getLatitude());
                                 intent.putExtra(PhotoDetailActivity.EXTRA_LNG,       photo.getLongitude());
                                 intent.putExtra(PhotoDetailActivity.EXTRA_IMAGE_URI, photo.getImageUri());
+                                intent.putExtra(PhotoDetailActivity.EXTRA_VOICE_URI, photo.getVoiceUri());
                                 v.getContext().startActivity(intent);
                             });
                         }
@@ -206,6 +227,35 @@ public class NotificationsFragment extends Fragment {
                         break;
                 }
             });
+        }
+
+        private void openPostDetail(View v, int photoId) {
+            viewModel.getPhotoById(photoId, photo -> {
+                if (photo == null) return;
+                Intent intent = new Intent(v.getContext(), PhotoDetailActivity.class);
+                intent.putExtra(PhotoDetailActivity.EXTRA_PHOTO_ID,  photo.getId());
+                intent.putExtra(PhotoDetailActivity.EXTRA_TITLE,     photo.getTitle());
+                intent.putExtra(PhotoDetailActivity.EXTRA_AUTHOR,    photo.getAuthor());
+                intent.putExtra(PhotoDetailActivity.EXTRA_DATE,      photo.getDate());
+                intent.putExtra(PhotoDetailActivity.EXTRA_LOCATION,  photo.getLocation());
+                intent.putExtra(PhotoDetailActivity.EXTRA_CATEGORY,  photo.getCategory());
+                intent.putExtra(PhotoDetailActivity.EXTRA_TAGS,      photo.getTags());
+                intent.putExtra(PhotoDetailActivity.EXTRA_LIKES,     photo.getLikes());
+                intent.putExtra(PhotoDetailActivity.EXTRA_LAT,       photo.getLatitude());
+                intent.putExtra(PhotoDetailActivity.EXTRA_LNG,       photo.getLongitude());
+                intent.putExtra(PhotoDetailActivity.EXTRA_IMAGE_URI, photo.getImageUri());
+                intent.putExtra(PhotoDetailActivity.EXTRA_VOICE_URI, photo.getVoiceUri());
+                v.getContext().startActivity(intent);
+            });
+        }
+
+        private void openPlanDetail(long planId) {
+            fragment.requireActivity().runOnUiThread(() ->
+                    fragment.requireActivity().getSupportFragmentManager()
+                            .beginTransaction()
+                            .replace(R.id.fragment_container, PlanDetailFragment.newInstance(planId))
+                            .addToBackStack(null)
+                            .commit());
         }
 
         @Override public int getItemCount() { return notifs.size(); }

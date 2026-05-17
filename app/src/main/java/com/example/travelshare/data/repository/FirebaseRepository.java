@@ -14,10 +14,13 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -166,6 +169,12 @@ public class FirebaseRepository {
     private String str(QueryDocumentSnapshot doc, String key) {
         String v = doc.getString(key);
         return v != null ? v : "";
+    }
+
+    public void getUserProfile(String username, Consumer<com.google.firebase.firestore.DocumentSnapshot> callback) {
+        db.collection("users").document(username).get()
+                .addOnSuccessListener(callback::accept)
+                .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "getUserProfile failed", e));
     }
 
     public void saveUserProfile(String username, String bio, String avatarUri) {
@@ -374,9 +383,10 @@ public class FirebaseRepository {
 
     public void sendGroupInvitation(String groupName, long groupId, String inviterUsername,
                                     String targetUsername, String date) {
+        long gid = groupId > 0 ? groupId : stableGroupId(groupName);
         Map<String, Object> data = new HashMap<>();
         data.put("groupName", groupName);
-        data.put("groupId", groupId > 0 ? groupId : stableGroupId(groupName));
+        data.put("groupId", gid);
         data.put("username", targetUsername);
         data.put("userId", stableUserId(targetUsername));
         data.put("status", "INVITED");
@@ -388,13 +398,19 @@ public class FirebaseRepository {
                 .document(docId)
                 .set(data)
                 .addOnSuccessListener(unused -> {
+                    // Send notification
                     AppNotification notif = new AppNotification();
                     notif.type = "GROUP_INVITE";
                     notif.message = inviterUsername + " vous invite à rejoindre \"" + groupName + "\"";
-                    notif.groupId = groupId > 0 ? groupId : stableGroupId(groupName);
+                    notif.groupId = gid;
                     notif.groupName = groupName;
                     notif.date = date != null ? date : "";
                     saveNotification(targetUsername, notif);
+
+                    // Send direct message
+                    saveDirectMessage(inviterUsername, targetUsername, 
+                                     "✉️ Invitation à rejoindre le groupe \"" + groupName + "\"", 
+                                     date, 0, 0, gid, groupName);
                 })
                 .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "sendGroupInvitation failed", e));
     }
@@ -503,6 +519,7 @@ public class FirebaseRepository {
         data.put("message",     message);
         data.put("date",        date != null ? date : "");
         data.put("photoId",     0);
+        data.put("planId",      0);
         data.put("timestamp",   FieldValue.serverTimestamp());
 
         db.collection("group_messages")
@@ -518,11 +535,99 @@ public class FirebaseRepository {
         data.put("message",     message);
         data.put("date",        date != null ? date : "");
         data.put("photoId",     photoId);
+        data.put("planId",      0);
         data.put("timestamp",   FieldValue.serverTimestamp());
 
         db.collection("group_messages")
                 .add(data)
                 .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "saveSharedPhotoMessage failed", e));
+    }
+
+    public void saveSharedPlanMessage(String groupName, String authorName, String message,
+                                      long planId, String date) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("groupName",   groupName);
+        data.put("authorName",  authorName);
+        data.put("message",     message);
+        data.put("date",        date != null ? date : "");
+        data.put("photoId",     0);
+        data.put("planId",      planId);
+        data.put("timestamp",   FieldValue.serverTimestamp());
+
+        db.collection("group_messages")
+                .add(data)
+                .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "saveSharedPlanMessage failed", e));
+    }
+
+    // DIRECT MESSAGES LOGIC
+    public void saveDirectMessage(String sender, String receiver, String text, String date, 
+                                  long photoId, long planId, long invGroupId, String invGroupName) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("sender",    sender);
+        data.put("receiver",  receiver);
+        data.put("message",   text);
+        data.put("date",      date);
+        data.put("photoId",   photoId);
+        data.put("planId",    planId);
+        data.put("invitationGroupId",   invGroupId);
+        data.put("invitationGroupName", invGroupName != null ? invGroupName : "");
+        data.put("timestamp", FieldValue.serverTimestamp());
+
+        String chatId = getDirectChatId(sender, receiver);
+        
+        // Update parent doc with participants for easy listing
+        Map<String, Object> parent = new HashMap<>();
+        parent.put("participants", java.util.Arrays.asList(sender, receiver));
+        parent.put("lastMessage", text);
+        parent.put("lastUpdate", FieldValue.serverTimestamp());
+        db.collection("direct_chats").document(chatId).set(parent, com.google.firebase.firestore.SetOptions.merge());
+
+        db.collection("direct_chats").document(chatId).collection("messages").add(data);
+    }
+
+    public ListenerRegistration listenToMyDirectChats(String username, Consumer<List<Map<String, Object>>> callback) {
+        return db.collection("direct_chats")
+                .whereArrayContains("participants", username)
+                .addSnapshotListener((query, e) -> {
+                    if (e != null || query == null) return;
+                    List<Map<String, Object>> list = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : query) {
+                        Map<String, Object> map = new HashMap<>(doc.getData());
+                        map.put("chatId", doc.getId());
+                        list.add(map);
+                    }
+                    callback.accept(list);
+                });
+    }
+
+    public ListenerRegistration listenToDirectMessages(String u1, String u2, Consumer<List<GroupMessage>> callback) {
+        String chatId = getDirectChatId(u1, u2);
+        return db.collection("direct_chats").document(chatId).collection("messages")
+                .orderBy("timestamp")
+                .addSnapshotListener((query, e) -> {
+                    if (e != null || query == null) return;
+                    List<GroupMessage> list = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : query) {
+                        GroupMessage m = new GroupMessage();
+                        m.authorName = doc.getString("sender");
+                        m.message    = doc.getString("message");
+                        m.date       = doc.getString("date");
+                        Long pid     = doc.getLong("photoId");
+                        Long plid    = doc.getLong("planId");
+                        Long igid    = doc.getLong("invitationGroupId");
+                        m.photoId    = pid != null ? pid.intValue() : 0;
+                        m.planId     = plid != null ? plid : 0;
+                        m.invitationGroupId   = igid != null ? igid : 0;
+                        m.invitationGroupName = doc.getString("invitationGroupName");
+                        list.add(m);
+                    }
+                    callback.accept(list);
+                });
+    }
+
+    private String getDirectChatId(String u1, String u2) {
+        if (u1.compareTo(u2) < 0) return u1 + "_" + u2;
+        else return u2 + "_" + u1;
     }
 
     public ListenerRegistration listenToMessages(String groupName, AppDatabase localDb, long localGroupId) {
@@ -536,6 +641,7 @@ public class FirebaseRepository {
                             String text    = doc.getString("message");
                             String date    = doc.getString("date");
                             Long photoId   = doc.getLong("photoId");
+                            Long planId    = doc.getLong("planId");
                             if (author == null || text == null) continue;
                             if (localDb.groupMessageDao().countByContent(localGroupId, author, text) > 0) continue;
 
@@ -546,8 +652,8 @@ public class FirebaseRepository {
                             msg.message    = text;
                             msg.date       = date != null ? date : "";
                             msg.photoId    = photoId != null ? photoId.intValue() : 0;
-                            localDb.groupMessageDao().insertOrIgnore(msg);
-                        }
+                            msg.planId     = planId != null ? planId : 0;
+                            localDb.groupMessageDao().insertOrIgnore(msg);                        }
                     });
                 });
     }
@@ -572,8 +678,10 @@ public class FirebaseRepository {
         data.put("type",    notif.type    != null ? notif.type    : "");
         data.put("message", notif.message != null ? notif.message : "");
         data.put("photoId", notif.photoId);
+        data.put("planId",  notif.planId);
         data.put("groupId", notif.groupId);
         data.put("groupName", notif.groupName != null ? notif.groupName : "");
+        data.put("senderUsername", notif.senderUsername != null ? notif.senderUsername : "");
         data.put("date",    notif.date    != null ? notif.date    : "");
         data.put("isRead",  false);
         data.put("timestamp", FieldValue.serverTimestamp());
@@ -601,10 +709,13 @@ public class FirebaseRepository {
                             n.message = message;
                             n.date    = doc.getString("date") != null ? doc.getString("date") : "";
                             Long pid  = doc.getLong("photoId");
+                            Long plid = doc.getLong("planId");
                             Long gid  = doc.getLong("groupId");
                             n.photoId = pid != null ? pid.intValue() : 0;
+                            n.planId  = plid != null ? plid : 0;
                             n.groupId = gid != null ? gid : 0;
                             n.groupName = doc.getString("groupName") != null ? doc.getString("groupName") : "";
+                            n.senderUsername = doc.getString("senderUsername") != null ? doc.getString("senderUsername") : "";
                             n.isRead  = false;
                             localDb.appNotificationDao().insert(n);
                         }
@@ -675,6 +786,78 @@ public class FirebaseRepository {
                 .document(username + "_" + plan.id)
                 .set(data)
                 .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "savePlan failed", e));
+    }
+
+    public void followUser(String follower, String followed) {
+        String docId = sanitize(follower) + "_" + sanitize(followed);
+        Map<String, Object> data = new HashMap<>();
+        data.put("follower", follower);
+        data.put("followed", followed);
+        data.put("timestamp", FieldValue.serverTimestamp());
+        db.collection("follows").document(docId).set(data);
+
+        AppNotification notif = new AppNotification();
+        notif.type = "FOLLOW";
+        notif.senderUsername = follower;
+        notif.message = follower + " a commencé à vous suivre !";
+        notif.date = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
+        saveNotification(followed, notif);
+    }
+
+    public void unfollowUser(String follower, String followed) {
+        String docId = sanitize(follower) + "_" + sanitize(followed);
+        db.collection("follows").document(docId).delete();
+    }
+
+    public void isFollowing(String follower, String followed, Consumer<Boolean> callback) {
+        String docId = sanitize(follower) + "_" + sanitize(followed);
+        db.collection("follows").document(docId).get()
+                .addOnSuccessListener(doc -> callback.accept(doc.exists()));
+    }
+
+    public void getFollowers(String username, Consumer<List<String>> callback) {
+        db.collection("follows").whereEqualTo("followed", username).get()
+                .addOnSuccessListener(query -> {
+                    List<String> list = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : query) list.add(doc.getString("follower"));
+                    callback.accept(list);
+                });
+    }
+
+    public void getFollowing(String username, Consumer<List<String>> callback) {
+        db.collection("follows").whereEqualTo("follower", username).get()
+                .addOnSuccessListener(query -> {
+                    List<String> list = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : query) list.add(doc.getString("followed"));
+                    callback.accept(list);
+                });
+    }
+
+    public void getFriends(String username, Consumer<List<String>> callback) {
+        getFollowing(username, following -> {
+            getFollowers(username, followers -> {
+                List<String> friends = new ArrayList<>();
+                for (String f : following) {
+                    if (followers.contains(f)) friends.add(f);
+                }
+                callback.accept(friends);
+            });
+        });
+    }
+
+    public void getGroupMembers(String groupName, Consumer<List<String>> callback) {
+        db.collection("group_members")
+                .whereEqualTo("groupName", groupName)
+                .whereEqualTo("status", "MEMBER")
+                .get()
+                .addOnSuccessListener(query -> {
+                    List<String> members = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : query) {
+                        String username = doc.getString("username");
+                        if (username != null) members.add(username);
+                    }
+                    callback.accept(members);
+                });
     }
 
     public interface OnLikesChangedListener {

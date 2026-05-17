@@ -8,39 +8,45 @@ import android.location.LocationManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.travelshare.data.AppDatabase;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
-
 import com.example.travelshare.MainActivity;
 import com.example.travelshare.R;
+import com.example.travelshare.data.AppDatabase;
 import com.example.travelshare.data.models.AppNotification;
 import com.example.travelshare.data.models.Comment;
 import com.example.travelshare.data.models.Report;
-import com.example.travelshare.ui.UserProfileActivity;
+import com.example.travelshare.data.repository.FirebaseRepository;
 import com.example.travelshare.ui.theme.adapters.CommentAdapter;
 import com.example.travelshare.ui.theme.adapters.PhotoAdapter;
+import com.example.travelshare.ui.theme.fragments.PlanDetailFragment;
 import com.example.travelshare.utils.NotificationUtil;
 import com.example.travelshare.utils.SessionManager;
 import com.example.travelshare.viewmodels.SharedViewModel;
-
-import com.example.travelshare.data.repository.FirebaseRepository;
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.firebase.firestore.ListenerRegistration;
+
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 public class PhotoDetailActivity extends AppCompatActivity {
@@ -48,105 +54,100 @@ public class PhotoDetailActivity extends AppCompatActivity {
     public static final String EXTRA_PHOTO_ID = "photo_id";
     public static final String EXTRA_TITLE    = "title";
     public static final String EXTRA_AUTHOR   = "author";
+    public static final String EXTRA_AUTHOR_ID = "author_id";
     public static final String EXTRA_DATE     = "date";
     public static final String EXTRA_LOCATION = "location";
     public static final String EXTRA_CATEGORY = "category";
     public static final String EXTRA_TAGS     = "tags";
     public static final String EXTRA_LIKES    = "likes";
-    public static final String EXTRA_LAT       = "lat";
-    public static final String EXTRA_LNG       = "lng";
+    public static final String EXTRA_LAT      = "lat";
+    public static final String EXTRA_LNG      = "lng";
     public static final String EXTRA_IMAGE_URI = "image_uri";
     public static final String EXTRA_VOICE_URI = "voice_uri";
 
-    private SessionManager sessionManager;
     private SharedViewModel viewModel;
-    private int photoId;
-    private int currentLikes;
-    private boolean isLiked = false;
+    private SessionManager sessionManager;
     private ListenerRegistration likesListener;
     private ListenerRegistration commentsListener;
-    private long authorId = -1;
-    private MediaPlayer mediaPlayer;
-    private boolean isPlaying = false;
-    private ActivityResultLauncher<String> locationPermLauncher;
+
+    private int currentLikes = 0;
+    private boolean isLiked = false;
     private double photoLat, photoLng;
     private TextView tvAccess;
+
+    private MediaPlayer mediaPlayer;
+    private boolean isPlaying = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_photo_detail);
 
-        sessionManager = new SessionManager(this);
         viewModel = new ViewModelProvider(this).get(SharedViewModel.class);
-
-        locationPermLauncher = registerForActivityResult(
-                new ActivityResultContracts.RequestPermission(),
-                granted -> { if (granted) fetchRouteToPhoto(); });
+        sessionManager = new SessionManager(this);
 
         Intent intent = getIntent();
-        photoId      = intent.getIntExtra(EXTRA_PHOTO_ID, -1);
-        if (photoId <= 0) {
-            Toast.makeText(this, "Post introuvable.", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
-        }
-        String title    = intent.getStringExtra(EXTRA_TITLE);
-        String author   = intent.getStringExtra(EXTRA_AUTHOR);
-        String date     = intent.getStringExtra(EXTRA_DATE);
+        int photoId    = intent.getIntExtra(EXTRA_PHOTO_ID, -1);
+        String title   = intent.getStringExtra(EXTRA_TITLE);
+        String author  = intent.getStringExtra(EXTRA_AUTHOR);
+        long authorId  = intent.getLongExtra(EXTRA_AUTHOR_ID, -1);
+        String date    = intent.getStringExtra(EXTRA_DATE);
         String location = intent.getStringExtra(EXTRA_LOCATION);
         String category = intent.getStringExtra(EXTRA_CATEGORY);
-        String tags     = intent.getStringExtra(EXTRA_TAGS);
-        currentLikes    = intent.getIntExtra(EXTRA_LIKES, 0);
-        double lat      = intent.getDoubleExtra(EXTRA_LAT, 0.0);
-        double lng      = intent.getDoubleExtra(EXTRA_LNG, 0.0);
+        String tags    = intent.getStringExtra(EXTRA_TAGS);
+        int likes      = intent.getIntExtra(EXTRA_LIKES, 0);
+        double lat     = intent.getDoubleExtra(EXTRA_LAT, 0);
+        double lng     = intent.getDoubleExtra(EXTRA_LNG, 0);
+        String imageUri = intent.getStringExtra(EXTRA_IMAGE_URI);
+        String voiceUri = intent.getStringExtra(EXTRA_VOICE_URI);
+
         photoLat = lat; photoLng = lng;
-        String imageUri  = intent.getStringExtra(EXTRA_IMAGE_URI);
-        String voiceUri  = intent.getStringExtra(EXTRA_VOICE_URI);
+        currentLikes = likes;
 
-        final String finalAuthor = author;
-        if (finalAuthor != null) {
-            viewModel.getUserByLogin(finalAuthor, user -> {
-                if (user != null) authorId = (long) user.id;
-            });
-        }
-
-        ImageView ivHero = findViewById(R.id.iv_detail_hero);
-        if (imageUri != null && !imageUri.isEmpty()) {
-            Glide.with(this).load(Uri.parse(imageUri)).centerCrop().into(ivHero);
-        }
-
-        ((TextView) findViewById(R.id.tv_detail_title)).setText(title);
+        ViewPager2 vpCarousel = findViewById(R.id.vp_detail_carousel);
+        TabLayout tabIndicator = findViewById(R.id.tab_carousel_indicator);
+        TextView tvTitle  = findViewById(R.id.tv_detail_title);
         TextView tvAuthorDate = findViewById(R.id.tv_detail_author_date);
-        tvAuthorDate.setText(date + " · par @" + author);
-        tvAuthorDate.setOnClickListener(v -> {
-            if (finalAuthor != null && !finalAuthor.isEmpty()) {
-                Intent profileIntent = new Intent(this, UserProfileActivity.class);
-                profileIntent.putExtra(UserProfileActivity.EXTRA_USERNAME, finalAuthor);
-                startActivity(profileIntent);
-            }
-        });
-        ((TextView) findViewById(R.id.tv_detail_category_tags)).setText(category + "  ·  " + tags);
-        ((TextView) findViewById(R.id.tv_detail_location)).setText("📍 " + location);
-
-        boolean isApprox = lat != 0 && Math.abs(lat - Math.round(lat * 10.0) / 10.0) < 0.001
-                && Math.abs(lat % 0.1) < 0.001;
-        ((TextView) findViewById(R.id.tv_detail_coord)).setText(isApprox
-                ? String.format(java.util.Locale.getDefault(), "≈ %.1f° N", lat)
-                : String.format(java.util.Locale.getDefault(), "%.4f° N", lat));
-        ((TextView) findViewById(R.id.tv_detail_period)).setText(date != null && date.length() >= 7
-                ? date.substring(0, 7) : date);
+        TextView tvLocation = findViewById(R.id.tv_detail_location);
+        TextView tvCatTags = findViewById(R.id.tv_detail_category_tags);
+        TextView tvLikesCount = findViewById(R.id.tv_likes_count);
         tvAccess = findViewById(R.id.tv_detail_access);
-        tvAccess.setText("📍 Calcul...");
-        tvAccess.setText(lat != 0 && lng != 0 ? "Maps →" : "Lieu non défini");
+
+        TextView btnLike  = findViewById(R.id.btn_detail_like);
+        TextView btnRoute = findViewById(R.id.btn_detail_route);
+        TextView btnReport = findViewById(R.id.btn_detail_report);
+
+        tvTitle.setText(title);
+        tvAuthorDate.setText("Par " + author + " • " + date);
+        tvLocation.setText(location);
+        tvCatTags.setText((category != null ? category : "Voyage") + " · " + (tags != null ? tags : ""));
+        tvLikesCount.setText(currentLikes + " personnes ont aimé");
+
+        // Carousel Setup
+        List<String> images = new ArrayList<>();
+        if (imageUri != null && !imageUri.isEmpty()) {
+            images.addAll(Arrays.asList(imageUri.split("\\|")));
+        }
+        
+        CarouselAdapter carouselAdapter = new CarouselAdapter(images);
+        vpCarousel.setAdapter(carouselAdapter);
+        
+        if (images.size() > 1) {
+            new TabLayoutMediator(tabIndicator, vpCarousel, (tab, position) -> {}).attach();
+            tabIndicator.setVisibility(View.VISIBLE);
+        } else {
+            tabIndicator.setVisibility(View.GONE);
+        }
+
+        tvAuthorDate.setOnClickListener(v -> {
+            Intent profileIntent = new Intent(this, UserProfileActivity.class);
+            profileIntent.putExtra(UserProfileActivity.EXTRA_USERNAME, author);
+            startActivity(profileIntent);
+        });
 
         findViewById(R.id.btn_back).setOnClickListener(v -> finish());
 
-        TextView btnLike   = findViewById(R.id.btn_detail_like);
-        TextView btnRoute  = findViewById(R.id.btn_detail_route);
-        TextView btnReport = findViewById(R.id.btn_detail_report);
-        TextView tvLikesCount = findViewById(R.id.tv_likes_count);
-        tvLikesCount.setText(currentLikes + " personnes ont aimé");
+        fetchRouteToPhoto();
 
         likesListener = FirebaseRepository.getInstance().listenToLikes(photoId, newLikes -> {
             currentLikes = newLikes;
@@ -191,53 +192,26 @@ public class PhotoDetailActivity extends AppCompatActivity {
             }
         });
 
-        findViewById(R.id.btn_share_to_group).setOnClickListener(v -> {
+        findViewById(R.id.btn_detail_share).setOnClickListener(v -> {
             if (!sessionManager.isLoggedIn()) {
-                Toast.makeText(this, "Connectez-vous pour partager dans un groupe", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Connectez-vous pour partager", Toast.LENGTH_SHORT).show();
                 return;
             }
-            long userId = sessionManager.getUserId();
-            FirebaseRepository.getInstance().getMyMemberGroups(sessionManager.getUsername(), groups -> {
-                runOnUiThread(() -> {
-                    if (groups == null || groups.isEmpty()) {
-                        Toast.makeText(this, "Vous n'appartenez à aucun groupe", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    String[] names = new String[groups.size()];
-                    for (int i = 0; i < groups.size(); i++) names[i] = groups.get(i).name;
-                    new android.app.AlertDialog.Builder(this)
-                            .setTitle("Partager dans…")
-                            .setItems(names, (d, which) -> {
-                                com.example.travelshare.data.models.GroupMessage msg =
-                                        new com.example.travelshare.data.models.GroupMessage();
-                                msg.groupId    = groups.get(which).id;
-                                msg.userId     = userId;
-                                msg.authorName = sessionManager.getUsername();
-                                msg.message    = "📸 " + title + " — 📍 " + location;
-                                msg.photoId    = photoId;
-                                msg.date       = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
-                                viewModel.sendGroupMessage(msg);
-                                FirebaseRepository.getInstance().saveSharedPhotoMessage(
-                                        groups.get(which).name,
-                                        sessionManager.getUsername(),
-                                        msg.message,
-                                        photoId,
-                                        msg.date);
-                                Toast.makeText(this, "Partagé dans \"" + names[which] + "\"", Toast.LENGTH_SHORT).show();
-                            })
-                            .setNegativeButton("Annuler", null)
-                            .show();
-                });
-            });
-        });
-
-        findViewById(R.id.btn_detail_share).setOnClickListener(v -> {
-            String text = title + "\n📍 " + location + "\n" + category + "  ·  " + tags
-                    + "\nVia Traveling";
-            Intent shareIntent = new Intent(Intent.ACTION_SEND);
-            shareIntent.setType("text/plain");
-            shareIntent.putExtra(Intent.EXTRA_TEXT, text);
-            startActivity(Intent.createChooser(shareIntent, "Partager via…"));
+            String[] options = {"À un groupe", "À un ami", "Externe (Texte)"};
+            new android.app.AlertDialog.Builder(this)
+                    .setTitle("Partager ce post…")
+                    .setItems(options, (dialog, which) -> {
+                        if (which == 0) shareToGroup(title, location, photoId);
+                        else if (which == 1) shareToFriend(title, photoId);
+                        else {
+                            String shareText = title + "\n📍 " + location + "\n" + category + "  ·  " + tags
+                                    + "\nVia Traveling";
+                            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                            shareIntent.setType("text/plain");
+                            shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
+                            startActivity(Intent.createChooser(shareIntent, "Partager via…"));
+                        }
+                    }).show();
         });
 
         boolean isOwner = sessionManager.isLoggedIn()
@@ -246,8 +220,6 @@ public class PhotoDetailActivity extends AppCompatActivity {
         if (isOwner) {
             View layoutOwner = findViewById(R.id.layout_owner_actions);
             layoutOwner.setVisibility(View.VISIBLE);
-
-            TextView tvTitle = findViewById(R.id.tv_detail_title);
 
             findViewById(R.id.btn_edit_title).setOnClickListener(v -> {
                 android.app.AlertDialog.Builder dlg = new android.app.AlertDialog.Builder(this);
@@ -423,21 +395,94 @@ public class PhotoDetailActivity extends AppCompatActivity {
             notif.photoId = photoId;
             notif.date    = c.date;
             viewModel.insertAppNotification(notif);
+            FirebaseRepository.getInstance().saveNotification(author, notif);
             NotificationUtil.showNotification(this, "Nouveau commentaire", notif.message);
+        });
+    }
+
+    private void shareToGroup(String title, String location, int photoId) {
+        long userId = sessionManager.getUserId();
+        FirebaseRepository.getInstance().getMyMemberGroups(sessionManager.getUsername(), groups -> {
+            runOnUiThread(() -> {
+                if (groups == null || groups.isEmpty()) {
+                    Toast.makeText(this, "Vous n'appartenez à aucun groupe", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                String[] names = new String[groups.size()];
+                for (int i = 0; i < groups.size(); i++) names[i] = groups.get(i).name;
+                new android.app.AlertDialog.Builder(this)
+                        .setTitle("Choisir un groupe")
+                        .setItems(names, (d, which) -> {
+                            com.example.travelshare.data.models.GroupMessage msg =
+                                    new com.example.travelshare.data.models.GroupMessage();
+                            msg.groupId    = groups.get(which).id;
+                            msg.userId     = userId;
+                            msg.authorName = sessionManager.getUsername();
+                            msg.message    = "📸 " + title + " — 📍 " + location;
+                            msg.photoId    = photoId;
+                            msg.date       = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
+                            viewModel.sendGroupMessage(msg);
+                            FirebaseRepository.getInstance().saveSharedPhotoMessage(
+                                    groups.get(which).name,
+                                    sessionManager.getUsername(),
+                                    msg.message,
+                                    photoId,
+                                    msg.date);
+                            Toast.makeText(this, "Partagé dans \"" + names[which] + "\"", Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("Annuler", null)
+                        .show();
+            });
+        });
+    }
+
+    private void shareToFriend(String title, int photoId) {
+        FirebaseRepository.getInstance().getFriends(sessionManager.getUsername(), friends -> {
+            runOnUiThread(() -> {
+                if (friends == null || friends.isEmpty()) {
+                    Toast.makeText(this, "Vous n'avez pas d'amis (suivis mutuels)", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                String[] names = friends.toArray(new String[0]);
+                new android.app.AlertDialog.Builder(this)
+                        .setTitle("Choisir un ami")
+                        .setItems(names, (d, which) -> {
+                            String target = names[which];
+                            String date = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
+                            String msgText = "📸 " + title;
+                            
+                            // Send direct message
+                            FirebaseRepository.getInstance().saveDirectMessage(
+                                    sessionManager.getUsername(), target, msgText, date, photoId, 0, -1, null);
+
+                            // Optional: keep notification for alert
+                            AppNotification notif = new AppNotification();
+                            notif.type = "SHARE_POST";
+                            notif.senderUsername = sessionManager.getUsername();
+                            notif.message = sessionManager.getUsername() + " vous a partagé un post : \"" + title + "\"";
+                            notif.photoId = photoId;
+                            notif.date = date;
+                            FirebaseRepository.getInstance().saveNotification(target, notif);
+                            
+                            Toast.makeText(this, "Post partagé avec " + target, Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("Annuler", null)
+                        .show();
+            });
         });
     }
 
     @android.annotation.SuppressLint("MissingPermission")
     private void fetchRouteToPhoto() {
         LocationManager lm = (LocationManager) getSystemService(LOCATION_SERVICE);
-        if (lm == null) { tvAccess.setText("Maps →"); return; }
+        if (lm == null) { if(tvAccess != null) tvAccess.setText("Maps →"); return; }
         try {
             Location last = null;
             for (String provider : lm.getProviders(true)) {
                 Location l = lm.getLastKnownLocation(provider);
                 if (l != null && (last == null || l.getAccuracy() < last.getAccuracy())) last = l;
             }
-            if (last == null) { tvAccess.setText("Maps →"); return; }
+            if (last == null) { if(tvAccess != null) tvAccess.setText("Maps →"); return; }
             final double userLat = last.getLatitude();
             final double userLng = last.getLongitude();
             new Thread(() -> {
@@ -467,16 +512,16 @@ public class PhotoDetailActivity extends AppCompatActivity {
                                         : ((int) distanceM) + " m";
                                 String label = "🚶 " + (min < 60 ? min + " min" : (min/60) + "h" + String.format("%02d", min%60))
                                         + " (" + dist + ")";
-                                runOnUiThread(() -> tvAccess.setText(label));
+                                runOnUiThread(() -> { if(tvAccess != null) tvAccess.setText(label); });
                                 return;
                             }
                         }
                     }
                 } catch (Exception ignored) {}
-                runOnUiThread(() -> tvAccess.setText("Maps →"));
+                runOnUiThread(() -> { if(tvAccess != null) tvAccess.setText("Maps →"); });
             }).start();
         } catch (SecurityException e) {
-            tvAccess.setText("Maps →");
+            if(tvAccess != null) tvAccess.setText("Maps →");
         }
     }
 
@@ -499,5 +544,30 @@ public class PhotoDetailActivity extends AppCompatActivity {
         }
         if (likesListener != null) likesListener.remove();
         if (commentsListener != null) commentsListener.remove();
+    }
+
+    // --- CAROUSEL ADAPTER ---
+    static class CarouselAdapter extends RecyclerView.Adapter<CarouselAdapter.CarouselVH> {
+        private final List<String> imageUrls;
+
+        CarouselAdapter(List<String> imageUrls) { this.imageUrls = imageUrls; }
+
+        @NonNull @Override public CarouselVH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            ImageView iv = new ImageView(parent.getContext());
+            iv.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            iv.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            return new CarouselVH(iv);
+        }
+
+        @Override public void onBindViewHolder(@NonNull CarouselVH holder, int position) {
+            Glide.with(holder.itemView.getContext()).load(Uri.parse(imageUrls.get(position))).into(holder.iv);
+        }
+
+        @Override public int getItemCount() { return imageUrls.size(); }
+
+        static class CarouselVH extends RecyclerView.ViewHolder {
+            ImageView iv;
+            CarouselVH(View v) { super(v); iv = (ImageView) v; }
+        }
     }
 }

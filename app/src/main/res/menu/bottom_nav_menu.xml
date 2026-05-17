@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/nav_explorer" android:title="Explore" android:icon="@drawable/ic_ms_explore" />
-    <item android:id="@+id/nav_map" android:title="Map" android:icon="@drawable/ic_ms_map" />
-    <item android:id="@+id/nav_publish" android:title="Add" android:icon="@drawable/ic_ms_add" />
-    <item android:id="@+id/nav_groups" android:title="Alerts" android:icon="@drawable/ic_ms_notifications" />
-    <item android:id="@+id/nav_profile" android:title="Person" android:icon="@drawable/ic_ms_person" />
+    <item android:id="@+id/nav_explorer" android:title="Explorer" android:icon="@drawable/ic_ms_explore" />
+    <item android:id="@+id/nav_map" android:title="Carte" android:icon="@drawable/ic_ms_map" />
+    <item android:id="@+id/nav_publish" android:title="Publier" android:icon="@drawable/ic_ms_add" />
+    <item android:id="@+id/nav_groups" android:title="Messages" android:icon="@drawable/ic_ms_notifications" />
+    <item android:id="@+id/nav_profile" android:title="Profil" android:icon="@drawable/ic_ms_person" />
 </menu>

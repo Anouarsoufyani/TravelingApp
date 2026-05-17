@@ -37,7 +37,7 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
     public static class PhotoViewHolder extends RecyclerView.ViewHolder {
         View gradientBg;
         ImageView ivPhoto;
-        TextView tvLocation, tvTitle, tvAuthor, tvCatTags, tvLikes;
+        TextView tvLocation, tvTitle, tvAuthor, tvCatTags, tvLikes, tvBadge;
 
         public PhotoViewHolder(View v) {
             super(v);
@@ -48,6 +48,7 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
             tvAuthor    = v.findViewById(R.id.photo_author);
             tvCatTags   = v.findViewById(R.id.photo_cat_tags);
             tvLikes     = v.findViewById(R.id.photo_likes);
+            tvBadge     = v.findViewById(R.id.tv_multi_photo_badge);
         }
     }
 
@@ -64,11 +65,21 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
         int[] colors = GRADIENTS[position % GRADIENTS.length];
         h.gradientBg.setBackgroundColor(colors[0]);
 
-        String imageUri = p.getImageUri();
-        if (imageUri != null && !imageUri.isEmpty()) {
+        List<String> uris = p.getImageUriList();
+        String firstUri = !uris.isEmpty() ? uris.get(0) : null;
+        
+        if (h.tvBadge != null) {
+            if (uris.size() > 1) {
+                h.tvBadge.setVisibility(View.VISIBLE);
+                h.tvBadge.setText("1/" + uris.size());
+            } else {
+                h.tvBadge.setVisibility(View.GONE);
+            }
+        }
+        if (firstUri != null) {
             h.ivPhoto.setVisibility(View.VISIBLE);
             Glide.with(h.itemView.getContext())
-                    .load(Uri.parse(imageUri))
+                    .load(Uri.parse(firstUri))
                     .centerCrop()
                     .into(h.ivPhoto);
         } else {

@@ -2,6 +2,7 @@ package com.example.travelshare.data.models;
 
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
+import java.util.List;
 
 @Entity(tableName = "photos")
 public class Photo {
@@ -56,6 +57,29 @@ public class Photo {
     public void setGroupId(long groupId) { this.groupId = groupId; }
     public String getImageUri() { return imageUri; }
     public void setImageUri(String imageUri) { this.imageUri = imageUri; }
+
+    public List<String> getImageUriList() {
+        List<String> list = new java.util.ArrayList<>();
+        if (imageUri != null && !imageUri.isEmpty()) {
+            String[] parts = imageUri.split("\\|");
+            for (String p : parts) if (!p.isEmpty()) list.add(p);
+        }
+        return list;
+    }
+
+    public void setImageUriList(List<String> list) {
+        if (list == null || list.isEmpty()) {
+            this.imageUri = "";
+            return;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < list.size(); i++) {
+            sb.append(list.get(i));
+            if (i < list.size() - 1) sb.append("|");
+        }
+        this.imageUri = sb.toString();
+    }
+
     public String getVoiceUri() { return voiceUri; }
     public void setVoiceUri(String voiceUri) { this.voiceUri = voiceUri; }
 }

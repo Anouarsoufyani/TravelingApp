@@ -18,6 +18,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -84,29 +85,34 @@ public class TravelPathViewModel extends AndroidViewModel {
                                String requiredPlaces, Set<String> weatherTolerances,
                                Runnable onDone) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
+            Set<String> safeActivities = activities != null ? activities : Collections.emptySet();
             String date = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
             StringBuilder actSb = new StringBuilder();
-            for (String a : activities) { if (actSb.length() > 0) actSb.append(","); actSb.append(a); }
+            if (!safeActivities.isEmpty()) {
+                for (String a : safeActivities) { if (actSb.length() > 0) actSb.append(","); actSb.append(a); }
+            }
             String actStr = actSb.toString();
 
             StringBuilder wtSb = new StringBuilder();
-            for (String w : weatherTolerances) { if (wtSb.length() > 0) wtSb.append(","); wtSb.append(w); }
+            if (weatherTolerances != null) {
+                for (String w : weatherTolerances) { if (wtSb.length() > 0) wtSb.append(","); wtSb.append(w); }
+            }
             String wtStr = wtSb.toString();
 
             double[] cityCenter = geocode(city);
             boolean sensitiveWeather = weatherTolerances != null && !weatherTolerances.isEmpty();
 
             Map<String, String[][]> overpassCache = new java.util.concurrent.ConcurrentHashMap<>();
-            if (cityCenter[0] != 0 || cityCenter[1] != 0) {
+            if (!safeActivities.isEmpty() && (cityCenter[0] != 0 || cityCenter[1] != 0)) {
                 java.util.concurrent.ExecutorService overpassPool =
-                        java.util.concurrent.Executors.newFixedThreadPool(Math.min(activities.size(), 5));
+                        java.util.concurrent.Executors.newFixedThreadPool(Math.min(safeActivities.size(), 5));
                 List<java.util.concurrent.Future<?>> futures = new ArrayList<>();
                 final double cLat = cityCenter[0], cLng = cityCenter[1];
-                for (String activity : activities) {
+                for (String activity : safeActivities) {
                     final String act = activity;
                     futures.add(overpassPool.submit(() -> {
 
-                        String[][] places = fetchRealPlaces(cLat, cLng, act, sensitiveWeather, 5);
+                        String[][] places = fetchRealPlaces(city, cLat, cLng, act, sensitiveWeather, 5);
                         if (places != null && places.length > 0) {
 
                             overpassCache.put(act + "_economique",
@@ -127,50 +133,89 @@ public class TravelPathViewModel extends AndroidViewModel {
 
             String[] types = {"economique", "equilibre", "confort"};
             for (String type : types) {
-                List<PlanStep> steps = buildSteps(city, activities, type, durationHours,
-                        weatherTolerances, effort, budgetMax, cityCenter, overpassCache);
-                steps = deduplicateSteps(steps, overpassCache, city, type);
-
+                List<PlanStep> finalSteps = new ArrayList<>();
+                
+                // 1. Force required places
                 if (requiredPlaces != null && !requiredPlaces.trim().isEmpty()) {
                     String[] places = requiredPlaces.split(",");
-                    int slotIdx = steps.size();
-                    String[] slots = {"Matin", "Après-midi", "Soir"};
-                    for (String place : places) {
-                        String p = place.trim();
+                    for (String pName : places) {
+                        String p = pName.trim();
                         if (p.isEmpty()) continue;
-
-                        String[] placeInfo = searchPlaceByName(p, cityCenter[0], cityCenter[1]);
-
+                        
+                        String[] placeInfo = searchPlaceByName(p + " " + city, cityCenter[0], cityCenter[1]);
                         if (placeInfo == null || "0".equals(placeInfo[0])) {
-                            placeInfo = geocodeWithType(p + " " + city,
-                                    cityCenter[0], cityCenter[1]);
+                            placeInfo = geocodeWithType(p + " " + city, cityCenter[0], cityCenter[1]);
                         }
-                        String detectedType = osmClassToStepType(placeInfo[2], placeInfo[3]);
-
-                        PlanStep custom = new PlanStep();
-                        custom.stepOrder   = slotIdx;
-                        custom.name        = p;
-                        custom.type        = detectedType;
-                        custom.timeSlot    = slots[Math.min(slotIdx, slots.length - 1)];
-                        custom.durationMin = guessDurationFromType(detectedType, type);
-                        custom.costEur     = guessCostFromType(detectedType, type);
-                        custom.description = "Lieu demandé — prix et durée estimés.";
+                        
+                        PlanStep step = new PlanStep();
+                        step.name = p;
+                        step.type = osmClassToStepType(placeInfo[2], placeInfo[3]);
+                        step.durationMin = guessDurationFromType(step.type, type);
+                        step.costEur = guessCostFromType(step.type, type);
+                        step.description = "Lieu demandé.";
                         try {
-                            custom.lat = Double.parseDouble(placeInfo[0]);
-                            custom.lng = Double.parseDouble(placeInfo[1]);
+                            step.lat = Double.parseDouble(placeInfo[0]);
+                            step.lng = Double.parseDouble(placeInfo[1]);
                         } catch (Exception e) {
-                            custom.lat = cityCenter[0]; custom.lng = cityCenter[1];
+                            step.lat = cityCenter[0]; step.lng = cityCenter[1];
                         }
-                        steps.add(custom);
-                        slotIdx++;
+                        finalSteps.add(step);
                         try { Thread.sleep(1100); } catch (InterruptedException ignored) {}
                     }
                 }
 
-                int budget = estimateBudget(steps);
-                if (budget > budgetMax && !type.equals("economique")) continue;
+                // 2. Add activity suggestions until we reach a reasonable limit
+                int maxTotal = Math.max(maxStepsFor(durationHours, effort), finalSteps.size() + 1);
+                int stepDurationMin = stepDurationFor(effort);
+                int perStepBudget = Math.max(1, budgetMax / Math.max(1, maxTotal));
+                for (String activity : safeActivities) {
+                    if (finalSteps.size() >= maxTotal) break;
+                    String[][] places = overpassCache.get(activity + "_" + type);
+                    PlanStep s = null;
+                    if (places != null && places.length > 0) {
+                        s = new PlanStep();
+                        s.type = activity;
+                        s.name = places[0][0];
+                        try { s.lat = Double.parseDouble(places[0][1]); s.lng = Double.parseDouble(places[0][2]); } catch (Exception ignored) {}
+                        if (places[0].length > 3) s.address = places[0][3];
+                        s.durationMin = stepDurationFor(effort);
+                        s.costEur = guessCostFromType(activity, type);
+                        s.description = "Suggestion Traveling.";
+                        s.openingHours = defaultOpeningHours(activity);
+                    }
 
-                geocodeStepsWithCenter(steps, city, cityCenter);
+                    // Simple duplicate check
+                    boolean exists = false;
+                    for (PlanStep fs : finalSteps) {
+                        if (fs.name != null && s != null && s.name != null
+                                && fs.name.equalsIgnoreCase(s.name)) {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (s != null && !exists) finalSteps.add(s);
+                }
+
+                if (finalSteps.isEmpty()) continue;
+
+                // 3. Assign simple ordering and slots
+                String[] allSlots = {"Matin", "Après-midi", "Soir", "Nuit", "Nuit tard"};
+                for (int i = 0; i < finalSteps.size(); i++) {
+                    PlanStep s = finalSteps.get(i);
+                    s.stepOrder = i;
+                    s.timeSlot = allSlots[Math.min(i, allSlots.length - 1)];
+                    
+                    // Robust Final Pass: ensure every step has coordinates
+                    if (s.lat == 0 || s.lng == 0) {
+                        double[] coords = geocode(s.name + " " + city);
+                        if (coords[0] != 0) {
+                            s.lat = coords[0]; s.lng = coords[1];
+                        }
+                    }
+                }
+
+                int budget = estimateBudget(finalSteps);
+                if (budget > budgetMax && !type.equals("economique")) continue;
 
                 TravelPlan plan = new TravelPlan();
                 plan.userId            = userId;
@@ -187,7 +232,7 @@ public class TravelPathViewModel extends AndroidViewModel {
                 plan.weatherTolerances = wtStr;
 
                 long planId = planDao.insertPlan(plan);
-                for (PlanStep step : steps) {
+                for (PlanStep step : finalSteps) {
                     step.planId = planId;
                     stepDao.insertStep(step);
                 }
@@ -196,9 +241,9 @@ public class TravelPathViewModel extends AndroidViewModel {
         });
     }
 
-    private String[][] fetchRealPlaces(double centerLat, double centerLng,
+    private String[][] fetchRealPlaces(String city, double centerLat, double centerLng,
                                         String activity, boolean sensitiveWeather, int count) {
-        double delta = 0.15;
+        double delta = 0.12;
         String bbox = String.format(Locale.US, "%.4f,%.4f,%.4f,%.4f",
                 centerLat - delta, centerLng - delta,
                 centerLat + delta, centerLng + delta);
@@ -256,10 +301,10 @@ public class TravelPathViewModel extends AndroidViewModel {
             }
         } catch (Exception ignored) {}
 
-        return fetchNominatimFallback(centerLat, centerLng, activity, sensitiveWeather, count);
+        return fetchNominatimFallback(city, centerLat, centerLng, activity, sensitiveWeather, count);
     }
 
-    private String[][] fetchNominatimFallback(double lat, double lng,
+    private String[][] fetchNominatimFallback(String city, double lat, double lng,
                                                String activity, boolean sensitiveWeather, int count) {
         String keyword;
         switch (activity) {
@@ -270,12 +315,12 @@ public class TravelPathViewModel extends AndroidViewModel {
             case "Shopping":     keyword = "centre commercial"; break;
             default:             keyword = activity;
         }
-        double d = 0.15;
+        double d = 0.20;
         String viewbox = String.format(Locale.US,
                 "&viewbox=%.4f,%.4f,%.4f,%.4f&bounded=1", lng-d, lat-d, lng+d, lat+d);
         List<String[]> results = new ArrayList<>();
         try {
-            String encoded = java.net.URLEncoder.encode(keyword, "UTF-8");
+            String encoded = java.net.URLEncoder.encode(keyword + " " + city, "UTF-8");
             java.net.URL url = new java.net.URL(
                     "https://nominatim.openstreetmap.org/search?q=" + encoded
                     + "&format=json&limit=" + count + viewbox);
@@ -471,17 +516,23 @@ public class TravelPathViewModel extends AndroidViewModel {
     }
 
     private String[] searchPlaceByName(String name, double centerLat, double centerLng) {
-        if (centerLat == 0 && centerLng == 0) return null;
-        double delta = 0.15;
-        String bbox = String.format(Locale.US, "%.4f,%.4f,%.4f,%.4f",
-                centerLat - delta, centerLng - delta,
-                centerLat + delta, centerLng + delta);
+        // Step 1: Bounded search (accurate within city)
+        String[] result = searchPlaceInternal(name, centerLat, centerLng, 0.2);
+        if (result != null && !"0".equals(result[0])) return result;
+
+        // Step 2: Global search (fallback if monument is outside city bounds)
+        return searchPlaceInternal(name, 0, 0, 0);
+    }
+
+    private String[] searchPlaceInternal(String name, double lat, double lng, double delta) {
+        String bbox = (lat != 0) ? String.format(Locale.US, "(%.4f,%.4f,%.4f,%.4f)",
+                lat - delta, lng - delta, lat + delta, lng + delta) : "";
 
         String safeName = name.replace("\"", "").replace("'", ".");
         String query = "[out:json][timeout:15];\n"
                 + "(\n"
-                + "  node[\"name\"~\"" + safeName + "\",i](" + bbox + ");\n"
-                + "  way[\"name\"~\"" + safeName + "\",i](" + bbox + ");\n"
+                + "  node[\"name\"~\"" + safeName + "\",i]" + bbox + ";\n"
+                + "  way[\"name\"~\"" + safeName + "\",i]" + bbox + ";\n"
                 + ");\n"
                 + "out center 1;";
         try {
@@ -490,9 +541,10 @@ public class TravelPathViewModel extends AndroidViewModel {
             con.setRequestMethod("POST");
             con.setDoOutput(true);
             con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-            con.setConnectTimeout(12000); con.setReadTimeout(15000);
+            con.setConnectTimeout(10000); con.setReadTimeout(12000);
             byte[] body = ("data=" + java.net.URLEncoder.encode(query, "UTF-8")).getBytes("UTF-8");
             con.getOutputStream().write(body);
+
             if (con.getResponseCode() == 200) {
                 java.io.BufferedReader br = new java.io.BufferedReader(
                         new java.io.InputStreamReader(con.getInputStream()));
@@ -503,21 +555,13 @@ public class TravelPathViewModel extends AndroidViewModel {
                 if (!json.contains("\"elements\":[]")) {
                     String[][] results = parseOverpassResult(json, 1);
                     if (results != null && results.length > 0 && results[0] != null) {
-
-                        String osmClass = extractJsonString(json, "amenity");
-                        if (osmClass == null) osmClass = extractJsonString(json, "tourism");
-                        if (osmClass == null) osmClass = extractJsonString(json, "leisure");
-                        if (osmClass == null) osmClass = extractJsonString(json, "shop");
                         String[] r = results[0];
-
-                        return new String[]{r[1], r[2],
-                                osmClass != null ? "amenity" : "",
-                                osmClass != null ? osmClass : ""};
+                        return new String[]{r[1], r[2], "landmark", "monument"};
                     }
                 }
             }
         } catch (Exception ignored) {}
-        return null;
+        return new String[]{"0", "0", "", ""};
     }
 
     private String buildAddress(String num, String street, String postcode, String city) {
@@ -561,11 +605,10 @@ public class TravelPathViewModel extends AndroidViewModel {
                                        String effort, int budgetMax,
                                        double[] cityCenter,
                                        Map<String, String[][]> overpassCache) {
-        List<PlanStep> steps = new ArrayList<>();
+        List<PlanStep> candidates = new ArrayList<>();
         boolean sensitiveWeather = weatherTolerances != null && !weatherTolerances.isEmpty();
 
         int maxSteps = maxStepsFor(durationHours, effort);
-
         int stepDurationMin = stepDurationFor(effort);
 
         double budgetRatio = "economique".equals(type) ? 0.25
@@ -573,24 +616,57 @@ public class TravelPathViewModel extends AndroidViewModel {
         int totalBudget   = (int) (budgetMax * budgetRatio);
         int perStepBudget = maxSteps > 0 ? totalBudget / maxSteps : totalBudget;
 
-        String[] allSlots = {"Matin", "Matin", "Après-midi", "Après-midi", "Soir", "Soir", "Soir"};
-        int order = 0, slotIdx = 0;
+        String[] allSlots = {"Matin", "Après-midi", "Soir", "Nuit"};
+        int order = 0;
 
+        // Collect all potential steps based on activities
         for (String activity : activities) {
-            if (order >= maxSteps || slotIdx >= allSlots.length) break;
-            PlanStep step = stepFor(city, activity, type, allSlots[slotIdx], order,
+            PlanStep step = stepFor(city, activity, type, "TBD", order,
                     sensitiveWeather, overpassCache, stepDurationMin, perStepBudget);
-            if (step != null) { steps.add(step); order++; slotIdx++; }
+            if (step != null) candidates.add(step);
         }
 
-        if (durationHours > 3 && order < maxSteps
-                && !activities.contains("Restauration") && slotIdx < allSlots.length) {
-            PlanStep meal = stepFor(city, "Restauration", type, allSlots[slotIdx], order,
+        // Add a meal if duration is long and not already selected
+        if (durationHours > 3 && candidates.size() < maxSteps && !activities.contains("Restauration")) {
+            PlanStep meal = stepFor(city, "Restauration", type, "TBD", order,
                     sensitiveWeather, overpassCache, stepDurationMin, perStepBudget);
-            if (meal != null) steps.add(meal);
+            if (meal != null) candidates.add(meal);
         }
 
-        return steps;
+        // Sort candidates by geographic proximity (Nearest Neighbor)
+        List<PlanStep> sorted = new ArrayList<>();
+        double lastLat = cityCenter[0], lastLng = cityCenter[1];
+
+        while (!candidates.isEmpty() && sorted.size() < maxSteps) {
+            int nearestIdx = -1;
+            double minDist = Double.MAX_VALUE;
+            
+            for (int i = 0; i < candidates.size(); i++) {
+                PlanStep c = candidates.get(i);
+                // If coordinates are missing, treat as "at center" for proximity logic
+                double cLat = c.lat != 0 ? c.lat : cityCenter[0];
+                double cLng = c.lng != 0 ? c.lng : cityCenter[1];
+                
+                double d = distanceKm(lastLat, lastLng, cLat, cLng);
+                if (d < minDist) {
+                    minDist = d;
+                    nearestIdx = i;
+                }
+            }
+            
+            if (nearestIdx >= 0) {
+                PlanStep chosen = candidates.remove(nearestIdx);
+                chosen.stepOrder = sorted.size();
+                chosen.timeSlot = allSlots[Math.min(chosen.stepOrder, allSlots.length - 1)];
+                sorted.add(chosen);
+                if (chosen.lat != 0) {
+                    lastLat = chosen.lat;
+                    lastLng = chosen.lng;
+                }
+            } else break;
+        }
+
+        return sorted;
     }
 
     private int maxStepsFor(int durationHours, String effort) {
@@ -841,6 +917,7 @@ public class TravelPathViewModel extends AndroidViewModel {
     private double[] geocode(String query) {
         try {
             String encoded = java.net.URLEncoder.encode(query, "UTF-8");
+            // Standard Nominatim Search
             java.net.URL url = new java.net.URL(
                     "https://nominatim.openstreetmap.org/search?q=" + encoded + "&format=json&limit=1");
             java.net.HttpURLConnection con = (java.net.HttpURLConnection) url.openConnection();
@@ -856,10 +933,10 @@ public class TravelPathViewModel extends AndroidViewModel {
                 String json = sb.toString();
                 if (!json.equals("[]") && json.contains("\"lat\"")) {
                     int li = json.indexOf("\"lat\":\"") + 7;
-                    double lat = Double.parseDouble(json.substring(li, json.indexOf("\"", li)));
+                    double resLat = Double.parseDouble(json.substring(li, json.indexOf("\"", li)));
                     int loi = json.indexOf("\"lon\":\"") + 7;
-                    double lng = Double.parseDouble(json.substring(loi, json.indexOf("\"", loi)));
-                    return new double[]{lat, lng};
+                    double resLng = Double.parseDouble(json.substring(loi, json.indexOf("\"", loi)));
+                    return new double[]{resLat, resLng};
                 }
             }
         } catch (Exception ignored) {}
@@ -870,14 +947,10 @@ public class TravelPathViewModel extends AndroidViewModel {
         String[] result = {"0", "0", "", ""};
         try {
             String encoded = java.net.URLEncoder.encode(query, "UTF-8");
-            String viewbox = (centerLat != 0)
-                    ? String.format(Locale.US,
-                        "&viewbox=%.4f,%.4f,%.4f,%.4f&bounded=1",
-                        centerLng - 0.4, centerLat - 0.4, centerLng + 0.4, centerLat + 0.4)
-                    : "";
+            // Try Nominatim without strict bounding box for monuments
             java.net.URL url = new java.net.URL(
                     "https://nominatim.openstreetmap.org/search?q=" + encoded
-                    + "&format=json&limit=1&addressdetails=0" + viewbox);
+                    + "&format=json&limit=1&addressdetails=1");
             java.net.HttpURLConnection con = (java.net.HttpURLConnection) url.openConnection();
             con.setRequestMethod("GET");
             con.setRequestProperty("User-Agent", "TravelingApp/1.0");

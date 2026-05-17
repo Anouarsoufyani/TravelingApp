@@ -13,4 +13,7 @@ public class GroupMessage {
     public String message;
     public String date;
     public int    photoId;
+    public long   planId;
+    public String invitationGroupName;
+    public long   invitationGroupId;
 }

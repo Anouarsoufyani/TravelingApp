@@ -1,325 +1,251 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_color">
+    android:background="@color/background_color"
+    android:overScrollMode="never">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingBottom="96dp">
 
-        <!-- Hero -->
+        <!-- Hero / Header -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="120dp"
-            android:background="@drawable/bg_header_gradient"
-            android:orientation="horizontal"
+            android:layout_height="220dp"
+            android:background="@color/navy"
+            android:orientation="vertical"
             android:gravity="bottom"
-            android:padding="16dp">
+            android:padding="@dimen/space_xl">
 
-            <!-- Avatar cliquable -->
             <FrameLayout
                 android:id="@+id/frame_avatar"
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:layout_marginEnd="12dp">
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_marginBottom="@dimen/space_md">
 
                 <TextView
                     android:id="@+id/tv_profile_avatar"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:gravity="center"
-                    android:text="M"
-                    android:textColor="@color/teal"
-                    android:textSize="22sp"
+                    android:text="U"
+                    android:textColor="@color/default_white"
+                    android:textSize="32sp"
                     android:textStyle="bold"
-                    android:fontFamily="sans"
-                    android:background="@drawable/bg_avatar" />
+                    android:background="@drawable/bg_pill_solid"
+                    android:backgroundTint="@color/surface_field" />
 
-                <ImageView
+                <com.google.android.material.imageview.ShapeableImageView
                     android:id="@+id/iv_profile_avatar"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:scaleType="centerCrop"
-                    android:visibility="gone" />
+                    android:visibility="gone"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Travelshare.Pill" />
 
                 <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="16dp"
-                    android:layout_gravity="bottom"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="bottom|end"
                     android:gravity="center"
                     android:text="✎"
-                    android:textSize="10sp"
+                    android:textSize="12sp"
                     android:textColor="@color/default_white"
-                    android:background="@color/overlay_soft" />
+                    android:background="@drawable/bg_pill_solid"
+                    android:backgroundTint="@color/coral" />
             </FrameLayout>
 
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_weight="1"
+            <TextView
+                android:id="@+id/tv_profile_name"
+                style="@style/TextAppearance.Travelshare.HeadlineLarge"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:text="Utilisateur"
+                android:textColor="@color/default_white" />
 
-                <TextView
-                    android:id="@+id/tv_profile_name"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Utilisateur"
-                    android:textColor="@color/default_white"
-                    android:textSize="17sp"
-                    android:textStyle="bold"
-                    android:fontFamily="sans" />
+            <TextView
+                android:id="@+id/tv_profile_handle"
+                style="@style/TextAppearance.Travelshare.BodyMedium"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@pseudo"
+                android:textColor="@color/sheet_muted" />
+        </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tv_profile_handle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@anonyme"
-                    android:textColor="#CCFFFFFF"
-                    android:textSize="12sp" />
+        <!-- Stats Bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="@dimen/space_xl"
+            android:paddingVertical="@dimen/space_lg"
+            android:background="@color/surface_card">
+
+            <LinearLayout style="@style/StatContainer">
+                <TextView android:id="@+id/tv_stat_photos" style="@style/StatValue" android:text="0" />
+                <TextView style="@style/StatLabel" android:text="PHOTOS" />
+            </LinearLayout>
+
+            <LinearLayout style="@style/StatContainer">
+                <TextView android:id="@+id/tv_stat_likes" style="@style/StatValue" android:text="0" />
+                <TextView style="@style/StatLabel" android:text="LIKES" />
+            </LinearLayout>
+
+            <LinearLayout style="@style/StatContainer">
+                <TextView android:id="@+id/tv_stat_groups" style="@style/StatValue" android:text="0" />
+                <TextView style="@style/StatLabel" android:text="GROUPES" />
             </LinearLayout>
         </LinearLayout>
 
+        <!-- Bio Section -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="@dimen/space_xl">
 
-            <!-- Biographie -->
             <TextView
-                android:layout_width="match_parent"
+                style="@style/StatLabel"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="BIOGRAPHIE"
-                android:textSize="10sp"
-                android:textColor="@color/ink_faint"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="6dp" />
+                android:text="BIO"
+                android:layout_marginBottom="8dp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:background="@drawable/bg_input"
-                android:padding="10dp"
-                android:layout_marginBottom="16dp">
+                android:gravity="center_vertical">
 
                 <EditText
                     android:id="@+id/et_bio"
                     android:layout_width="0dp"
                     android:layout_weight="1"
                     android:layout_height="wrap_content"
-                    android:hint="Ajoutez une bio…"
-                    android:textColor="@color/ink"
-                    android:textSize="13sp"
+                    android:hint="Parlez-nous de vos voyages..."
                     android:background="@android:color/transparent"
+                    android:textColor="@color/default_white"
                     android:textColorHint="@color/ink_faint"
-                    android:inputType="textMultiLine"
+                    android:textSize="14sp"
                     android:maxLines="3" />
 
-                <androidx.appcompat.widget.AppCompatButton
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_save_bio"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:text="OK"
-                    android:textAllCaps="false"
-                    android:textColor="@color/default_white"
-                    android:background="@drawable/bg_pill_solid"
-                    android:paddingHorizontal="12dp"
+                    android:layout_height="wrap_content"
+                    android:text="Sauver"
+                    android:textColor="@color/coral"
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <!-- Stats grid -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="20dp">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:background="@drawable/bg_stat_tile"
-                    android:padding="10dp"
-                    android:layout_marginEnd="6dp">
-                    <TextView
-                        android:id="@+id/tv_stat_photos"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0"
-                        android:textSize="22sp"
-                        android:fontFamily="sans"
-                        android:textStyle="bold"
-                        android:textColor="@color/ink" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="PHOTOS"
-                        android:textSize="9sp"
-                        android:textColor="@color/ink_faint"
-                        android:letterSpacing="0.08" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:background="@drawable/bg_stat_tile"
-                    android:padding="10dp"
-                    android:layout_marginEnd="6dp">
-                    <TextView
-                        android:id="@+id/tv_stat_likes"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0"
-                        android:textSize="22sp"
-                        android:fontFamily="sans"
-                        android:textStyle="bold"
-                        android:textColor="@color/ink" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="LIKES"
-                        android:textSize="9sp"
-                        android:textColor="@color/ink_faint"
-                        android:letterSpacing="0.08" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:background="@drawable/bg_stat_tile"
-                    android:padding="10dp">
-                    <TextView
-                        android:id="@+id/tv_stat_groups"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0"
-                        android:textSize="22sp"
-                        android:fontFamily="sans"
-                        android:textStyle="bold"
-                        android:textColor="@color/ink" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="GROUPES"
-                        android:textSize="9sp"
-                        android:textColor="@color/ink_faint"
-                        android:letterSpacing="0.08" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Mes publications -->
+            <!-- Saved Paths Section -->
             <TextView
-                android:layout_width="match_parent"
+                style="@style/StatLabel"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="MES PUBLICATIONS"
-                android:textSize="10sp"
-                android:textColor="@color/ink_faint"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="8dp" />
+                android:text="MES PARCOURS SAUVEGARDÉS"
+                android:layout_marginTop="@dimen/space_xl"
+                android:layout_marginBottom="@dimen/space_md" />
 
             <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rv_my_photos"
+                android:id="@+id/rv_saved_plans"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false"
-                android:layout_marginBottom="20dp" />
+                android:nestedScrollingEnabled="false" />
 
-            <!-- Mes groupes -->
+            <!-- Groups Section -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="8dp">
+                android:layout_marginTop="@dimen/space_xl"
+                android:layout_marginBottom="@dimen/space_md">
 
                 <TextView
+                    style="@style/StatLabel"
                     android:layout_width="0dp"
                     android:layout_weight="1"
                     android:layout_height="wrap_content"
-                    android:text="MES GROUPES"
-                    android:textSize="10sp"
-                    android:textColor="@color/ink_faint"
-                    android:letterSpacing="0.1" />
+                    android:text="MES GROUPES" />
 
-                <androidx.appcompat.widget.AppCompatButton
+                <TextView
                     android:id="@+id/btn_groups"
                     android:layout_width="wrap_content"
-                    android:layout_height="32dp"
-                    android:text="+ Voir tous"
-                    android:textAllCaps="false"
-                    android:textColor="@color/ink"
-                    android:background="@drawable/bg_pill_outline"
-                    android:textSize="11sp"
-                    android:paddingHorizontal="12dp" />
+                    android:layout_height="wrap_content"
+                    android:text="Voir tous →"
+                    android:textColor="@color/sand"
+                    android:textSize="12sp" />
             </LinearLayout>
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rv_profile_groups"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false"
-                android:layout_marginBottom="20dp" />
+                android:nestedScrollingEnabled="false" />
 
-            <!-- Alertes configurées -->
+            <!-- Alerts Section -->
             <TextView
-                android:layout_width="match_parent"
+                style="@style/StatLabel"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="ALERTES CONFIGURÉES"
-                android:textSize="10sp"
-                android:textColor="@color/ink_faint"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="8dp" />
+                android:text="ALERTES VOYAGE"
+                android:layout_marginTop="@dimen/space_xl"
+                android:layout_marginBottom="@dimen/space_md" />
 
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/layout_alerts_preview"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@drawable/bg_card_md"
-                android:padding="12dp"
-                android:layout_marginBottom="20dp">
+                app:cardBackgroundColor="@color/surface_card"
+                app:cardCornerRadius="@dimen/radius_md"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/border_light"
+                app:strokeWidth="1dp">
 
-                <TextView
-                    android:id="@+id/tv_alerts_preview"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Aucune alerte configurée."
-                    android:textColor="@color/ink_muted"
-                    android:textSize="12sp"
-                    android:layout_marginBottom="6dp" />
+                    android:orientation="vertical"
+                    android:padding="@dimen/space_md">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="+ Gérer mes alertes"
-                    android:textColor="@color/teal"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
+                    <TextView
+                        android:id="@+id/tv_alerts_preview"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Aucune alerte configurée."
+                        android:textColor="@color/sheet_muted"
+                        android:textSize="13sp"
+                        android:layout_marginBottom="8dp" />
 
-            <!-- Déconnexion -->
-            <androidx.appcompat.widget.AppCompatButton
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="+ Configurer"
+                        android:textColor="@color/coral"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Logout -->
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_logout"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:text="Se déconnecter"
-                android:textColor="@color/ink_faint"
-                android:background="@drawable/bg_pill_outline"
+                android:layout_height="56dp"
+                android:layout_marginTop="48dp"
+                android:text="Déconnexion"
                 android:textAllCaps="false"
-                android:textSize="13sp"
-                android:layout_marginBottom="80dp" />
+                android:textColor="@color/sheet_muted"
+                app:cornerRadius="@dimen/radius_md"
+                app:strokeColor="@color/border_light" />
 
         </LinearLayout>
     </LinearLayout>
-</ScrollView>
+</androidx.core.widget.NestedScrollView>

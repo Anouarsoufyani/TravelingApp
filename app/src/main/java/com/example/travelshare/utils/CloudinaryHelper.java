@@ -14,7 +14,6 @@ import java.util.Map;
  */
 public class CloudinaryHelper {
 
-    // IMPORTANT: Remplacer par vos vraies clés Cloudinary
     private static final String CLOUD_NAME = "db68oxg2m";
     private static final String UPLOAD_PRESET = "ml_default";
 

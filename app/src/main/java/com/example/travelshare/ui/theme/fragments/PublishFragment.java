@@ -15,7 +15,6 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
-import android.widget.Switch;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -27,9 +26,12 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import java.io.File;
 
+import com.bumptech.glide.Glide;
 import com.google.mlkit.vision.common.InputImage;
 import com.google.mlkit.vision.label.ImageLabel;
 import com.google.mlkit.vision.label.ImageLabeler;
@@ -38,7 +40,6 @@ import com.google.mlkit.vision.label.defaults.ImageLabelerOptions;
 
 import com.example.travelshare.R;
 import com.example.travelshare.data.models.Group;
-import com.example.travelshare.data.models.NotificationPreference;
 import com.example.travelshare.data.models.Photo;
 import com.example.travelshare.utils.NotificationUtil;
 import com.example.travelshare.utils.SessionManager;
@@ -50,6 +51,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public class PublishFragment extends Fragment {
 
@@ -57,9 +59,11 @@ public class PublishFragment extends Fragment {
     private SessionManager sessionManager;
     private List<Group> groupList = new ArrayList<>();
 
-    private Uri selectedPhotoUri = null;
+    private List<Uri> selectedUris = new ArrayList<>();
     private Uri cameraUri        = null;
     private ImageView ivPreview;
+    private RecyclerView rvThumbs;
+    private ThumbAdapter thumbAdapter;
     private List<String> mlKitLabels = new ArrayList<>();
 
     private enum VoiceState { IDLE, RECORDING, RECORDED }
@@ -78,10 +82,12 @@ public class PublishFragment extends Fragment {
         super.onCreate(savedInstanceState);
 
         galleryLauncher = registerForActivityResult(
-                new ActivityResultContracts.GetContent(),
-                uri -> {
-                    if (uri != null) {
-                        handleImageSelection(uri);
+                new ActivityResultContracts.GetMultipleContents(),
+                uris -> {
+                    if (uris != null && !uris.isEmpty()) {
+                        selectedUris.addAll(uris);
+                        updatePhotoPreview();
+                        runMlKit(uris.get(uris.size() - 1));
                     }
                 });
 
@@ -89,7 +95,9 @@ public class PublishFragment extends Fragment {
                 new ActivityResultContracts.TakePicture(),
                 success -> {
                     if (success && cameraUri != null) {
-                        handleImageSelection(cameraUri);
+                        selectedUris.add(cameraUri);
+                        updatePhotoPreview();
+                        runMlKit(cameraUri);
                     }
                 });
 
@@ -138,6 +146,13 @@ public class PublishFragment extends Fragment {
         }
 
         ivPreview = view.findViewById(R.id.iv_photo_preview);
+        rvThumbs  = view.findViewById(R.id.rv_publish_thumbs);
+        rvThumbs.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+        thumbAdapter = new ThumbAdapter(selectedUris, uri -> {
+            selectedUris.remove(uri);
+            updatePhotoPreview();
+        });
+        rvThumbs.setAdapter(thumbAdapter);
         
         view.findViewById(R.id.btn_pick_gallery).setOnClickListener(v -> galleryLauncher.launch("image/*"));
         view.findViewById(R.id.btn_pick_camera).setOnClickListener(v -> takeCameraPhoto());
@@ -177,7 +192,7 @@ public class PublishFragment extends Fragment {
 
         btnTags.setOnClickListener(v -> {
             if (mlKitLabels.isEmpty()) {
-                Toast.makeText(getContext(), "Analysez une photo d'abord (touchez la zone photo)", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Analysez une photo d'abord", Toast.LENGTH_SHORT).show();
                 return;
             }
             String title = etTitle.getText().toString().trim();
@@ -223,13 +238,13 @@ public class PublishFragment extends Fragment {
 
             btnPublish.setEnabled(false);
             
-            if (selectedPhotoUri != null) {
-                Toast.makeText(getContext(), "Envoi de l'image sur Cloudinary...", Toast.LENGTH_SHORT).show();
-                com.example.travelshare.utils.CloudinaryHelper.uploadImage(selectedPhotoUri, new com.example.travelshare.utils.CloudinaryHelper.UploadListener() {
+            if (!selectedUris.isEmpty()) {
+                Toast.makeText(getContext(), "Envoi des images (" + selectedUris.size() + ") sur Cloudinary...", Toast.LENGTH_SHORT).show();
+                uploadMultipleImages(new ArrayList<>(selectedUris), new ArrayList<>(), new com.example.travelshare.utils.CloudinaryHelper.UploadListener() {
                     @Override
-                    public void onSuccess(String publicUrl) {
+                    public void onSuccess(String publicUrls) {
                         if (isAdded()) {
-                            proceedToPublish(publicUrl, title, location, category, tags, 
+                            proceedToPublish(publicUrls, title, location, category, tags, 
                                            author, visibility, date, approxChecked, 
                                            savedVoicePath, finalGroupId, btnPublish, btnVoice, view);
                         }
@@ -255,6 +270,88 @@ public class PublishFragment extends Fragment {
         return view;
     }
 
+    private void uploadMultipleImages(List<Uri> remaining, List<String> uploadedUrls, com.example.travelshare.utils.CloudinaryHelper.UploadListener finalListener) {
+        if (remaining.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < uploadedUrls.size(); i++) {
+                sb.append(uploadedUrls.get(i));
+                if (i < uploadedUrls.size() - 1) sb.append("|");
+            }
+            finalListener.onSuccess(sb.toString());
+            return;
+        }
+
+        Uri next = remaining.remove(0);
+        com.example.travelshare.utils.CloudinaryHelper.uploadImage(next, new com.example.travelshare.utils.CloudinaryHelper.UploadListener() {
+            @Override
+            public void onSuccess(String publicUrl) {
+                uploadedUrls.add(publicUrl);
+                uploadMultipleImages(remaining, uploadedUrls, finalListener);
+            }
+
+            @Override
+            public void onError(String message) {
+                finalListener.onError(message);
+            }
+        });
+    }
+
+    private void updatePhotoPreview() {
+        if (thumbAdapter != null) thumbAdapter.notifyDataSetChanged();
+        
+        if (selectedUris.isEmpty()) {
+            ivPreview.setVisibility(View.GONE);
+            rvThumbs.setVisibility(View.GONE);
+            View placeholder = getView() != null ? getView().findViewById(R.id.layout_photo_placeholder) : null;
+            if (placeholder != null) placeholder.setVisibility(View.VISIBLE);
+        } else {
+            ivPreview.setVisibility(View.VISIBLE);
+            rvThumbs.setVisibility(View.VISIBLE);
+            Uri last = selectedUris.get(selectedUris.size() - 1);
+            Glide.with(this).load(last).centerCrop().into(ivPreview);
+            View placeholder = getView() != null ? getView().findViewById(R.id.layout_photo_placeholder) : null;
+            if (placeholder != null) placeholder.setVisibility(View.GONE);
+            
+            Toast.makeText(getContext(), selectedUris.size() + " photo(s) sélectionnée(s)", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // --- THUMB ADAPTER ---
+    static class ThumbAdapter extends RecyclerView.Adapter<ThumbAdapter.TVH> {
+        private final List<Uri> uris;
+        private final java.util.function.Consumer<Uri> onRemove;
+        ThumbAdapter(List<Uri> uris, java.util.function.Consumer<Uri> onRemove) {
+            this.uris = uris;
+            this.onRemove = onRemove;
+        }
+        @NonNull @Override public TVH onCreateViewHolder(@NonNull ViewGroup p, int vt) {
+            return new TVH(LayoutInflater.from(p.getContext()).inflate(R.layout.item_publish_thumb, p, false));
+        }
+        @Override public void onBindViewHolder(@NonNull TVH h, int p) {
+            Uri u = uris.get(p);
+            Glide.with(h.itemView.getContext()).load(u).centerCrop().into(h.iv);
+            h.btnRemove.setOnClickListener(v -> onRemove.accept(u));
+        }
+        @Override public int getItemCount() { return uris.size(); }
+        static class TVH extends RecyclerView.ViewHolder {
+            ImageView iv; View btnRemove;
+            TVH(View v) { super(v); iv = v.findViewById(R.id.iv_thumb); btnRemove = v.findViewById(R.id.btn_remove_thumb); }
+        }
+    }
+
+    private void takeCameraPhoto() {
+        try {
+            File imageDir = new File(requireContext().getExternalCacheDir(), "images");
+            if (!imageDir.exists()) imageDir.mkdirs();
+            File photoFile = new File(imageDir, "camera_photo_" + System.currentTimeMillis() + ".jpg");
+            cameraUri = FileProvider.getUriForFile(requireContext(),
+                    requireContext().getPackageName() + ".provider", photoFile);
+            cameraLauncher.launch(cameraUri);
+        } catch (Exception e) {
+            Toast.makeText(getContext(), "Erreur caméra", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void proceedToPublish(String cloudImageUrl, String title, String location, String category, String tags,
                                   String author, String visibility, String date, boolean approxChecked,
                                   String savedVoicePath, long finalGroupId, Button btnPublish, Button btnVoice, View view) {
@@ -274,7 +371,6 @@ public class PublishFragment extends Fragment {
                             coords[0], coords[1], date, category, tags, visibility);
                     
                     if (cloudImageUrl != null) photo.setImageUri(cloudImageUrl);
-                    else if (selectedPhotoUri != null) photo.setImageUri(selectedPhotoUri.toString());
                     
                     if (savedVoicePath != null)   photo.setVoiceUri(savedVoicePath);
                     if (finalGroupId >= 0)        photo.setGroupId(finalGroupId);
@@ -282,28 +378,21 @@ public class PublishFragment extends Fragment {
                     viewModel.insertAndGetId(photo, roomId -> {
                         savePhotoToFirestore(photo, roomId);
                         btnPublish.setEnabled(true);
-                        Toast.makeText(getContext(), "Photo publiée !", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "Post publié !", Toast.LENGTH_SHORT).show();
                         triggerNotificationsForPublish(author, location, category, tags);
                         
                         // Reset UI
-                        EditText etTitle = view.findViewById(R.id.et_pub_title);
-                        EditText etLocation = view.findViewById(R.id.et_pub_location);
-                        EditText etTags = view.findViewById(R.id.et_pub_tags);
-                        Spinner spinnerCat = view.findViewById(R.id.spinner_pub_category);
-                        com.google.android.material.switchmaterial.SwitchMaterial switchVisibility = view.findViewById(R.id.switch_visibility);
-                        CheckBox checkApprox = view.findViewById(R.id.check_approx_location);
-
-                        if (etTitle != null) etTitle.setText("");
-                        if (etLocation != null) etLocation.setText("");
-                        if (etTags != null) etTags.setText("");
-                        if (spinnerCat != null) spinnerCat.setSelection(0);
-                        if (switchVisibility != null) switchVisibility.setChecked(false);
-                        if (checkApprox != null) checkApprox.setChecked(false);
-                        
-                        selectedPhotoUri = null;
-                        ivPreview.setVisibility(View.GONE);
-                        view.findViewById(R.id.layout_photo_placeholder).setVisibility(View.VISIBLE);
+                        selectedUris.clear();
+                        updatePhotoPreview();
                         resetVoiceState(btnVoice);
+                        
+                        // Clear fields
+                        EditText etT = view.findViewById(R.id.et_pub_title);
+                        EditText etL = view.findViewById(R.id.et_pub_location);
+                        EditText etTg = view.findViewById(R.id.et_pub_tags);
+                        if (etT != null) etT.setText("");
+                        if (etL != null) etL.setText("");
+                        if (etTg != null) etTg.setText("");
                     });
                 });
             }
@@ -378,7 +467,7 @@ public class PublishFragment extends Fragment {
         stopMediaPlayer();
         voiceState    = VoiceState.IDLE;
         voiceNotePath = null;
-        if (btn != null) btn.setText("🎤 Message Vocal");
+        if (btn != null) btn.setText("Note Vocale");
     }
 
     private void releaseRecorder() {
@@ -395,34 +484,6 @@ public class PublishFragment extends Fragment {
             mediaPlayer.release();
             mediaPlayer = null;
         }
-    }
-
-    private void takeCameraPhoto() {
-        try {
-            File imageDir = new File(requireContext().getExternalCacheDir(), "images");
-            if (!imageDir.exists()) imageDir.mkdirs();
-            File photoFile = new File(imageDir, "camera_photo.jpg");
-            cameraUri = FileProvider.getUriForFile(requireContext(),
-                    requireContext().getPackageName() + ".provider", photoFile);
-            cameraLauncher.launch(cameraUri);
-        } catch (Exception e) {
-            Toast.makeText(getContext(), "Erreur caméra", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void handleImageSelection(Uri uri) {
-        selectedPhotoUri = uri;
-        if (ivPreview != null) {
-            ivPreview.setVisibility(View.VISIBLE);
-            com.bumptech.glide.Glide.with(this)
-                    .load(uri)
-                    .centerCrop()
-                    .into(ivPreview);
-            
-            View placeholder = getView() != null ? getView().findViewById(R.id.layout_photo_placeholder) : null;
-            if (placeholder != null) placeholder.setVisibility(View.GONE);
-        }
-        runMlKit(uri);
     }
 
     private void runMlKit(Uri imageUri) {
@@ -471,8 +532,7 @@ public class PublishFragment extends Fragment {
     }
 
     private double[] geocodeLocation(String locationName) {
-        // Simulation simple pour l'exemple
-        return new double[]{48.8566, 2.3522}; // Paris par défaut
+        return new double[]{48.8566, 2.3522}; // Paris default
     }
 
     private void triggerNotificationsForPublish(String author, String location, String category, String tags) {

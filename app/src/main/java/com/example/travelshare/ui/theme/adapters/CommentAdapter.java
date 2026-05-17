@@ -51,6 +51,14 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
         holder.tvDate.setText(c.date);
         holder.tvText.setText(c.text);
 
+        holder.tvAuthor.setOnClickListener(v -> {
+            if (c.authorName != null) {
+                android.content.Intent intent = new android.content.Intent(v.getContext(), com.example.travelshare.ui.UserProfileActivity.class);
+                intent.putExtra(com.example.travelshare.ui.UserProfileActivity.EXTRA_USERNAME, c.authorName);
+                v.getContext().startActivity(intent);
+            }
+        });
+
         if (currentUserId >= 0 && c.userId == currentUserId && deleteCallback != null) {
             holder.btnDelete.setVisibility(View.VISIBLE);
             holder.btnDelete.setOnClickListener(v -> deleteCallback.accept(c.id));

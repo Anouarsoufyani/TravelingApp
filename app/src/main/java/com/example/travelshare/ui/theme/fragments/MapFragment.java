@@ -49,9 +49,15 @@ public class MapFragment extends Fragment {
         viewModel.getAllPhotos().observe(getViewLifecycleOwner(), photos -> {
             addMarkers(photos);
             if (photos != null) {
-                tvCount.setText(photos.size() + " photo" + (photos.size() > 1 ? "s" : ""));
+                tvCount.setText(String.valueOf(photos.size()));
             }
         });
+
+        view.findViewById(R.id.fab_map_plan).setOnClickListener(v ->
+                requireActivity().getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, new TravelPathFragment())
+                        .addToBackStack(null)
+                        .commit());
 
         return view;
     }
@@ -85,6 +91,7 @@ public class MapFragment extends Fragment {
                 intent.putExtra(PhotoDetailActivity.EXTRA_LAT, lat);
                 intent.putExtra(PhotoDetailActivity.EXTRA_LNG, lng);
                 intent.putExtra(PhotoDetailActivity.EXTRA_IMAGE_URI, photo.getImageUri());
+                intent.putExtra(PhotoDetailActivity.EXTRA_VOICE_URI, photo.getVoiceUri());
                 startActivity(intent);
                 return true;
             });
