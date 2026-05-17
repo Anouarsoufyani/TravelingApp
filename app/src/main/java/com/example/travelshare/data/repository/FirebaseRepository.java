@@ -168,15 +168,16 @@ public class FirebaseRepository {
         return v != null ? v : "";
     }
 
-    public void saveUserProfile(String username, String bio) {
+    public void saveUserProfile(String username, String bio, String avatarUri) {
         Map<String, Object> data = new HashMap<>();
         data.put("username",  username);
         data.put("bio",       bio != null ? bio : "");
+        data.put("avatarUri", avatarUri != null ? avatarUri : "");
         data.put("timestamp", FieldValue.serverTimestamp());
 
         db.collection("users")
                 .document(username)
-                .set(data)
+                .set(data, com.google.firebase.firestore.SetOptions.merge())
                 .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "saveUserProfile failed", e));
     }
 

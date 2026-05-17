@@ -11,5 +11,8 @@ public class TravelingApp extends Application {
         Configuration.getInstance().setOsmdroidBasePath(getCacheDir());
         Configuration.getInstance().setOsmdroidTileCache(
                 new java.io.File(getCacheDir(), "osm_tiles"));
+
+        // Initialisation Cloudinary
+        com.example.travelshare.utils.CloudinaryHelper.init(this);
     }
 }

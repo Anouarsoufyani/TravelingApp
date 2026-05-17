@@ -50,16 +50,29 @@ public class ProfileFragment extends Fragment {
                 new ActivityResultContracts.GetContent(),
                 uri -> {
                     if (uri == null || ivAvatar == null) return;
-                    try {
-                        requireContext().getContentResolver().takePersistableUriPermission(
-                                uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    } catch (SecurityException ignored) {}
-                    currentAvatarUri = uri.toString();
-                    ivAvatar.setVisibility(View.VISIBLE);
-                    Glide.with(this).load(uri).centerCrop().into(ivAvatar);
+                    
+                    Toast.makeText(getContext(), "Upload de l'avatar...", Toast.LENGTH_SHORT).show();
+                    com.example.travelshare.utils.CloudinaryHelper.uploadImage(uri, new com.example.travelshare.utils.CloudinaryHelper.UploadListener() {
+                        @Override
+                        public void onSuccess(String publicUrl) {
+                            requireActivity().runOnUiThread(() -> {
+                                currentAvatarUri = publicUrl;
+                                ivAvatar.setVisibility(View.VISIBLE);
+                                Glide.with(ProfileFragment.this).load(publicUrl).centerCrop().into(ivAvatar);
+                                
+                                String bio = etBio != null ? etBio.getText().toString().trim() : "";
+                                viewModel.updateUserProfile(session.getUserId(), currentAvatarUri, bio);
+                                FirebaseRepository.getInstance().saveUserProfile(session.getUsername(), bio, currentAvatarUri);
+                                Toast.makeText(getContext(), "Avatar mis à jour !", Toast.LENGTH_SHORT).show();
+                            });
+                        }
 
-                    String bio = etBio != null ? etBio.getText().toString().trim() : "";
-                    viewModel.updateUserProfile(session.getUserId(), currentAvatarUri, bio);
+                        @Override
+                        public void onError(String message) {
+                            requireActivity().runOnUiThread(() -> 
+                                Toast.makeText(getContext(), "Erreur upload : " + message, Toast.LENGTH_LONG).show());
+                        }
+                    });
                 }
         );
     }
@@ -130,7 +143,7 @@ public class ProfileFragment extends Fragment {
             if (!session.isLoggedIn()) return;
             String bio = etBio.getText().toString().trim();
             viewModel.updateUserProfile(session.getUserId(), currentAvatarUri, bio);
-            FirebaseRepository.getInstance().saveUserProfile(session.getUsername(), bio);
+            FirebaseRepository.getInstance().saveUserProfile(session.getUsername(), bio, currentAvatarUri);
             Toast.makeText(getContext(), "Profil mis à jour ✓", Toast.LENGTH_SHORT).show();
         });
 

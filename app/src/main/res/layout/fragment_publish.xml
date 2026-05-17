@@ -13,11 +13,11 @@
         android:orientation="vertical"
         android:paddingBottom="96dp">
 
-        <!-- Edge-to-Edge Photo Picker -->
+        <!-- Image Preview Area -->
         <FrameLayout
-            android:id="@+id/layout_photo_picker"
+            android:id="@+id/layout_photo_preview_container"
             android:layout_width="match_parent"
-            android:layout_height="400dp"
+            android:layout_height="320dp"
             android:background="@color/navy">
 
             <ImageView
@@ -27,17 +27,11 @@
                 android:scaleType="centerCrop"
                 android:visibility="gone" />
 
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="#20000000" />
-
             <LinearLayout
                 android:id="@+id/layout_photo_placeholder"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:background="@drawable/bg_photo_overlay_gradient"
                 android:gravity="center"
                 android:orientation="vertical"
                 android:padding="@dimen/space_xl">
@@ -47,30 +41,61 @@
                     android:layout_height="48dp"
                     android:layout_marginBottom="@dimen/space_sm"
                     android:src="@drawable/ic_ms_explore"
-                    app:tint="@color/default_white" />
+                    app:tint="@color/sheet_muted" />
 
                 <TextView
                     style="@style/TextAppearance.Travelshare.TitleMedium"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Ajouter une photo"
-                    android:textColor="@color/default_white" />
-
-                <TextView
-                    style="@style/TextAppearance.Travelshare.LabelSmall"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Touchez pour choisir"
-                    android:textColor="@color/sand" />
+                    android:text="Aucune photo"
+                    android:textColor="@color/sheet_muted" />
             </LinearLayout>
         </FrameLayout>
+
+        <!-- Media Source Selection Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="@dimen/space_xl"
+            android:paddingTop="@dimen/space_md"
+            android:paddingBottom="@dimen/space_md"
+            android:gravity="center">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_pick_gallery"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="@dimen/space_xs"
+                android:text="Galerie"
+                android:textAllCaps="false"
+                android:textColor="@color/default_white"
+                app:cornerRadius="@dimen/radius_md"
+                app:icon="@drawable/ic_ms_explore"
+                app:iconTint="@color/sand"
+                app:strokeColor="@color/border_light" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_pick_camera"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:text="Caméra"
+                android:textAllCaps="false"
+                android:textColor="@color/default_white"
+                app:cornerRadius="@dimen/radius_md"
+                app:icon="@drawable/ic_ms_explore"
+                app:iconTint="@color/coral"
+                app:strokeColor="@color/border_light" />
+        </LinearLayout>
 
         <!-- Form Content -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="-24dp"
             android:background="@drawable/bg_sheet_top"
             android:orientation="vertical"
             android:padding="@dimen/space_xl">

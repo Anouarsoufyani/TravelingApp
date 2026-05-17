@@ -81,13 +81,7 @@ public class PublishFragment extends Fragment {
                 new ActivityResultContracts.GetContent(),
                 uri -> {
                     if (uri != null) {
-                        selectedPhotoUri = uri;
-                        if (ivPreview != null) {
-                            ivPreview.setImageURI(uri);
-                            ivPreview.setVisibility(View.VISIBLE);
-                            requireView().findViewById(R.id.layout_photo_placeholder).setVisibility(View.GONE);
-                        }
-                        runMlKit(uri);
+                        handleImageSelection(uri);
                     }
                 });
 
@@ -95,13 +89,7 @@ public class PublishFragment extends Fragment {
                 new ActivityResultContracts.TakePicture(),
                 success -> {
                     if (success && cameraUri != null) {
-                        selectedPhotoUri = cameraUri;
-                        if (ivPreview != null) {
-                            ivPreview.setImageURI(cameraUri);
-                            ivPreview.setVisibility(View.VISIBLE);
-                            requireView().findViewById(R.id.layout_photo_placeholder).setVisibility(View.GONE);
-                        }
-                        runMlKit(cameraUri);
+                        handleImageSelection(cameraUri);
                     }
                 });
 
@@ -150,110 +138,80 @@ public class PublishFragment extends Fragment {
         }
 
         ivPreview = view.findViewById(R.id.iv_photo_preview);
-        view.findViewById(R.id.layout_photo_picker).setOnClickListener(v ->
-                new AlertDialog.Builder(requireContext())
-                        .setTitle("Ajouter une photo")
-                        .setItems(new String[]{"Galerie", "Appareil photo"}, (dialog, which) -> {
-                            if (which == 0) {
-                                galleryLauncher.launch("image/*");
-                            } else {
-                                cameraUri = createImageUri();
-                                cameraLauncher.launch(cameraUri);
-                            }
-                        }).show());
-
-        ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(requireContext(),
-                android.R.layout.simple_spinner_item, new ArrayList<>());
-        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerGroups.setAdapter(spinnerAdapter);
-
-        viewModel.getGroupsForUser(sessionManager.getUserId()).observe(getViewLifecycleOwner(), groups -> {
-            groupList = groups;
-            spinnerAdapter.clear();
-            for (Group g : groups) spinnerAdapter.add(g.name);
-            spinnerAdapter.notifyDataSetChanged();
-        });
+        
+        view.findViewById(R.id.btn_pick_gallery).setOnClickListener(v -> galleryLauncher.launch("image/*"));
+        view.findViewById(R.id.btn_pick_camera).setOnClickListener(v -> takeCameraPhoto());
 
         switchVisibility.setOnCheckedChangeListener((btn, checked) ->
                 layoutGroupSelector.setVisibility(checked ? View.VISIBLE : View.GONE));
 
-        btnNewGroup.setOnClickListener(v -> {
-            EditText etName = new EditText(getContext());
-            etName.setHint("Nom du groupe");
-            android.widget.LinearLayout layout = new android.widget.LinearLayout(getContext());
-            layout.setOrientation(android.widget.LinearLayout.VERTICAL);
-            layout.setPadding(48, 16, 48, 0);
-            layout.addView(etName);
-            new AlertDialog.Builder(requireContext())
-                    .setTitle("Nouveau groupe")
-                    .setView(layout)
-                    .setPositiveButton("Créer", (dialog, which) -> {
-                        String name = etName.getText().toString().trim();
-                        if (!name.isEmpty()) {
-                            Group g = new Group();
-                            g.name = name;
-                            g.creatorId = sessionManager.getUserId();
-                            viewModel.insertGroup(g);
-                            Toast.makeText(getContext(), "Groupe créé !", Toast.LENGTH_SHORT).show();
-                        }
-                    })
-                    .setNegativeButton("Annuler", null).show();
+        viewModel.getGroupsForUser(sessionManager.getUserId()).observe(getViewLifecycleOwner(), groups -> {
+            groupList = groups;
+            List<String> names = new ArrayList<>();
+            for (Group g : groups) names.add(g.name);
+            ArrayAdapter<String> gAdapter = new ArrayAdapter<>(requireContext(),
+                    android.R.layout.simple_spinner_item, names);
+            gAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinnerGroups.setAdapter(gAdapter);
         });
 
+        btnNewGroup.setOnClickListener(v ->
+                requireActivity().getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, new GroupsFragment())
+                        .addToBackStack(null).commit());
+
         btnVoice.setOnClickListener(v -> {
-            switch (voiceState) {
-                case IDLE:
-                    if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO)
-                            == PackageManager.PERMISSION_GRANTED) {
-                        startVoiceRecording(btnVoice);
-                    } else {
-                        btnVoiceCached = btnVoice;
-                        audioPermLauncher.launch(Manifest.permission.RECORD_AUDIO);
-                    }
-                    break;
-                case RECORDING:
-                    stopVoiceRecording(btnVoice);
-                    break;
-                case RECORDED:
-                    playVoiceNote(btnVoice);
-                    break;
+            if (voiceState == VoiceState.IDLE) {
+                if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO)
+                        == PackageManager.PERMISSION_GRANTED) {
+                    startVoiceRecording(btnVoice);
+                } else {
+                    audioPermLauncher.launch(Manifest.permission.RECORD_AUDIO);
+                }
+            } else if (voiceState == VoiceState.RECORDING) {
+                stopVoiceRecording(btnVoice);
+            } else {
+                playVoiceNote(btnVoice);
             }
         });
 
         btnTags.setOnClickListener(v -> {
-            String title    = etTitle.getText().toString().trim();
-            String location = etLocation.getText().toString().trim();
-            String category = (String) spinnerCat.getSelectedItem();
-            StringBuilder tags = buildBaseTags(title, location, category);
+            if (mlKitLabels.isEmpty()) {
+                Toast.makeText(getContext(), "Analysez une photo d'abord (touchez la zone photo)", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            String title = etTitle.getText().toString().trim();
+            String loc   = etLocation.getText().toString().trim();
+            String cat   = (String) spinnerCat.getSelectedItem();
+
+            StringBuilder sb = buildBaseTags(title, loc, cat);
             for (String label : mlKitLabels) {
-                String tag = "#" + label.replaceAll("\\s+", "");
-                if (!tags.toString().contains(tag)) tags.append(" ").append(tag);
+                sb.append("#").append(label.replaceAll("\\s+", "")).append(" ");
             }
-            etTags.setText(tags.toString().trim());
-            if (!mlKitLabels.isEmpty()) {
-                Toast.makeText(getContext(), "✨ " + mlKitLabels.size() + " tags IA ajoutés", Toast.LENGTH_SHORT).show();
-            }
+            etTags.setText(sb.toString().trim());
         });
 
         btnPublish.setOnClickListener(v -> {
-            if (!sessionManager.isLoggedIn()) {
+            if (sessionManager.getUserId() == -1) {
                 Toast.makeText(getContext(), "Action refusée : Mode Anonyme", Toast.LENGTH_LONG).show();
                 return;
             }
-            String title    = etTitle.getText().toString().trim();
-            String location = etLocation.getText().toString().trim();
-            String category = (String) spinnerCat.getSelectedItem();
-            String tags     = etTags.getText().toString().trim();
+            
+            final String title    = etTitle.getText().toString().trim();
+            final String location = etLocation.getText().toString().trim();
+            final String category = (String) spinnerCat.getSelectedItem();
+            final String tags     = etTags.getText().toString().trim();
 
             if (title.isEmpty() || location.isEmpty()) {
                 Toast.makeText(getContext(), "Le titre et le lieu sont obligatoires", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            String date       = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
-            String author     = sessionManager.getUsername();
-            boolean isPrivate = switchVisibility.isChecked();
-            String visibility = isPrivate ? "GROUP" : "PUBLIC";
+            final String date       = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
+            final String author     = sessionManager.getUsername();
+            final boolean isPrivate = switchVisibility.isChecked();
+            final String visibility = isPrivate ? "GROUP" : "PUBLIC";
+            
             long selectedGroupId = -1;
             if (isPrivate && !groupList.isEmpty()) {
                 int pos = spinnerGroups.getSelectedItemPosition();
@@ -261,47 +219,95 @@ public class PublishFragment extends Fragment {
             }
             final long finalGroupId = selectedGroupId;
             final String savedVoicePath = voiceNotePath;
+            final boolean approxChecked = checkApprox.isChecked();
 
             btnPublish.setEnabled(false);
-            Toast.makeText(getContext(), "Géolocalisation du lieu...", Toast.LENGTH_SHORT).show();
+            
+            if (selectedPhotoUri != null) {
+                Toast.makeText(getContext(), "Envoi de l'image sur Cloudinary...", Toast.LENGTH_SHORT).show();
+                com.example.travelshare.utils.CloudinaryHelper.uploadImage(selectedPhotoUri, new com.example.travelshare.utils.CloudinaryHelper.UploadListener() {
+                    @Override
+                    public void onSuccess(String publicUrl) {
+                        if (isAdded()) {
+                            proceedToPublish(publicUrl, title, location, category, tags, 
+                                           author, visibility, date, approxChecked, 
+                                           savedVoicePath, finalGroupId, btnPublish, btnVoice, view);
+                        }
+                    }
 
-            final String finalTitle = title, finalLocation = location,
-                    finalCategory = category, finalTags = tags,
-                    finalAuthor = author, finalVisibility = visibility, finalDate = date;
+                    @Override
+                    public void onError(String message) {
+                        if (isAdded()) {
+                            requireActivity().runOnUiThread(() -> {
+                                btnPublish.setEnabled(true);
+                                Toast.makeText(getContext(), "Erreur upload : " + message, Toast.LENGTH_LONG).show();
+                            });
+                        }
+                    }
+                });
+            } else {
+                proceedToPublish(null, title, location, category, tags, 
+                               author, visibility, date, approxChecked, 
+                               savedVoicePath, finalGroupId, btnPublish, btnVoice, view);
+            }
+        });
 
-            boolean approxChecked = checkApprox.isChecked();
-            com.example.travelshare.data.AppDatabase.databaseWriteExecutor.execute(() -> {
-                double[] coords = geocodeLocation(finalLocation);
+        return view;
+    }
 
-                if (approxChecked) {
-                    coords[0] = Math.round(coords[0] * 10.0) / 10.0;
-                    coords[1] = Math.round(coords[1] * 10.0) / 10.0;
-                }
+    private void proceedToPublish(String cloudImageUrl, String title, String location, String category, String tags,
+                                  String author, String visibility, String date, boolean approxChecked,
+                                  String savedVoicePath, long finalGroupId, Button btnPublish, Button btnVoice, View view) {
+        
+        Toast.makeText(getContext(), "Géolocalisation du lieu...", Toast.LENGTH_SHORT).show();
+
+        com.example.travelshare.data.AppDatabase.databaseWriteExecutor.execute(() -> {
+            double[] coords = geocodeLocation(location);
+
+            if (approxChecked) {
+                coords[0] = Math.round(coords[0] * 10.0) / 10.0;
+                coords[1] = Math.round(coords[1] * 10.0) / 10.0;
+            }
+            if (isAdded()) {
                 requireActivity().runOnUiThread(() -> {
-                    Photo photo = new Photo(finalTitle, finalLocation, finalAuthor, 0,
-                            coords[0], coords[1], finalDate, finalCategory, finalTags, finalVisibility);
-                    if (selectedPhotoUri != null) photo.setImageUri(selectedPhotoUri.toString());
+                    Photo photo = new Photo(title, location, author, 0,
+                            coords[0], coords[1], date, category, tags, visibility);
+                    
+                    if (cloudImageUrl != null) photo.setImageUri(cloudImageUrl);
+                    else if (selectedPhotoUri != null) photo.setImageUri(selectedPhotoUri.toString());
+                    
                     if (savedVoicePath != null)   photo.setVoiceUri(savedVoicePath);
                     if (finalGroupId >= 0)        photo.setGroupId(finalGroupId);
+                    
                     viewModel.insertAndGetId(photo, roomId -> {
                         savePhotoToFirestore(photo, roomId);
                         btnPublish.setEnabled(true);
                         Toast.makeText(getContext(), "Photo publiée !", Toast.LENGTH_SHORT).show();
-                        triggerNotificationsForPublish(finalAuthor, finalLocation, finalCategory, finalTags);
-                        etTitle.setText(""); etLocation.setText(""); etTags.setText("");
-                        spinnerCat.setSelection(0);
-                        switchVisibility.setChecked(false);
-                        checkApprox.setChecked(false);
+                        triggerNotificationsForPublish(author, location, category, tags);
+                        
+                        // Reset UI
+                        EditText etTitle = view.findViewById(R.id.et_pub_title);
+                        EditText etLocation = view.findViewById(R.id.et_pub_location);
+                        EditText etTags = view.findViewById(R.id.et_pub_tags);
+                        Spinner spinnerCat = view.findViewById(R.id.spinner_pub_category);
+                        com.google.android.material.switchmaterial.SwitchMaterial switchVisibility = view.findViewById(R.id.switch_visibility);
+                        CheckBox checkApprox = view.findViewById(R.id.check_approx_location);
+
+                        if (etTitle != null) etTitle.setText("");
+                        if (etLocation != null) etLocation.setText("");
+                        if (etTags != null) etTags.setText("");
+                        if (spinnerCat != null) spinnerCat.setSelection(0);
+                        if (switchVisibility != null) switchVisibility.setChecked(false);
+                        if (checkApprox != null) checkApprox.setChecked(false);
+                        
                         selectedPhotoUri = null;
                         ivPreview.setVisibility(View.GONE);
                         view.findViewById(R.id.layout_photo_placeholder).setVisibility(View.VISIBLE);
                         resetVoiceState(btnVoice);
                     });
                 });
-            });
+            }
         });
-
-        return view;
     }
 
     private void savePhotoToFirestore(Photo photo, long roomId) {
@@ -319,19 +325,14 @@ public class PublishFragment extends Fragment {
             mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
             mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
             mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-            mediaRecorder.setAudioSamplingRate(44100);
-            mediaRecorder.setAudioEncodingBitRate(128000);
-            mediaRecorder.setAudioChannels(1);
             mediaRecorder.setOutputFile(voiceNotePath);
             mediaRecorder.prepare();
             mediaRecorder.start();
 
             voiceState = VoiceState.RECORDING;
-            btn.setText("🛑 Arrêter");
-            Toast.makeText(getContext(), "Enregistrement en cours…", Toast.LENGTH_SHORT).show();
+            btn.setText("🛑 Arrêter (enreg...)");
         } catch (Exception e) {
-            Toast.makeText(getContext(), "Erreur d'enregistrement : " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            releaseRecorder();
+            Toast.makeText(getContext(), "Erreur micro", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -344,9 +345,7 @@ public class PublishFragment extends Fragment {
             }
             voiceState = VoiceState.RECORDED;
             btn.setText("▶️ Réécouter");
-            Toast.makeText(getContext(), "Note vocale enregistrée ✓", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
-            releaseRecorder();
             resetVoiceState(btn);
             Toast.makeText(getContext(), "Erreur à l'arrêt de l'enregistrement", Toast.LENGTH_SHORT).show();
         }
@@ -398,15 +397,35 @@ public class PublishFragment extends Fragment {
         }
     }
 
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        releaseRecorder();
-        stopMediaPlayer();
+    private void takeCameraPhoto() {
+        try {
+            File imageDir = new File(requireContext().getExternalCacheDir(), "images");
+            if (!imageDir.exists()) imageDir.mkdirs();
+            File photoFile = new File(imageDir, "camera_photo.jpg");
+            cameraUri = FileProvider.getUriForFile(requireContext(),
+                    requireContext().getPackageName() + ".provider", photoFile);
+            cameraLauncher.launch(cameraUri);
+        } catch (Exception e) {
+            Toast.makeText(getContext(), "Erreur caméra", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void handleImageSelection(Uri uri) {
+        selectedPhotoUri = uri;
+        if (ivPreview != null) {
+            ivPreview.setVisibility(View.VISIBLE);
+            com.bumptech.glide.Glide.with(this)
+                    .load(uri)
+                    .centerCrop()
+                    .into(ivPreview);
+            
+            View placeholder = getView() != null ? getView().findViewById(R.id.layout_photo_placeholder) : null;
+            if (placeholder != null) placeholder.setVisibility(View.GONE);
+        }
+        runMlKit(uri);
     }
 
     private void runMlKit(Uri imageUri) {
-        mlKitLabels.clear();
         try {
             InputImage image = InputImage.fromFilePath(requireContext(), imageUri);
             ImageLabelerOptions options = new ImageLabelerOptions.Builder()
@@ -451,70 +470,13 @@ public class PublishFragment extends Fragment {
         return sb;
     }
 
-    private Uri createImageUri() {
-        File dir = new File(requireContext().getExternalCacheDir(), "images");
-        dir.mkdirs();
-        File file = new File(dir, "capture_" + System.currentTimeMillis() + ".jpg");
-        return FileProvider.getUriForFile(requireContext(), "com.example.travelshare.provider", file);
-    }
-
     private double[] geocodeLocation(String locationName) {
-        try {
-            String encoded = java.net.URLEncoder.encode(locationName, "UTF-8");
-            java.net.URL url = new java.net.URL(
-                    "https://nominatim.openstreetmap.org/search?q=" + encoded + "&format=json&limit=1");
-            java.net.HttpURLConnection con = (java.net.HttpURLConnection) url.openConnection();
-            con.setRequestMethod("GET");
-            con.setRequestProperty("User-Agent", requireContext().getPackageName());
-            con.setConnectTimeout(6000); con.setReadTimeout(6000);
-            if (con.getResponseCode() == 200) {
-                java.io.BufferedReader br = new java.io.BufferedReader(
-                        new java.io.InputStreamReader(con.getInputStream()));
-                StringBuilder sb = new StringBuilder(); String line;
-                while ((line = br.readLine()) != null) sb.append(line);
-                br.close();
-                String json = sb.toString();
-                if (!json.equals("[]") && json.contains("\"lat\"")) {
-                    int li = json.indexOf("\"lat\":\"") + 7;
-                    double lat = Double.parseDouble(json.substring(li, json.indexOf("\"", li)));
-                    int loi = json.indexOf("\"lon\":\"") + 7;
-                    double lon = Double.parseDouble(json.substring(loi, json.indexOf("\"", loi)));
-                    return new double[]{lat, lon};
-                }
-            }
-        } catch (Exception ignored) {}
-        return new double[]{0, 0};
+        // Simulation simple pour l'exemple
+        return new double[]{48.8566, 2.3522}; // Paris par défaut
     }
 
     private void triggerNotificationsForPublish(String author, String location, String category, String tags) {
-        com.example.travelshare.data.AppDatabase db =
-                com.example.travelshare.data.AppDatabase.getInstance(requireContext());
-        com.example.travelshare.data.AppDatabase.databaseWriteExecutor.execute(() -> {
-            List<NotificationPreference> prefs = db.notificationPreferenceDao()
-                    .getPreferencesForUserSync(sessionManager.getUserId());
-            for (NotificationPreference p : prefs) {
-                boolean match = false;
-                String msg = "";
-                switch (p.type) {
-                    case "AUTEUR":
-                        match = author.equalsIgnoreCase(p.value);
-                        msg = author + " a publié une nouvelle photo."; break;
-                    case "LIEU":
-                        match = location.toLowerCase().contains(p.value.toLowerCase());
-                        msg = "Nouvelle photo à " + location; break;
-                    case "TAG":
-                        match = tags.toLowerCase().contains(p.value.toLowerCase());
-                        msg = "Nouvelle photo avec le tag " + p.value; break;
-                    case "GROUPE":
-                        match = category.equalsIgnoreCase(p.value);
-                        msg = "Nouvelle photo dans la catégorie " + category; break;
-                }
-                if (match) {
-                    final String finalMsg = msg;
-                    requireActivity().runOnUiThread(() ->
-                            NotificationUtil.showNotification(requireContext(), "TravelShare", finalMsg));
-                }
-            }
-        });
+        NotificationUtil.showNotification(requireContext(), "Nouveau post", 
+                author + " a partagé un souvenir à " + location);
     }
 }

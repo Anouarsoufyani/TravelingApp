@@ -69,6 +69,9 @@ dependencies {
     // Loading skeletons
     implementation("com.facebook.shimmer:shimmer:0.5.0")
 
+    // Cloudinary SDK pour le stockage d'images
+    implementation("com.cloudinary:cloudinary-android:3.1.2")
+
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-auth")
