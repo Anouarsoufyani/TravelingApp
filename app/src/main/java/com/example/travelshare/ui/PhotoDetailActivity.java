@@ -20,6 +20,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
@@ -33,7 +34,7 @@ import com.example.travelshare.data.models.Comment;
 import com.example.travelshare.data.models.Report;
 import com.example.travelshare.data.repository.FirebaseRepository;
 import com.example.travelshare.ui.theme.adapters.CommentAdapter;
-import com.example.travelshare.ui.theme.adapters.PhotoAdapter;
+import com.example.travelshare.ui.theme.adapters.SquarePhotoAdapter;
 import com.example.travelshare.ui.theme.fragments.PlanDetailFragment;
 import com.example.travelshare.utils.NotificationUtil;
 import com.example.travelshare.utils.SessionManager;
@@ -108,6 +109,7 @@ public class PhotoDetailActivity extends AppCompatActivity {
         TabLayout tabIndicator = findViewById(R.id.tab_carousel_indicator);
         TextView tvTitle  = findViewById(R.id.tv_detail_title);
         TextView tvAuthorDate = findViewById(R.id.tv_detail_author_date);
+        TextView tvAuthorInitial = findViewById(R.id.tv_detail_author_initial);
         TextView tvLocation = findViewById(R.id.tv_detail_location);
         TextView tvCatTags = findViewById(R.id.tv_detail_category_tags);
         TextView tvLikesCount = findViewById(R.id.tv_likes_count);
@@ -118,9 +120,12 @@ public class PhotoDetailActivity extends AppCompatActivity {
         TextView btnReport = findViewById(R.id.btn_detail_report);
 
         tvTitle.setText(title);
+        tvAuthorInitial.setText(author != null && !author.isEmpty()
+                ? String.valueOf(author.charAt(0)).toUpperCase(Locale.getDefault())
+                : "?");
         tvAuthorDate.setText("Par " + author + " • " + date);
         tvLocation.setText(location);
-        tvCatTags.setText((category != null ? category : "Voyage") + " · " + (tags != null ? tags : ""));
+        tvCatTags.setText(formatCategoryTags(category, tags));
         tvLikesCount.setText(currentLikes + " personnes ont aimé");
 
         // Carousel Setup
@@ -320,8 +325,9 @@ public class PhotoDetailActivity extends AppCompatActivity {
         }
 
         RecyclerView rvSimilar = findViewById(R.id.rv_similar_photos);
-        rvSimilar.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
-        PhotoAdapter similarAdapter = new PhotoAdapter();
+        rvSimilar.setLayoutManager(new GridLayoutManager(this, 3));
+        rvSimilar.setNestedScrollingEnabled(false);
+        SquarePhotoAdapter similarAdapter = new SquarePhotoAdapter(3);
         rvSimilar.setAdapter(similarAdapter);
 
         String firstTag = extractFirstTag(tags);
@@ -540,6 +546,13 @@ public class PhotoDetailActivity extends AppCompatActivity {
         return null;
     }
 
+    private String formatCategoryTags(String category, String tags) {
+        String safeCategory = category != null && !category.trim().isEmpty()
+                ? category.trim() : "Voyage";
+        String safeTags = tags != null ? tags.trim() : "";
+        return safeTags.isEmpty() ? safeCategory : safeCategory + " · " + safeTags;
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -561,14 +574,19 @@ public class PhotoDetailActivity extends AppCompatActivity {
             ImageView iv = new ImageView(parent.getContext());
             iv.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             iv.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            iv.setBackgroundResource(R.drawable.bg_photo_placeholder);
             return new CarouselVH(iv);
         }
 
         @Override public void onBindViewHolder(@NonNull CarouselVH holder, int position) {
+            if (imageUrls.isEmpty()) {
+                Glide.with(holder.itemView.getContext()).clear(holder.iv);
+                return;
+            }
             Glide.with(holder.itemView.getContext()).load(Uri.parse(imageUrls.get(position))).into(holder.iv);
         }
 
-        @Override public int getItemCount() { return imageUrls.size(); }
+        @Override public int getItemCount() { return Math.max(1, imageUrls.size()); }
 
         static class CarouselVH extends RecyclerView.ViewHolder {
             ImageView iv;

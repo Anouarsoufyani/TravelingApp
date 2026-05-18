@@ -213,6 +213,18 @@ public class SharedViewModel extends AndroidViewModel {
         AppDatabase.databaseWriteExecutor.execute(() -> groupMemberDao.leaveGroup(groupId, userId));
     }
 
+    public void updateLocalGroupName(long groupId, String newName) {
+        AppDatabase.databaseWriteExecutor.execute(() -> groupDao.updateGroupName(groupId, newName));
+    }
+
+    public void deleteLocalGroup(long groupId) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            groupMessageDao.deleteMessagesForGroup(groupId);
+            groupMemberDao.deleteMembersForGroup(groupId);
+            groupDao.deleteGroupById(groupId);
+        });
+    }
+
     public LiveData<List<Long>> getJoinedGroupIds(long userId) {
         return groupMemberDao.getJoinedGroupIds(userId);
     }

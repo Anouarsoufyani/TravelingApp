@@ -63,6 +63,16 @@
             android:textColor="@color/coral"
             app:icon="@drawable/ic_ms_explore"
             app:iconTint="@color/coral" />
+
+        <TextView
+            android:id="@+id/btn_group_menu"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:gravity="center"
+            android:text="⋮"
+            android:textColor="@color/default_white"
+            android:textSize="24sp" />
     </LinearLayout>
 
     <!-- Section demandes (créateur) -->

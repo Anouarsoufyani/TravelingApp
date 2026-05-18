@@ -440,6 +440,134 @@ public class FirebaseRepository {
                 .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "deleteGroupMember failed", e));
     }
 
+    public void renameGroup(String oldName, String newName, Consumer<Boolean> callback) {
+        String cleanNewName = newName != null ? newName.trim() : "";
+        if (oldName == null || oldName.trim().isEmpty() || cleanNewName.isEmpty()) {
+            callback.accept(false);
+            return;
+        }
+        if (oldName.equals(cleanNewName)) {
+            callback.accept(true);
+            return;
+        }
+
+        String oldDocId = sanitize(oldName);
+        String newDocId = sanitize(cleanNewName);
+        db.collection("groups").document(newDocId).get()
+                .addOnSuccessListener(existing -> {
+                    if (existing.exists()) {
+                        callback.accept(false);
+                        return;
+                    }
+                    db.collection("groups").document(oldDocId).get()
+                            .addOnSuccessListener(groupDoc -> {
+                                if (!groupDoc.exists() || groupDoc.getData() == null) {
+                                    callback.accept(false);
+                                    return;
+                                }
+                                db.collection("group_members").whereEqualTo("groupName", oldName).get()
+                                        .addOnSuccessListener(members -> db.collection("group_messages")
+                                                .whereEqualTo("groupName", oldName).get()
+                                                .addOnSuccessListener(messages -> db.collection("notifications")
+                                                        .whereEqualTo("groupName", oldName).get()
+                                                        .addOnSuccessListener(notifications -> {
+                                                            Long existingGroupId = groupDoc.getLong("groupId");
+                                                            long groupId = existingGroupId != null ? existingGroupId : stableGroupId(oldName);
+                                                            WriteBatch batch = db.batch();
+
+                                                            Map<String, Object> groupData = new HashMap<>(groupDoc.getData());
+                                                            groupData.put("name", cleanNewName);
+                                                            groupData.put("groupId", groupId);
+                                                            batch.set(db.collection("groups").document(newDocId), groupData);
+                                                            batch.delete(db.collection("groups").document(oldDocId));
+
+                                                            for (QueryDocumentSnapshot doc : members) {
+                                                                String username = doc.getString("username");
+                                                                if (username == null || username.isEmpty()) continue;
+                                                                Map<String, Object> memberData = new HashMap<>(doc.getData());
+                                                                memberData.put("groupName", cleanNewName);
+                                                                memberData.put("groupId", groupId);
+                                                                String newMemberDocId = newDocId + "_" + sanitize(username);
+                                                                batch.set(db.collection("group_members").document(newMemberDocId), memberData);
+                                                                batch.delete(doc.getReference());
+                                                            }
+
+                                                            for (QueryDocumentSnapshot doc : messages) {
+                                                                batch.update(doc.getReference(), "groupName", cleanNewName);
+                                                            }
+
+                                                            for (QueryDocumentSnapshot doc : notifications) {
+                                                                batch.update(doc.getReference(), "groupName", cleanNewName, "groupId", groupId);
+                                                            }
+
+                                                            batch.commit()
+                                                                    .addOnSuccessListener(unused -> callback.accept(true))
+                                                                    .addOnFailureListener(e -> {
+                                                                        android.util.Log.w("FirebaseRepository", "renameGroup failed", e);
+                                                                        callback.accept(false);
+                                                                    });
+                                                        })
+                                                        .addOnFailureListener(e -> {
+                                                            android.util.Log.w("FirebaseRepository", "renameGroup notifications query failed", e);
+                                                            callback.accept(false);
+                                                        }))
+                                                .addOnFailureListener(e -> {
+                                                    android.util.Log.w("FirebaseRepository", "renameGroup messages query failed", e);
+                                                    callback.accept(false);
+                                                }))
+                                        .addOnFailureListener(e -> {
+                                            android.util.Log.w("FirebaseRepository", "renameGroup members query failed", e);
+                                            callback.accept(false);
+                                        });
+                            })
+                            .addOnFailureListener(e -> {
+                                android.util.Log.w("FirebaseRepository", "renameGroup group query failed", e);
+                                callback.accept(false);
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    android.util.Log.w("FirebaseRepository", "renameGroup duplicate query failed", e);
+                    callback.accept(false);
+                });
+    }
+
+    public void deleteGroup(String groupName, Consumer<Boolean> callback) {
+        if (groupName == null || groupName.trim().isEmpty()) {
+            callback.accept(false);
+            return;
+        }
+        db.collection("group_members").whereEqualTo("groupName", groupName).get()
+                .addOnSuccessListener(members -> db.collection("group_messages")
+                        .whereEqualTo("groupName", groupName).get()
+                        .addOnSuccessListener(messages -> db.collection("notifications")
+                                .whereEqualTo("groupName", groupName).get()
+                                .addOnSuccessListener(notifications -> {
+                                    WriteBatch batch = db.batch();
+                                    batch.delete(db.collection("groups").document(sanitize(groupName)));
+                                    for (QueryDocumentSnapshot doc : members) batch.delete(doc.getReference());
+                                    for (QueryDocumentSnapshot doc : messages) batch.delete(doc.getReference());
+                                    for (QueryDocumentSnapshot doc : notifications) batch.delete(doc.getReference());
+                                    batch.commit()
+                                            .addOnSuccessListener(unused -> callback.accept(true))
+                                            .addOnFailureListener(e -> {
+                                                android.util.Log.w("FirebaseRepository", "deleteGroup failed", e);
+                                                callback.accept(false);
+                                            });
+                                })
+                                .addOnFailureListener(e -> {
+                                    android.util.Log.w("FirebaseRepository", "deleteGroup notifications query failed", e);
+                                    callback.accept(false);
+                                }))
+                        .addOnFailureListener(e -> {
+                            android.util.Log.w("FirebaseRepository", "deleteGroup messages query failed", e);
+                            callback.accept(false);
+                        }))
+                .addOnFailureListener(e -> {
+                    android.util.Log.w("FirebaseRepository", "deleteGroup members query failed", e);
+                    callback.accept(false);
+                });
+    }
+
     public ListenerRegistration listenToPendingMembers(String groupName, AppDatabase localDb, long localGroupId) {
         return db.collection("group_members")
                 .whereEqualTo("groupName", groupName)

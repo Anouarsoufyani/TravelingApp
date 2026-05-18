@@ -134,6 +134,13 @@ public class GroupChatFragment extends Fragment {
             }
             showInviteDialog(groupName, groupId, session.getUsername());
         });
+        view.findViewById(R.id.btn_group_menu).setOnClickListener(v -> {
+            if (!session.isLoggedIn()) {
+                Toast.makeText(getContext(), "Connectez-vous pour gérer ce groupe.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            showGroupActionsDialog(groupId, groupName, creatorId, creatorUsername, isCreator, viewModel, session);
+        });
 
         View layoutRequests = view.findViewById(R.id.layout_requests);
         TextView tvBadge    = view.findViewById(R.id.tv_requests_badge);
@@ -242,6 +249,114 @@ public class GroupChatFragment extends Fragment {
                         .show();
             });
         });
+    }
+
+    private void showGroupActionsDialog(long groupId, String groupName, long creatorId,
+                                        @Nullable String creatorUsername, boolean isCreator,
+                                        SharedViewModel viewModel, SessionManager session) {
+        if (!isAdded()) return;
+
+        if (isCreator) {
+            String[] actions = {"Modifier le nom", "Supprimer le groupe"};
+            new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    .setTitle(groupName)
+                    .setItems(actions, (dialog, which) -> {
+                        if (which == 0) {
+                            showRenameGroupDialog(groupId, groupName, creatorId, creatorUsername);
+                        } else {
+                            confirmDeleteGroup(groupId, groupName);
+                        }
+                    })
+                    .setNegativeButton("Annuler", null)
+                    .show();
+            return;
+        }
+
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle(groupName)
+                .setItems(new String[]{"Quitter le groupe"}, (dialog, which) ->
+                        confirmLeaveGroup(groupId, groupName, viewModel, session))
+                .setNegativeButton("Annuler", null)
+                .show();
+    }
+
+    private void showRenameGroupDialog(long groupId, String currentName, long creatorId,
+                                       @Nullable String creatorUsername) {
+        EditText input = new EditText(requireContext());
+        input.setSingleLine(true);
+        input.setText(currentName);
+        input.setSelection(input.getText().length());
+        input.setPadding(48, 16, 48, 0);
+
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Modifier le nom")
+                .setView(input)
+                .setPositiveButton("Enregistrer", (dialog, which) -> {
+                    String newName = input.getText().toString().trim();
+                    if (newName.isEmpty()) {
+                        Toast.makeText(getContext(), "Le nom ne peut pas être vide.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    FirebaseRepository.getInstance().renameGroup(currentName, newName, success -> {
+                        if (!isAdded()) return;
+                        requireActivity().runOnUiThread(() -> {
+                            if (!success) {
+                                Toast.makeText(getContext(),
+                                        "Impossible de renommer ce groupe. Le nom existe peut-être déjà.",
+                                        Toast.LENGTH_LONG).show();
+                                return;
+                            }
+                            Toast.makeText(getContext(), "Groupe renommé.", Toast.LENGTH_SHORT).show();
+                            SharedViewModel viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+                            viewModel.updateLocalGroupName(groupId, newName);
+                            requireActivity().getSupportFragmentManager()
+                                    .beginTransaction()
+                                    .replace(R.id.fragment_container,
+                                            GroupChatFragment.newInstance(groupId, newName, creatorId, creatorUsername))
+                                    .addToBackStack(null)
+                                    .commit();
+                        });
+                    });
+                })
+                .setNegativeButton("Annuler", null)
+                .show();
+    }
+
+    private void confirmDeleteGroup(long groupId, String groupName) {
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Supprimer le groupe ?")
+                .setMessage("Cette action supprimera le groupe, ses membres et ses messages partagés.")
+                .setPositiveButton("Supprimer", (dialog, which) ->
+                        FirebaseRepository.getInstance().deleteGroup(groupName, success -> {
+                            if (!isAdded()) return;
+                            requireActivity().runOnUiThread(() -> {
+                                if (!success) {
+                                    Toast.makeText(getContext(), "Suppression impossible.", Toast.LENGTH_SHORT).show();
+                                    return;
+                                }
+                                Toast.makeText(getContext(), "Groupe supprimé.", Toast.LENGTH_SHORT).show();
+                                SharedViewModel viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+                                viewModel.deleteLocalGroup(groupId);
+                                requireActivity().getSupportFragmentManager().popBackStack();
+                            });
+                        }))
+                .setNegativeButton("Annuler", null)
+                .show();
+    }
+
+    private void confirmLeaveGroup(long groupId, String groupName, SharedViewModel viewModel,
+                                   SessionManager session) {
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Quitter le groupe ?")
+                .setMessage("Vous ne verrez plus cette conversation dans vos groupes.")
+                .setPositiveButton("Quitter", (dialog, which) -> {
+                    FirebaseRepository.getInstance().deleteGroupMember(groupName, session.getUsername());
+                    viewModel.rejectOrLeaveGroup(groupId, session.getUserId());
+                    Toast.makeText(getContext(), "Vous avez quitté le groupe.", Toast.LENGTH_SHORT).show();
+                    requireActivity().getSupportFragmentManager().popBackStack();
+                })
+                .setNegativeButton("Annuler", null)
+                .show();
     }
 
     private void showInviteDialog(String groupName, long groupId, String inviterUsername) {

@@ -32,6 +32,12 @@ public interface GroupDao {
     @Query("SELECT * FROM `groups` WHERE name LIKE '%' || :query || '%' ORDER BY id DESC")
     LiveData<List<Group>> searchGroups(String query);
 
+    @Query("UPDATE `groups` SET name = :newName WHERE id = :groupId")
+    void updateGroupName(long groupId, String newName);
+
+    @Query("DELETE FROM `groups` WHERE id = :groupId")
+    void deleteGroupById(long groupId);
+
     @Query("SELECT DISTINCT g.* FROM `groups` g " +
            "LEFT JOIN group_members gm ON g.id = gm.groupId " +
            "WHERE g.creatorId = :userId OR (gm.userId = :userId AND gm.status = 'MEMBER') " +

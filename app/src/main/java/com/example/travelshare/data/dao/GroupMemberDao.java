@@ -19,6 +19,9 @@ public interface GroupMemberDao {
     @Query("DELETE FROM group_members WHERE groupId = :groupId AND userId = :userId")
     void leaveGroup(long groupId, long userId);
 
+    @Query("DELETE FROM group_members WHERE groupId = :groupId")
+    void deleteMembersForGroup(long groupId);
+
     @Query("UPDATE group_members SET status = 'MEMBER' WHERE groupId = :groupId AND userId = :userId")
     void acceptRequest(long groupId, long userId);
 

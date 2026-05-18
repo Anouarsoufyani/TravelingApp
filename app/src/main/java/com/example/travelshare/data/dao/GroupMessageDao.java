@@ -23,4 +23,7 @@ public interface GroupMessageDao {
 
     @Query("SELECT * FROM group_messages WHERE groupId = :groupId ORDER BY id ASC")
     LiveData<List<GroupMessage>> getMessagesForGroup(long groupId);
+
+    @Query("DELETE FROM group_messages WHERE groupId = :groupId")
+    void deleteMessagesForGroup(long groupId);
 }

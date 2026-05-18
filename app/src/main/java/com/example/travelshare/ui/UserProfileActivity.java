@@ -16,16 +16,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.travelshare.MainActivity;
 import com.example.travelshare.R;
-import com.example.travelshare.data.AppDatabase;
-import com.example.travelshare.data.models.Photo;
-import com.example.travelshare.data.models.User;
 import com.example.travelshare.data.repository.FirebaseRepository;
-import com.example.travelshare.ui.theme.adapters.PhotoAdapter;
+import com.example.travelshare.ui.theme.adapters.SquarePhotoAdapter;
 import com.example.travelshare.utils.SessionManager;
 import com.example.travelshare.viewmodels.SharedViewModel;
 import com.google.android.material.button.MaterialButton;
-
-import java.util.List;
 
 public class UserProfileActivity extends AppCompatActivity {
 
@@ -73,7 +68,7 @@ public class UserProfileActivity extends AppCompatActivity {
 
         SharedViewModel viewModel = new ViewModelProvider(this).get(SharedViewModel.class);
 
-        PhotoAdapter adapter = new PhotoAdapter();
+        SquarePhotoAdapter adapter = new SquarePhotoAdapter();
         rv.setLayoutManager(new GridLayoutManager(this, 3));
         rv.setAdapter(adapter);
 
