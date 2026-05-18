@@ -17,7 +17,11 @@ import com.example.travelshare.data.models.User;
 import com.example.travelshare.data.repository.FirebaseRepository;
 import com.example.travelshare.utils.SessionManager;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.android.material.datepicker.MaterialDatePicker;
 import java.util.concurrent.Executors;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class InscriptionFragment extends Fragment {
 
@@ -60,10 +64,28 @@ public class InscriptionFragment extends Fragment {
         checkVoyage       = view.findViewById(R.id.check_voyage);
         checkSport        = view.findViewById(R.id.check_sport);
 
+        editDateNaissance.setOnClickListener(v -> showBirthDatePicker());
+
         view.findViewById(R.id.btn_valider_inscription)
                 .setOnClickListener(v -> validerInscription());
 
         return view;
+    }
+
+    private void showBirthDatePicker() {
+        MaterialDatePicker<Long> picker = MaterialDatePicker.Builder.datePicker()
+                .setTitleText("Date de naissance")
+                .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
+                .build();
+
+        picker.addOnPositiveButtonClickListener(selection -> {
+            if (selection == null) return;
+            String formatted = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                    .format(new Date(selection));
+            editDateNaissance.setText(formatted);
+        });
+
+        picker.show(getChildFragmentManager(), "birth_date_picker");
     }
 
     private void validerInscription() {

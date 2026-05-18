@@ -77,6 +77,10 @@
             android:background="@drawable/bg_input"
 
             android:hint="Date de naissance"
+            android:clickable="true"
+            android:cursorVisible="false"
+            android:focusable="false"
+            android:inputType="none"
             android:textColor="@color/ink"
             android:textColorHint="@color/ink_faint"
             android:layout_marginBottom="12dp"/>
