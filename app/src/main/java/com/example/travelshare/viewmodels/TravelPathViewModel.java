@@ -57,6 +57,7 @@ public class TravelPathViewModel extends AndroidViewModel {
 
     public void toggleLike(TravelPlan plan) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
+            if (!new SessionManager(getApplication()).isLoggedIn()) return;
             plan.liked = !plan.liked;
             plan.saved = plan.liked;
             planDao.updatePlan(plan);
@@ -65,9 +66,11 @@ public class TravelPathViewModel extends AndroidViewModel {
 
     public void saveLikeAndSave(TravelPlan plan) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
+            SessionManager session = new SessionManager(getApplication());
+            if (!session.isLoggedIn()) return;
             planDao.updatePlan(plan);
             if (plan.liked) {
-                String username = new SessionManager(getApplication()).getUsername();
+                String username = session.getUsername();
                 if (username != null && !username.isEmpty()) {
                     FirebaseRepository.getInstance().savePlan(username, plan);
                 }

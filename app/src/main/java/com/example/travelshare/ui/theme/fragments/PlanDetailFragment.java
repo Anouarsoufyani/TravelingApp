@@ -132,6 +132,12 @@ public class PlanDetailFragment extends Fragment {
                 btnLike.setText(plan.liked ? "♥ Sauvegardé" : "♡ J'aime et sauvegarder");
 
                 btnLike.setOnClickListener(v -> {
+                    SessionManager session = new SessionManager(requireContext());
+                    if (!session.isLoggedIn()) {
+                        Toast.makeText(getContext(), "Connectez-vous pour sauvegarder un parcours", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
                     plan.liked = !plan.liked;
                     plan.saved = plan.liked;
                     viewModel.saveLikeAndSave(plan);

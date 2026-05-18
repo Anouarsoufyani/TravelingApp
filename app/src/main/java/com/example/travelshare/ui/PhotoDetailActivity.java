@@ -165,6 +165,11 @@ public class PhotoDetailActivity extends AppCompatActivity {
         btnLike.setText(isLiked ? "♥ Aimé" : "♡ Like");
 
         btnLike.setOnClickListener(v -> {
+            if (!sessionManager.isLoggedIn()) {
+                Toast.makeText(this, "Connectez-vous pour aimer un post", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             isLiked = !isLiked;
             currentLikes = Math.max(0, currentLikes + (isLiked ? 1 : -1));
             btnLike.setText(isLiked ? "♥ Aimé" : "♡ Like");

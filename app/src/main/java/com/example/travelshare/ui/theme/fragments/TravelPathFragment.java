@@ -279,6 +279,12 @@ public class TravelPathFragment extends Fragment {
             h.tvActivities.setText(p.activities != null ? p.activities.replace(",", " · ") : "");
 
             h.tvLiked.setOnClickListener(v -> {
+                SessionManager session = new SessionManager(v.getContext());
+                if (!session.isLoggedIn()) {
+                    Toast.makeText(v.getContext(), "Connectez-vous pour sauvegarder un parcours", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
                 p.liked = !p.liked;
                 p.saved = p.liked;
                 viewModel.saveLikeAndSave(p);
