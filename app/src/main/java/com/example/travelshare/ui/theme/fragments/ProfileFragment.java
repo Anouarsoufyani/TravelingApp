@@ -1,6 +1,7 @@
 package com.example.travelshare.ui.theme.fragments;
 
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -17,6 +18,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -24,11 +26,14 @@ import com.bumptech.glide.Glide;
 import com.example.travelshare.R;
 import com.example.travelshare.data.models.Group;
 import com.example.travelshare.data.models.Photo;
+import com.example.travelshare.data.models.TravelPlan;
 import com.example.travelshare.data.repository.FirebaseRepository;
 import com.example.travelshare.ui.LoginActivity;
+import com.example.travelshare.ui.PhotoDetailActivity;
 import com.example.travelshare.ui.UserProfileActivity;
 import com.example.travelshare.utils.SessionManager;
 import com.example.travelshare.viewmodels.SharedViewModel;
+import com.example.travelshare.viewmodels.TravelPathViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +46,7 @@ public class ProfileFragment extends Fragment {
     private EditText etBio;
     private SessionManager session;
     private SharedViewModel viewModel;
+    private TravelPathViewModel pathViewModel;
     private List<Group> memberGroups = new ArrayList<>();
 
     @Override
@@ -85,6 +91,8 @@ public class ProfileFragment extends Fragment {
 
         session = new SessionManager(requireContext());
         viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+        pathViewModel = new ViewModelProvider(this).get(TravelPathViewModel.class);
+        viewModel.syncPhotosFromFirestore();
 
         TextView tvName   = view.findViewById(R.id.tv_profile_name);
         TextView tvHandle = view.findViewById(R.id.tv_profile_handle);
@@ -146,6 +154,25 @@ public class ProfileFragment extends Fragment {
         TextView tvStatGroups = view.findViewById(R.id.tv_stat_groups);
         TextView tvStatFollowing = view.findViewById(R.id.tv_stat_following);
         TextView tvStatFollowers = view.findViewById(R.id.tv_stat_followers);
+        TextView tabPosts = view.findViewById(R.id.tab_profile_posts);
+        TextView tabPaths = view.findViewById(R.id.tab_profile_paths);
+        TextView tvContentEmpty = view.findViewById(R.id.tv_profile_content_empty);
+        RecyclerView rvPosts = view.findViewById(R.id.rv_profile_posts);
+        RecyclerView rvPaths = view.findViewById(R.id.rv_profile_paths);
+
+        ProfilePostAdapter postAdapter = new ProfilePostAdapter();
+        ProfilePlanAdapter planAdapter = new ProfilePlanAdapter(this);
+        rvPosts.setLayoutManager(new GridLayoutManager(getContext(), 3));
+        rvPosts.setAdapter(postAdapter);
+        rvPaths.setLayoutManager(new LinearLayoutManager(getContext()));
+        rvPaths.setAdapter(planAdapter);
+
+        View.OnClickListener showPosts = v -> selectProfileTab(true, tabPosts, tabPaths,
+                rvPosts, rvPaths, tvContentEmpty, postAdapter, planAdapter);
+        View.OnClickListener showPaths = v -> selectProfileTab(false, tabPosts, tabPaths,
+                rvPosts, rvPaths, tvContentEmpty, postAdapter, planAdapter);
+        tabPosts.setOnClickListener(showPosts);
+        tabPaths.setOnClickListener(showPaths);
 
         viewModel.getAllPhotos().observe(getViewLifecycleOwner(), photos -> {
             if (photos == null) return;
@@ -159,6 +186,17 @@ public class ProfileFragment extends Fragment {
             tvStatPhotos.setText(String.valueOf(myPhotos));
             tvStatLikes.setText(String.valueOf(myLikes));
         });
+
+        if (session.isLoggedIn()) {
+            viewModel.getPhotosByAuthor(session.getUsername()).observe(getViewLifecycleOwner(), photos -> {
+                postAdapter.setPhotos(photos);
+                updateProfileEmpty(tabPosts, rvPosts, rvPaths, tvContentEmpty, postAdapter, planAdapter);
+            });
+            pathViewModel.getSavedPlansForUser(session.getUserId()).observe(getViewLifecycleOwner(), plans -> {
+                planAdapter.setPlans(plans);
+                updateProfileEmpty(tabPosts, rvPosts, rvPaths, tvContentEmpty, postAdapter, planAdapter);
+            });
+        }
 
         if (session.isLoggedIn()) {
             FirebaseRepository.getInstance().getFollowing(session.getUsername(), following -> {
@@ -233,6 +271,33 @@ public class ProfileFragment extends Fragment {
         });
 
         return view;
+    }
+
+    private void selectProfileTab(boolean postsSelected, TextView tabPosts, TextView tabPaths,
+                                  RecyclerView rvPosts, RecyclerView rvPaths, TextView tvEmpty,
+                                  ProfilePostAdapter postAdapter, ProfilePlanAdapter planAdapter) {
+        int selectedBg = getResources().getColor(R.color.coral, null);
+        int selectedText = getResources().getColor(R.color.default_white, null);
+        int mutedText = getResources().getColor(R.color.sheet_muted, null);
+
+        tabPosts.setBackgroundResource(postsSelected ? R.drawable.bg_pill_solid : 0);
+        tabPaths.setBackgroundResource(postsSelected ? 0 : R.drawable.bg_pill_solid);
+        tabPosts.setBackgroundTintList(postsSelected ? ColorStateList.valueOf(selectedBg) : null);
+        tabPaths.setBackgroundTintList(postsSelected ? null : ColorStateList.valueOf(selectedBg));
+        tabPosts.setTextColor(postsSelected ? selectedText : mutedText);
+        tabPaths.setTextColor(postsSelected ? mutedText : selectedText);
+        rvPosts.setVisibility(postsSelected ? View.VISIBLE : View.GONE);
+        rvPaths.setVisibility(postsSelected ? View.GONE : View.VISIBLE);
+        updateProfileEmpty(tabPosts, rvPosts, rvPaths, tvEmpty, postAdapter, planAdapter);
+    }
+
+    private void updateProfileEmpty(TextView tabPosts, RecyclerView rvPosts, RecyclerView rvPaths,
+                                    TextView tvEmpty, ProfilePostAdapter postAdapter,
+                                    ProfilePlanAdapter planAdapter) {
+        boolean postsVisible = rvPosts.getVisibility() == View.VISIBLE;
+        int count = postsVisible ? postAdapter.getItemCount() : planAdapter.getItemCount();
+        tvEmpty.setText(postsVisible ? "Aucun post pour le moment." : "Aucun parcours enregistré.");
+        tvEmpty.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
     }
 
     private void showUserList(String title, List<String> users) {
@@ -314,5 +379,137 @@ public class ProfileFragment extends Fragment {
         @Override public int getItemCount() { return Math.min(groups.size(), 3); }
 
         void setGroups(List<Group> g) { this.groups = g != null ? g : new ArrayList<>(); notifyDataSetChanged(); }
+    }
+
+    static class ProfilePostAdapter extends RecyclerView.Adapter<ProfilePostAdapter.PVH> {
+        private List<Photo> photos = new ArrayList<>();
+
+        static class PVH extends RecyclerView.ViewHolder {
+            View placeholder;
+            ImageView image;
+
+            PVH(View v) {
+                super(v);
+                placeholder = v.findViewById(R.id.profile_post_placeholder);
+                image = v.findViewById(R.id.iv_profile_post);
+            }
+        }
+
+        @NonNull @Override
+        public PVH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View v = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_profile_post_square, parent, false);
+            return new PVH(v);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull PVH h, int position) {
+            Photo photo = photos.get(position);
+            List<String> uris = photo.getImageUriList();
+            String firstUri = !uris.isEmpty() ? uris.get(0) : null;
+
+            if (firstUri != null) {
+                h.image.setVisibility(View.VISIBLE);
+                h.placeholder.setVisibility(View.GONE);
+                Glide.with(h.itemView.getContext())
+                        .load(Uri.parse(firstUri))
+                        .centerCrop()
+                        .into(h.image);
+            } else {
+                Glide.with(h.itemView.getContext()).clear(h.image);
+                h.image.setVisibility(View.GONE);
+                h.placeholder.setVisibility(View.VISIBLE);
+            }
+
+            h.itemView.setOnClickListener(v -> {
+                Intent intent = new Intent(v.getContext(), PhotoDetailActivity.class);
+                intent.putExtra(PhotoDetailActivity.EXTRA_PHOTO_ID, photo.getId());
+                intent.putExtra(PhotoDetailActivity.EXTRA_TITLE, photo.getTitle());
+                intent.putExtra(PhotoDetailActivity.EXTRA_AUTHOR, photo.getAuthor());
+                intent.putExtra(PhotoDetailActivity.EXTRA_DATE, photo.getDate());
+                intent.putExtra(PhotoDetailActivity.EXTRA_LOCATION, photo.getLocation());
+                intent.putExtra(PhotoDetailActivity.EXTRA_CATEGORY, photo.getCategory());
+                intent.putExtra(PhotoDetailActivity.EXTRA_TAGS, photo.getTags());
+                intent.putExtra(PhotoDetailActivity.EXTRA_LIKES, photo.getLikes());
+                intent.putExtra(PhotoDetailActivity.EXTRA_LAT, photo.getLatitude());
+                intent.putExtra(PhotoDetailActivity.EXTRA_LNG, photo.getLongitude());
+                intent.putExtra(PhotoDetailActivity.EXTRA_IMAGE_URI, photo.getImageUri());
+                intent.putExtra(PhotoDetailActivity.EXTRA_VOICE_URI, photo.getVoiceUri());
+                v.getContext().startActivity(intent);
+            });
+        }
+
+        @Override public int getItemCount() { return photos.size(); }
+
+        void setPhotos(List<Photo> photos) {
+            this.photos = photos != null ? photos : new ArrayList<>();
+            notifyDataSetChanged();
+        }
+    }
+
+    static class ProfilePlanAdapter extends RecyclerView.Adapter<ProfilePlanAdapter.PVH> {
+        private List<TravelPlan> plans = new ArrayList<>();
+        private final Fragment fragment;
+
+        ProfilePlanAdapter(Fragment fragment) {
+            this.fragment = fragment;
+        }
+
+        static class PVH extends RecyclerView.ViewHolder {
+            View color;
+            TextView city, meta, activities;
+
+            PVH(View v) {
+                super(v);
+                color = v.findViewById(R.id.v_profile_plan_color);
+                city = v.findViewById(R.id.tv_profile_plan_city);
+                meta = v.findViewById(R.id.tv_profile_plan_meta);
+                activities = v.findViewById(R.id.tv_profile_plan_activities);
+            }
+        }
+
+        @NonNull @Override
+        public PVH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View v = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_profile_plan_row, parent, false);
+            return new PVH(v);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull PVH h, int position) {
+            TravelPlan plan = plans.get(position);
+            int color;
+            String type;
+            if ("economique".equals(plan.type)) {
+                color = h.itemView.getContext().getResources().getColor(R.color.teal, null);
+                type = "Économique";
+            } else if ("confort".equals(plan.type)) {
+                color = h.itemView.getContext().getResources().getColor(R.color.terracotta, null);
+                type = "Confort";
+            } else {
+                color = h.itemView.getContext().getResources().getColor(R.color.coral, null);
+                type = "Équilibré";
+            }
+
+            h.color.setBackgroundColor(color);
+            h.city.setText(plan.city != null ? plan.city : "Parcours");
+            h.meta.setText(type + " · " + plan.durationHours + " h · " + plan.budgetEur + " €");
+            h.activities.setText(plan.activities != null ? plan.activities.replace(",", " · ") : "");
+            h.itemView.setOnClickListener(v -> {
+                if (!fragment.isAdded() || fragment.getActivity() == null) return;
+                fragment.getActivity().getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, PlanDetailFragment.newInstance(plan.id))
+                        .addToBackStack(null)
+                        .commit();
+            });
+        }
+
+        @Override public int getItemCount() { return plans.size(); }
+
+        void setPlans(List<TravelPlan> plans) {
+            this.plans = plans != null ? plans : new ArrayList<>();
+            notifyDataSetChanged();
+        }
     }
 }

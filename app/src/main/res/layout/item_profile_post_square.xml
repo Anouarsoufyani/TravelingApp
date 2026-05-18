@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.example.travelshare.ui.theme.views.SquareFrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/navy_light"
+    android:clickable="true"
+    android:focusable="true">
+
+    <View
+        android:id="@+id/profile_post_placeholder"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_photo_placeholder" />
+
+    <ImageView
+        android:id="@+id/iv_profile_post"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@string/photo_content_description"
+        android:scaleType="centerCrop"
+        android:visibility="gone" />
+
+</com.example.travelshare.ui.theme.views.SquareFrameLayout>
