@@ -231,7 +231,7 @@
                     android:layout_width="0dp"
                     android:layout_height="56dp"
                     android:layout_weight="1"
-                    android:text="Auto-tags AI"
+                    android:text="🤖 Tags automatiques"
                     android:textAllCaps="false"
                     android:textColor="@color/navy"
                     app:backgroundTint="@color/sand"

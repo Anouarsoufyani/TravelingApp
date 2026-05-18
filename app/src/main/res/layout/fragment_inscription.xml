@@ -27,7 +27,7 @@
             android:paddingHorizontal="16dp"
             android:background="@drawable/bg_input"
 
-            android:hint="Login (Max 10 lettres)"
+            android:hint="Identifiant (max 10 caractères)"
             android:textColor="@color/ink"
             android:textColorHint="@color/ink_faint"
             android:layout_marginBottom="12dp"/>

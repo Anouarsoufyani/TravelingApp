@@ -251,7 +251,7 @@ public class GroupChatFragment extends Fragment {
                     new androidx.appcompat.app.AlertDialog.Builder(requireContext())
                         .setTitle("Inviter des amis")
                         .setMessage("Vous n'avez pas encore d'amis (suivis mutuels). Suivez des utilisateurs et attendez qu'ils vous suivent en retour pour les inviter.")
-                        .setPositiveButton("OK", null)
+                        .setPositiveButton("Fermer", null)
                         .show());
                 return;
             }

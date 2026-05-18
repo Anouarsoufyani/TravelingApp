@@ -21,21 +21,21 @@
             android:paddingBottom="@dimen/space_md">
 
             <TextView
-                style="@style/TextAppearance.Travelshare.HeadlineLarge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="TravelPath"
                 android:textColor="@color/default_white"
                 android:textSize="32sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-condensed" />
 
             <TextView
-                style="@style/TextAppearance.Travelshare.BodyMedium"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Planifiez et découvrez vos parcours"
-                android:textColor="@color/sheet_muted" />
+                android:text="Générez votre parcours personnalisé"
+                android:textColor="@color/sheet_muted"
+                android:textSize="14sp" />
         </LinearLayout>
 
         <com.google.android.material.tabs.TabLayout
@@ -58,11 +58,6 @@
             <com.google.android.material.tabs.TabItem
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Résultats" />
-
-            <com.google.android.material.tabs.TabItem
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
                 android:text="Sauvegardés" />
         </com.google.android.material.tabs.TabLayout>
 
@@ -73,24 +68,27 @@
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <!-- SECTION 0: FORM -->
+        <!-- ONGLET 0 : Formulaire + Résultats en dessous -->
         <androidx.core.widget.NestedScrollView
-            android:id="@+id/section_tp_form"
+            android:id="@+id/scroll_tp"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="visible">
+            android:visibility="visible"
+            android:overScrollMode="never">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingBottom="48dp">
+                android:paddingBottom="96dp">
 
+                <!-- Formulaire -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="@dimen/space_xl"
                     android:layout_marginTop="@dimen/space_md"
+                    android:layout_marginBottom="@dimen/space_md"
                     app:cardBackgroundColor="@color/surface_card"
                     app:cardCornerRadius="@dimen/radius_lg"
                     app:cardElevation="0dp"
@@ -116,68 +114,69 @@
                             android:inputType="textCapWords"
                             android:layout_marginBottom="16dp" />
 
-                        <TextView style="@style/StatLabel" android:text="ENDROITS SPÉCIFIQUES" android:layout_marginBottom="8dp" />
+                        <TextView style="@style/StatLabel" android:text="ENDROITS SPÉCIFIQUES (optionnel)" android:layout_marginBottom="8dp" />
                         <EditText
                             android:id="@+id/et_tp_required_places"
                             android:layout_width="match_parent"
                             android:layout_height="56dp"
-                            android:hint="Ex: Tour Eiffel, Louvres..."
+                            android:hint="Ex: Tour Eiffel, Louvre..."
                             android:background="@drawable/bg_input"
                             android:paddingHorizontal="@dimen/space_md"
                             android:textColor="@color/default_white"
                             android:textColorHint="@color/ink_faint"
                             android:inputType="textCapSentences"
-                            android:layout_marginBottom="24dp" />
+                            android:layout_marginBottom="12dp" />
+
+                        <RadioGroup
+                            android:id="@+id/rg_places_mode"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_marginBottom="20dp">
+                            <RadioButton android:id="@+id/rb_places_plus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Ces lieux + nouvelles suggestions selon mes critères" android:textColor="@color/default_white" android:textSize="13sp" android:buttonTint="@color/coral" android:checked="true" />
+                            <RadioButton android:id="@+id/rb_places_only" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Ces lieux uniquement" android:textColor="@color/default_white" android:textSize="13sp" android:buttonTint="@color/coral" />
+                        </RadioGroup>
 
                         <TextView style="@style/StatLabel" android:text="ACTIVITÉS" android:layout_marginBottom="12dp" />
                         <GridLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:columnCount="2" android:layout_marginBottom="24dp">
-                            <CheckBox android:id="@+id/cb_culture" android:text="🏛 Culture" android:textColor="@color/default_white" android:buttonTint="@color/coral"/>
-                            <CheckBox android:id="@+id/cb_restauration" android:text="🍽 Resto" android:textColor="@color/default_white" android:buttonTint="@color/coral" android:checked="true"/>
-                            <CheckBox android:id="@+id/cb_loisirs" android:text="🎭 Loisirs" android:textColor="@color/default_white" android:buttonTint="@color/coral"/>
-                            <CheckBox android:id="@+id/cb_decouverte" android:text="🌍 Découverte" android:textColor="@color/default_white" android:buttonTint="@color/coral" android:checked="true"/>
-                            <CheckBox android:id="@+id/cb_shopping" android:text="🛍 Shopping" android:textColor="@color/default_white" android:buttonTint="@color/coral"/>
+                            <CheckBox android:id="@+id/cb_culture"      android:text="🏛 Culture"      android:textColor="@color/default_white" android:buttonTint="@color/coral" />
+                            <CheckBox android:id="@+id/cb_restauration" android:text="🍽 Restauration" android:textColor="@color/default_white" android:buttonTint="@color/coral" android:checked="true" />
+                            <CheckBox android:id="@+id/cb_loisirs"      android:text="🎭 Loisirs"      android:textColor="@color/default_white" android:buttonTint="@color/coral" />
+                            <CheckBox android:id="@+id/cb_decouverte"   android:text="🌍 Découverte"   android:textColor="@color/default_white" android:buttonTint="@color/coral" android:checked="true" />
+                            <CheckBox android:id="@+id/cb_shopping"     android:text="🛍 Shopping"     android:textColor="@color/default_white" android:buttonTint="@color/coral" />
                         </GridLayout>
 
-                        <TextView style="@style/StatLabel" android:text="PARAMÈTRES" android:layout_marginBottom="12dp" />
                         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="4dp">
-                            <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Budget" android:textColor="@color/sheet_muted" />
-                            <TextView android:id="@+id/tv_tp_budget_value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="100 €" android:textColor="@color/sand" android:textStyle="bold"/>
+                            <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Budget maximum" android:textColor="@color/sheet_muted" android:textSize="13sp" />
+                            <TextView android:id="@+id/tv_tp_budget_value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="100 €" android:textColor="@color/sand" android:textStyle="bold" />
                         </LinearLayout>
-                        <SeekBar android:id="@+id/seekbar_tp_budget" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="1000" android:progress="100" android:layout_marginBottom="16dp" />
+                        <SeekBar android:id="@+id/seekbar_tp_budget" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="1000" android:progress="100" android:progressTint="@color/coral" android:thumbTint="@color/coral" android:layout_marginBottom="16dp" />
 
                         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="4dp">
-                            <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Durée (h)" android:textColor="@color/sheet_muted" />
-                            <TextView android:id="@+id/tv_tp_duration_value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="4 h" android:textColor="@color/sand" android:textStyle="bold"/>
+                            <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Durée de la visite" android:textColor="@color/sheet_muted" android:textSize="13sp" />
+                            <TextView android:id="@+id/tv_tp_duration_value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="4 h" android:textColor="@color/sand" android:textStyle="bold" />
                         </LinearLayout>
-                        <SeekBar android:id="@+id/seekbar_tp_duration" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="12" android:progress="3" android:layout_marginBottom="24dp" />
+                        <SeekBar android:id="@+id/seekbar_tp_duration" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="12" android:progress="3" android:progressTint="@color/coral" android:thumbTint="@color/coral" android:layout_marginBottom="24dp" />
 
                         <TextView style="@style/StatLabel" android:text="NIVEAU D'EFFORT" android:layout_marginBottom="8dp" />
-                        <RadioGroup
-                            android:id="@+id/rg_tp_effort"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:layout_marginBottom="24dp">
-                            <RadioButton android:id="@+id/rb_facile" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Facile" android:textColor="@color/default_white" android:buttonTint="@color/coral" android:checked="true"/>
-                            <RadioButton android:id="@+id/rb_modere" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Modéré" android:textColor="@color/default_white" android:buttonTint="@color/coral"/>
-                            <RadioButton android:id="@+id/rb_intense" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Intense" android:textColor="@color/default_white" android:buttonTint="@color/coral"/>
+                        <RadioGroup android:id="@+id/rg_tp_effort" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="24dp">
+                            <RadioButton android:id="@+id/rb_facile"  android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Facile"  android:textColor="@color/default_white" android:buttonTint="@color/coral" android:checked="true" />
+                            <RadioButton android:id="@+id/rb_modere"  android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Modéré"  android:textColor="@color/default_white" android:buttonTint="@color/coral" />
+                            <RadioButton android:id="@+id/rb_intense" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Intense" android:textColor="@color/default_white" android:buttonTint="@color/coral" />
                         </RadioGroup>
 
-                        <FrameLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="64dp">
-
+                        <FrameLayout android:layout_width="match_parent" android:layout_height="64dp">
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btn_tp_generate"
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
-                                android:text="Générer mes parcours"
+                                android:text="✦ Générer mes parcours"
                                 android:textAllCaps="false"
                                 android:textColor="@color/default_white"
+                                android:textSize="16sp"
                                 android:textStyle="bold"
                                 app:backgroundTint="@color/coral"
                                 app:cornerRadius="@dimen/radius_lg" />
-
                             <ProgressBar
                                 android:id="@+id/progress_tp_generate"
                                 style="?android:attr/progressBarStyleSmall"
@@ -191,35 +190,58 @@
                         </FrameLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
+
+                <!-- Résultats (en dessous du formulaire, même onglet) -->
+                <LinearLayout
+                    android:id="@+id/section_tp_results"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingHorizontal="@dimen/space_xl"
+                        android:paddingTop="@dimen/space_sm"
+                        android:paddingBottom="@dimen/space_xs">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="MES PARCOURS GÉNÉRÉS"
+                            android:textColor="@color/default_white"
+                            android:textSize="12sp"
+                            android:letterSpacing="0.08"
+                            android:textStyle="bold" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_tp_delete_all"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🗑 Effacer"
+                            android:textColor="@color/coral"
+                            android:textAllCaps="false"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rv_tp_results"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false"
+                        android:clipToPadding="false"
+                        android:padding="@dimen/space_xs" />
+                </LinearLayout>
+
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
 
-        <!-- SECTION 1: RESULTS -->
-        <LinearLayout
-            android:id="@+id/section_tp_results"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_tp_delete_all"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="🗑 Effacer les résultats temporaires"
-                android:textColor="@color/coral"
-                android:textAllCaps="false" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rv_tp_results"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:clipToPadding="false"
-                android:padding="@dimen/space_md" />
-        </LinearLayout>
-
-        <!-- SECTION 2: SAVED -->
+        <!-- ONGLET 1 : Sauvegardés -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_tp_saved"
             android:layout_width="match_parent"
@@ -229,4 +251,5 @@
             android:visibility="gone" />
 
     </FrameLayout>
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

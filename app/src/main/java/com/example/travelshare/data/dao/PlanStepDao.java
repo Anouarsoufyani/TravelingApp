@@ -25,4 +25,7 @@ public interface PlanStepDao {
 
     @Query("UPDATE plan_steps SET address = :address WHERE id = :id")
     void updateAddress(long id, String address);
+
+    @Query("UPDATE plan_steps SET lat = :lat, lng = :lng WHERE id = :id")
+    void updateCoords(long id, double lat, double lng);
 }

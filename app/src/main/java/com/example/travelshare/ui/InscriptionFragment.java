@@ -127,10 +127,13 @@ public class InscriptionFragment extends Fragment {
                             });
                         })
                         .addOnFailureListener(e -> {
-                            if (e.getMessage() != null && e.getMessage().contains("already in use")) {
-                                editLogin.setError("Ce login existe déjà !");
+                            String msg = e.getMessage() != null ? e.getMessage() : "";
+                            if (msg.contains("already in use")) {
+                                editEmail.setError("Cet email est déjà utilisé !");
+                            } else if (msg.contains("badly formatted") || msg.contains("invalid")) {
+                                editEmail.setError("Email invalide");
                             } else {
-                                editLogin.setError("Erreur : " + e.getMessage());
+                                editLogin.setError("Erreur : " + msg);
                             }
                         })
                 );

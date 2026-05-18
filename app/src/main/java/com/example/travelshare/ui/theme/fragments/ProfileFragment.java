@@ -100,6 +100,29 @@ public class ProfileFragment extends Fragment {
         ivAvatar          = view.findViewById(R.id.iv_profile_avatar);
         etBio             = view.findViewById(R.id.et_bio);
 
+        boolean isGuest = !session.isLoggedIn();
+        if (isGuest) {
+            tvName.setText("Visiteur");
+            tvHandle.setText("@invité");
+            tvAvatar.setText("?");
+            view.findViewById(R.id.btn_save_bio).setVisibility(View.GONE);
+            etBio.setEnabled(false);
+            etBio.setHint("Connectez-vous pour rédiger une bio");
+            view.findViewById(R.id.rv_profile_groups).setVisibility(View.GONE);
+            view.findViewById(R.id.rv_profile_posts).setVisibility(View.GONE);
+            view.findViewById(R.id.rv_profile_paths).setVisibility(View.GONE);
+            view.findViewById(R.id.btn_groups).setVisibility(View.GONE);
+            com.google.android.material.button.MaterialButton btnLogout =
+                    view.findViewById(R.id.btn_logout);
+            btnLogout.setText("Se connecter / S'inscrire");
+            btnLogout.setOnClickListener(v -> {
+                Intent intent = new Intent(getActivity(), com.example.travelshare.ui.LoginActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+            });
+            return view;
+        }
+
         if (session.isLoggedIn()) {
             String username = session.getUsername();
             tvName.setText(username);
@@ -219,7 +242,7 @@ public class ProfileFragment extends Fragment {
                 return;
             }
             FirebaseRepository.getInstance().getFollowing(session.getUsername(),
-                    users -> showUserList("Utilisateurs suivis", users));
+                    users -> showUserList("Abonnements", users));
         });
 
         view.findViewById(R.id.layout_stat_followers).setOnClickListener(v -> {
@@ -228,7 +251,7 @@ public class ProfileFragment extends Fragment {
                 return;
             }
             FirebaseRepository.getInstance().getFollowers(session.getUsername(),
-                    users -> showUserList("Followers", users));
+                    users -> showUserList("Abonnés", users));
         });
 
         RecyclerView rvGroups = view.findViewById(R.id.rv_profile_groups);

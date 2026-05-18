@@ -56,7 +56,6 @@ import com.example.travelshare.data.models.AppNotification;
 import com.example.travelshare.data.repository.FirebaseRepository;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Locale;
 
 public class PlanDetailFragment extends Fragment {
 
@@ -87,7 +86,9 @@ public class PlanDetailFragment extends Fragment {
         viewModel = new ViewModelProvider(this).get(TravelPathViewModel.class);
         final SharedViewModel sViewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
 
-        mapView       = view.findViewById(R.id.map_plan);
+        mapView        = view.findViewById(R.id.map_plan);
+        blockRouteTime = view.findViewById(R.id.block_route_time);
+        tvRouteTime    = view.findViewById(R.id.tv_route_time);
         mapView.setTileSource(TileSourceFactory.MAPNIK);
         mapView.setMultiTouchControls(true);
         mapView.getController().setZoom(13.0);
@@ -306,7 +307,45 @@ public class PlanDetailFragment extends Fragment {
         List<GeoPoint> allPoints  = new ArrayList<>();
 
         for (PlanStep step : steps) {
-            if (step.lat == 0 && step.lng == 0) continue;
+            if (step.lat == 0 && step.lng == 0) {
+                // Géocode en arrière-plan pour avoir un pin quand même
+                final PlanStep s = step;
+                final String cityName = currentPlan != null ? currentPlan.city : "";
+                AppDatabase.databaseWriteExecutor.execute(() -> {
+                    try {
+                        String q = java.net.URLEncoder.encode(s.name + " " + cityName, "UTF-8");
+                        java.net.HttpURLConnection con = (java.net.HttpURLConnection)
+                                new java.net.URL("https://nominatim.openstreetmap.org/search?q="
+                                        + q + "&format=json&limit=1").openConnection();
+                        con.setRequestProperty("User-Agent", "TravelingApp/1.0");
+                        con.setConnectTimeout(5000); con.setReadTimeout(5000);
+                        if (con.getResponseCode() == 200) {
+                            java.io.BufferedReader br = new java.io.BufferedReader(
+                                    new java.io.InputStreamReader(con.getInputStream()));
+                            StringBuilder sb2 = new StringBuilder(); String line;
+                            while ((line = br.readLine()) != null) sb2.append(line);
+                            br.close();
+                            org.json.JSONArray arr = new org.json.JSONArray(sb2.toString());
+                            if (arr.length() > 0) {
+                                double lat2 = arr.getJSONObject(0).getDouble("lat");
+                                double lng2 = arr.getJSONObject(0).getDouble("lon");
+                                s.lat = lat2; s.lng = lng2;
+                                AppDatabase.getInstance(requireContext()).planStepDao().updateCoords(s.id, lat2, lng2);
+                                if (isAdded()) requireActivity().runOnUiThread(() -> {
+                                    GeoPoint pt = new GeoPoint(lat2, lng2);
+                                    Marker m = new Marker(mapView);
+                                    m.setPosition(pt);
+                                    m.setTitle(s.name);
+                                    m.setSnippet(s.timeSlot + " · " + s.durationMin + " min");
+                                    mapView.getOverlays().add(m);
+                                    mapView.invalidate();
+                                });
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                });
+                continue;
+            }
             validSteps.add(step);
             GeoPoint pt = new GeoPoint(step.lat, step.lng);
             allPoints.add(pt);
@@ -525,38 +564,44 @@ public class PlanDetailFragment extends Fragment {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             try {
                 String encoded = java.net.URLEncoder.encode(city, "UTF-8");
-                java.net.URL geoUrl = new java.net.URL(
-                        "https://nominatim.openstreetmap.org/search?q=" + encoded + "&format=json&limit=1");
-                java.net.HttpURLConnection con = (java.net.HttpURLConnection) geoUrl.openConnection();
-                con.setRequestProperty("User-Agent", requireContext().getPackageName());
-                con.setConnectTimeout(6000); con.setReadTimeout(6000);
-                String geoJson = readResponse(con);
-                if (geoJson == null || geoJson.equals("[]") || !geoJson.contains("\"lat\"")) return;
+                java.net.HttpURLConnection geoConn = (java.net.HttpURLConnection)
+                        new java.net.URL("https://nominatim.openstreetmap.org/search?q="
+                                + encoded + "&format=json&limit=1").openConnection();
+                geoConn.setRequestProperty("User-Agent", requireContext().getPackageName());
+                geoConn.setConnectTimeout(6000); geoConn.setReadTimeout(6000);
+                String geoJson = readResponse(geoConn);
+                if (geoJson == null || geoJson.equals("[]")) return;
 
-                double lat = parseJsonDouble(geoJson, "\"lat\":\"");
-                double lng = parseJsonDouble(geoJson, "\"lon\":\"");
+                JSONArray geoArr = new JSONArray(geoJson);
+                if (geoArr.length() == 0) return;
+                JSONObject geoObj = geoArr.getJSONObject(0);
+                double lat = geoObj.getDouble("lat");
+                double lng = geoObj.getDouble("lon");
 
                 String weatherUrl = String.format(Locale.US,
                         "https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f"
-                        + "&current_weather=true&hourly=precipitation_probability&timezone=auto",
-                        lat, lng);
-                java.net.HttpURLConnection wCon = (java.net.HttpURLConnection)
+                        + "&current_weather=true&timezone=auto", lat, lng);
+                java.net.HttpURLConnection wConn = (java.net.HttpURLConnection)
                         new java.net.URL(weatherUrl).openConnection();
-                wCon.setConnectTimeout(6000); wCon.setReadTimeout(6000);
-                String wJson = readResponse(wCon);
+                wConn.setConnectTimeout(6000); wConn.setReadTimeout(6000);
+                String wJson = readResponse(wConn);
                 if (wJson == null || !wJson.contains("current_weather")) return;
 
-                double temp      = parseJsonDouble(wJson, "\"temperature\":");
-                int weatherCode  = (int) parseJsonDouble(wJson, "\"weathercode\":");
+                // Parse via JSONObject pour éviter le bug current_weather_units
+                JSONObject root = new JSONObject(wJson);
+                JSONObject cw   = root.getJSONObject("current_weather");
+                double temp     = cw.getDouble("temperature");
+                int weatherCode = cw.optInt("weathercode", cw.optInt("weather_code", 0));
 
                 String icon, desc, advice;
-                if (weatherCode == 0)          { icon = "☀️"; desc = "Ciel dégagé";         advice = "Parfait pour visiter !"; }
-                else if (weatherCode <= 3)     { icon = "⛅"; desc = "Partiellement nuageux"; advice = "Bonne journée de visite."; }
-                else if (weatherCode <= 49)    { icon = "🌫️"; desc = "Brouillard";            advice = "Visibilité réduite."; }
-                else if (weatherCode <= 67)    { icon = "🌧️"; desc = "Pluie";                 advice = "Prévoyez un imperméable."; }
-                else if (weatherCode <= 77)    { icon = "❄️"; desc = "Neige";                 advice = "Habillez-vous chaudement !"; }
-                else if (weatherCode <= 82)    { icon = "🌦️"; desc = "Averses";               advice = "Prévoyez un parapluie."; }
-                else                           { icon = "⛈️"; desc = "Orage";                 advice = "Privilégiez les activités intérieures."; }
+                if      (weatherCode == 0)  { icon = "☀️"; desc = "Ciel dégagé";          advice = "Parfait pour visiter !"; }
+                else if (weatherCode <= 2)  { icon = "🌤️"; desc = "Peu nuageux";           advice = "Bonne journée de visite."; }
+                else if (weatherCode == 3)  { icon = "☁️"; desc = "Couvert";               advice = "Temps gris mais praticable."; }
+                else if (weatherCode <= 49) { icon = "🌫️"; desc = "Brouillard";             advice = "Visibilité réduite."; }
+                else if (weatherCode <= 67) { icon = "🌧️"; desc = "Pluie";                 advice = "Prévoyez un imperméable."; }
+                else if (weatherCode <= 77) { icon = "❄️"; desc = "Neige";                 advice = "Habillez-vous chaudement !"; }
+                else if (weatherCode <= 82) { icon = "🌦️"; desc = "Averses";               advice = "Prévoyez un parapluie."; }
+                else                        { icon = "⛈️"; desc = "Orage";                 advice = "Privilégiez les activités intérieures."; }
 
                 final String fIcon = icon, fDesc = desc, fAdvice = advice;
                 final String fTemp = String.format(Locale.getDefault(), "%.0f°C", temp);

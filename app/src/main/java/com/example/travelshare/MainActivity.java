@@ -72,9 +72,18 @@ public class MainActivity extends AppCompatActivity implements InscriptionFragme
         View btnBellContainer = findViewById(R.id.btn_notif_bell);
 
         bottomNav.setOnItemSelectedListener(item -> {
-            Fragment selectedFragment = null;
             int itemId = item.getItemId();
+            boolean isGuest = !new SessionManager(this).isLoggedIn();
 
+            // Onglets réservés aux connectés
+            if (isGuest && (itemId == R.id.nav_publish || itemId == R.id.nav_groups)) {
+                Toast.makeText(this,
+                        "Connectez-vous pour accéder à cette fonctionnalité",
+                        Toast.LENGTH_LONG).show();
+                return false;
+            }
+
+            Fragment selectedFragment = null;
             if (itemId == R.id.nav_explorer) {
                 selectedFragment = new ExplorerFragment();
             } else if (itemId == R.id.nav_map) {

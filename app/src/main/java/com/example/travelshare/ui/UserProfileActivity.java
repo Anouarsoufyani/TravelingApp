@@ -64,7 +64,7 @@ public class UserProfileActivity extends AppCompatActivity {
 
         tvToolbarUsername.setText(targetUsername);
         tvUsername.setText("@" + targetUsername);
-        tvAvatarInitial.setText(targetUsername.substring(0, 1).toUpperCase());
+        tvAvatarInitial.setText(targetUsername.isEmpty() ? "?" : targetUsername.substring(0, 1).toUpperCase());
 
         if (targetUsername.equalsIgnoreCase(currentUsername)) {
             btnFollow.setVisibility(View.GONE);

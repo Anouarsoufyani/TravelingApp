@@ -120,12 +120,16 @@ public class TravelPathViewModel extends AndroidViewModel {
                             ? fetchRealPlaces(city, cLat, cLng, activity, sensitiveWeather, 8)
                             : fetchNominatimFallback(city, cLat, cLng, activity, sensitiveWeather, 8);
                     if (places != null && places.length > 0) {
+                        // Indices différents pour chaque variante → lieux variés
+                        int idxEco     = 0;
+                        int idxEquil   = Math.min(2, places.length - 1);
+                        int idxConfort = Math.min(4, places.length - 1);
                         overpassCache.put(activity + "_economique",
-                                new String[][]{places[Math.min(0, places.length - 1)]});
+                                new String[][]{places[idxEco]});
                         overpassCache.put(activity + "_equilibre",
-                                new String[][]{places[Math.min(2, places.length - 1)]});
+                                new String[][]{places[idxEquil]});
                         overpassCache.put(activity + "_confort",
-                                new String[][]{places[Math.min(4, places.length - 1)]});
+                                new String[][]{places[idxConfort]});
                     }
                     sleepQuietly(1100);
                 }

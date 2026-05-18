@@ -44,8 +44,24 @@ public class NotificationPreferencesFragment extends Fragment {
 
         Spinner spinnerType = view.findViewById(R.id.spinner_pref_type);
         String[] types = {"AUTEUR", "LIEU", "TAG", "GROUPE"};
-        ArrayAdapter<String> typeAdapter = new ArrayAdapter<>(requireContext(),
-                android.R.layout.simple_spinner_item, types);
+        ArrayAdapter<String> typeAdapter = new ArrayAdapter<String>(requireContext(),
+                android.R.layout.simple_spinner_item, types) {
+            @Override
+            public android.view.View getView(int position, android.view.View convertView, android.view.ViewGroup parent) {
+                android.widget.TextView tv = (android.widget.TextView) super.getView(position, convertView, parent);
+                tv.setTextColor(android.graphics.Color.WHITE);
+                tv.setTextSize(14f);
+                return tv;
+            }
+            @Override
+            public android.view.View getDropDownView(int position, android.view.View convertView, android.view.ViewGroup parent) {
+                android.widget.TextView tv = (android.widget.TextView) super.getDropDownView(position, convertView, parent);
+                tv.setTextColor(android.graphics.Color.WHITE);
+                tv.setBackgroundColor(android.graphics.Color.parseColor("#1A2040"));
+                tv.setPadding(32, 24, 32, 24);
+                return tv;
+            }
+        };
         typeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerType.setAdapter(typeAdapter);
 

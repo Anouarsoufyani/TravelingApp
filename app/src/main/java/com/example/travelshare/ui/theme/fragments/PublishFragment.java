@@ -130,8 +130,26 @@ public class PublishFragment extends Fragment {
         EditText etTags     = view.findViewById(R.id.et_pub_tags);
 
         String[] categories = {"Nature", "Urbain", "Culture", "Magasin"};
-        ArrayAdapter<String> catAdapter = new ArrayAdapter<>(requireContext(),
-                android.R.layout.simple_spinner_item, categories);
+        ArrayAdapter<String> catAdapter = new ArrayAdapter<String>(requireContext(),
+                android.R.layout.simple_spinner_item, categories) {
+            @Override
+            public android.view.View getView(int position, android.view.View convertView, android.view.ViewGroup parent) {
+                android.widget.TextView tv = (android.widget.TextView) super.getView(position, convertView, parent);
+                tv.setTextColor(android.graphics.Color.WHITE);
+                tv.setTextSize(14f);
+                tv.setPadding(16, 0, 16, 0);
+                return tv;
+            }
+            @Override
+            public android.view.View getDropDownView(int position, android.view.View convertView, android.view.ViewGroup parent) {
+                android.widget.TextView tv = (android.widget.TextView) super.getDropDownView(position, convertView, parent);
+                tv.setTextColor(android.graphics.Color.WHITE);
+                tv.setBackgroundColor(android.graphics.Color.parseColor("#1A2040"));
+                tv.setPadding(32, 24, 32, 24);
+                tv.setTextSize(15f);
+                return tv;
+            }
+        };
         catAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerCat.setAdapter(catAdapter);
 
@@ -515,11 +533,7 @@ public class PublishFragment extends Fragment {
                         for (ImageLabel label : labels) {
                             mlKitLabels.add(label.getText());
                         }
-                        if (!mlKitLabels.isEmpty() && isAdded()) {
-                            Toast.makeText(getContext(),
-                                    "🤖 IA prête : " + mlKitLabels.size() + " objets détectés",
-                                    Toast.LENGTH_SHORT).show();
-                        }
+                        // Toast IA supprimé
                     })
                     .addOnFailureListener(e -> mlKitLabels.clear());
         } catch (Exception e) {

@@ -50,11 +50,10 @@ public class TravelPathFragment extends Fragment {
 
     private TravelPathViewModel viewModel;
     private SessionManager session;
-    
-    private View sectionForm, sectionResults;
+    private View sectionResults;
+    private View scrollForm;
     private RecyclerView rvResults, rvSaved;
     private PlanAdapter resultsAdapter, savedAdapter;
-    private TabLayout tabLayout;
 
     @Nullable
     @Override
@@ -66,31 +65,37 @@ public class TravelPathFragment extends Fragment {
         session   = new SessionManager(requireContext());
         long userId = session.getUserId();
 
-        tabLayout      = view.findViewById(R.id.tabs_tp);
-        sectionForm    = view.findViewById(R.id.section_tp_form);
+        scrollForm     = view.findViewById(R.id.scroll_tp);
         sectionResults = view.findViewById(R.id.section_tp_results);
         rvResults      = view.findViewById(R.id.rv_tp_results);
         rvSaved        = view.findViewById(R.id.rv_tp_saved);
 
-        setupTabs();
-        setupForm(view, userId);
         setupRecyclerViews();
+        setupForm(view, userId);
+        setupTabs(view);
 
-        // Observe Data
-        viewModel.getPlansForUser(userId).observe(getViewLifecycleOwner(), resultsAdapter::setPlans);
+        // Observe résultats — affiche la section si non vide
+        viewModel.getPlansForUser(userId).observe(getViewLifecycleOwner(), plans -> {
+            resultsAdapter.setPlans(plans);
+            sectionResults.setVisibility(
+                    plans != null && !plans.isEmpty() ? View.VISIBLE : View.GONE);
+        });
         viewModel.getSavedPlansForUser(userId).observe(getViewLifecycleOwner(), savedAdapter::setPlans);
 
         return view;
     }
 
-    private void setupTabs() {
-        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
-            @Override
-            public void onTabSelected(TabLayout.Tab tab) {
-                int pos = tab.getPosition();
-                sectionForm.setVisibility(pos == 0 ? View.VISIBLE : View.GONE);
-                sectionResults.setVisibility(pos == 1 ? View.VISIBLE : View.GONE);
-                rvSaved.setVisibility(pos == 2 ? View.VISIBLE : View.GONE);
+    private void setupTabs(View view) {
+        TabLayout tabs = view.findViewById(R.id.tabs_tp);
+        tabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override public void onTabSelected(TabLayout.Tab tab) {
+                if (tab.getPosition() == 0) {
+                    scrollForm.setVisibility(View.VISIBLE);
+                    rvSaved.setVisibility(View.GONE);
+                } else {
+                    scrollForm.setVisibility(View.GONE);
+                    rvSaved.setVisibility(View.VISIBLE);
+                }
             }
             @Override public void onTabUnselected(TabLayout.Tab tab) {}
             @Override public void onTabReselected(TabLayout.Tab tab) {}
@@ -148,21 +153,32 @@ public class TravelPathFragment extends Fragment {
                 return;
             }
 
-            Set<String> activities = new LinkedHashSet<>();
-            if (((CheckBox) view.findViewById(R.id.cb_culture)).isChecked())      activities.add("Culture");
-            if (((CheckBox) view.findViewById(R.id.cb_restauration)).isChecked()) activities.add("Restauration");
-            if (((CheckBox) view.findViewById(R.id.cb_loisirs)).isChecked())      activities.add("Loisirs");
-            if (((CheckBox) view.findViewById(R.id.cb_decouverte)).isChecked())   activities.add("Découverte");
-            if (((CheckBox) view.findViewById(R.id.cb_shopping)).isChecked())     activities.add("Shopping");
+            // Mode : lieux uniquement ou lieux + suggestions
+            boolean onlyRequired = ((RadioGroup) view.findViewById(R.id.rg_places_mode))
+                    .getCheckedRadioButtonId() == R.id.rb_places_only;
 
-            if (activities.isEmpty()) {
+            Set<String> activities = new LinkedHashSet<>();
+            if (!onlyRequired) {
+                if (((CheckBox) view.findViewById(R.id.cb_culture)).isChecked())      activities.add("Culture");
+                if (((CheckBox) view.findViewById(R.id.cb_restauration)).isChecked()) activities.add("Restauration");
+                if (((CheckBox) view.findViewById(R.id.cb_loisirs)).isChecked())      activities.add("Loisirs");
+                if (((CheckBox) view.findViewById(R.id.cb_decouverte)).isChecked())   activities.add("Découverte");
+                if (((CheckBox) view.findViewById(R.id.cb_shopping)).isChecked())     activities.add("Shopping");
+            }
+
+            String reqPlaces = etReq.getText().toString().trim();
+
+            if (!onlyRequired && activities.isEmpty()) {
                 Toast.makeText(getContext(), "Sélectionnez au moins une activité", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (onlyRequired && reqPlaces.isEmpty()) {
+                Toast.makeText(getContext(), "Entrez au moins un lieu spécifique", Toast.LENGTH_SHORT).show();
                 return;
             }
 
             int budget   = Math.max(10, sbBudget.getProgress());
             int duration = sbDuration.getProgress() + 1;
-            String reqPlaces = etReq.getText().toString().trim();
 
             String effort = "Facile";
             int rbId = ((RadioGroup) view.findViewById(R.id.rg_tp_effort)).getCheckedRadioButtonId();
@@ -186,17 +202,16 @@ public class TravelPathFragment extends Fragment {
 
                     if (createdCount <= 0) {
                         Toast.makeText(getContext(),
-                                "Aucun lieu réel trouvé pour ces critères. Réessayez dans quelques secondes ou élargissez les activités.",
+                                "Aucun lieu trouvé. Essayez une ville plus précise ou d'autres activités.",
                                 Toast.LENGTH_LONG).show();
                         return;
                     }
-                    
-                    // Switch to Results tab
-                    if (tabLayout != null) {
-                        TabLayout.Tab resultsTab = tabLayout.getTabAt(1);
-                        if (resultsTab != null) resultsTab.select();
+
+                    // Scroll vers les résultats
+                    androidx.core.widget.NestedScrollView scroll = view.findViewById(R.id.scroll_tp);
+                    if (scroll != null && sectionResults != null) {
+                        scroll.post(() -> scroll.smoothScrollTo(0, sectionResults.getTop()));
                     }
-                    
                     Toast.makeText(getContext(), createdCount + " parcours généré(s) !", Toast.LENGTH_SHORT).show();
                 });
             });

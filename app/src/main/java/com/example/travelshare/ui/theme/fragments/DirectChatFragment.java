@@ -72,12 +72,13 @@ public class DirectChatFragment extends Fragment {
         rv.setAdapter(adapter);
 
         chatListener = FirebaseRepository.getInstance().listenToDirectMessages(currentUsername, targetUsername, messages -> {
-            if (isAdded()) {
-                requireActivity().runOnUiThread(() -> {
-                    adapter.setMessages(messages);
+            if (!isAdded()) return;
+            requireActivity().runOnUiThread(() -> {
+                if (!isAdded()) return;
+                adapter.setMessages(messages);
+                if (messages != null && !messages.isEmpty())
                     rv.scrollToPosition(messages.size() - 1);
-                });
-            }
+            });
         });
 
         EditText etInput = view.findViewById(R.id.et_chat_input);

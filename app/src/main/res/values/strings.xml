@@ -32,7 +32,7 @@
     <string name="route_thumbnail_description">Aperçu carte du parcours</string>
     <string name="back_content_description">Retour</string>
     <string name="share_group">Partager dans un groupe</string>
-    <string name="travelpath_cta">Itinerary</string>
+    <string name="travelpath_cta">Planifier un voyage</string>
     <string name="route_cta">Y aller</string>
     <string name="share_cta">Partager</string>
     <string name="report_cta">Signaler ce contenu</string>

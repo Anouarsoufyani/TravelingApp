@@ -66,7 +66,7 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
     private boolean isLoadingMore = false;
     private SwipeRefreshLayout swipeRefresh;
 
-    private final int[] CHIP_IDS = {R.id.chip_all, R.id.chip_nature, R.id.chip_urbain, R.id.chip_culture, R.id.chip_magasin, R.id.chip_nearby, R.id.chip_likes};
+    private final int[] CHIP_IDS = {R.id.chip_all, R.id.chip_nature, R.id.chip_urbain, R.id.chip_culture, R.id.chip_magasin, R.id.chip_nearby, R.id.chip_likes, R.id.chip_date};
     private View chipRoot;
 
     private ActivityResultLauncher<String> locationPermLauncher;
@@ -282,7 +282,35 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
                     .commit()
         );
 
+        view.findViewById(R.id.chip_date).setOnClickListener(v -> showDateRangePicker());
+
         return view;
+    }
+
+    private void showDateRangePicker() {
+        com.google.android.material.datepicker.MaterialDatePicker<androidx.core.util.Pair<Long, Long>> picker =
+            com.google.android.material.datepicker.MaterialDatePicker.Builder
+                .dateRangePicker()
+                .setTitleText("Filtrer par période")
+                .build();
+
+        picker.addOnPositiveButtonClickListener(selection -> {
+            if (selection == null || selection.first == null || selection.second == null) return;
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault());
+            String start = sdf.format(new java.util.Date(selection.first));
+            String end   = sdf.format(new java.util.Date(selection.second));
+            setActiveChip(R.id.chip_date);
+            TextView chipDate = chipRoot != null ? chipRoot.findViewById(R.id.chip_date) : null;
+            if (chipDate != null) chipDate.setText("📅 " + start.substring(5) + " → " + end.substring(5));
+            observeSource(viewModel.getPhotosByDateRange(start, end));
+        });
+
+        picker.addOnNegativeButtonClickListener(d -> {
+            TextView chipDate = chipRoot != null ? chipRoot.findViewById(R.id.chip_date) : null;
+            if (chipDate != null) chipDate.setText("📅 Période");
+        });
+
+        picker.show(getChildFragmentManager(), "date_range_picker");
     }
 
     private void enterPaginationMode() {
@@ -338,6 +366,12 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
     private void fetchNearbyPhotos() {
         try {
             LocationManager lm = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
+            if (lm == null) {
+                Toast.makeText(getContext(), "GPS non disponible", Toast.LENGTH_SHORT).show();
+                setActiveChip(R.id.chip_all);
+                enterPaginationMode();
+                return;
+            }
             Location loc = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             if (loc == null) loc = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
             if (loc != null) {
@@ -348,8 +382,8 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
                 setActiveChip(R.id.chip_all);
                 enterPaginationMode();
             }
-        } catch (SecurityException e) {
-            Toast.makeText(getContext(), "Permission GPS manquante", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(getContext(), "Erreur GPS", Toast.LENGTH_SHORT).show();
         }
     }
 
