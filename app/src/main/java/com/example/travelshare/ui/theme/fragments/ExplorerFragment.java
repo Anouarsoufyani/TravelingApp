@@ -31,17 +31,25 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.travelshare.R;
+import com.example.travelshare.data.models.AppNotification;
+import com.example.travelshare.data.models.GroupMessage;
 import com.example.travelshare.data.models.Photo;
-import com.example.travelshare.ui.theme.adapters.PhotoAdapter;
+import com.example.travelshare.data.repository.FirebaseRepository;
+import com.example.travelshare.ui.theme.adapters.ExplorerPostAdapter;
+import com.example.travelshare.utils.NotificationUtil;
+import com.example.travelshare.utils.SessionManager;
 import com.example.travelshare.viewmodels.SharedViewModel;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public class ExplorerFragment extends Fragment implements SensorEventListener {
 
@@ -57,9 +65,9 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
     private static final long SHAKE_COOLDOWN_MS = 1500;
 
     private SharedViewModel viewModel;
-    private PhotoAdapter adapter;
+    private ExplorerPostAdapter adapter;
     private LiveData<List<Photo>> currentSource;
-    private boolean isGridView = false;
+    private SessionManager sessionManager;
 
     private int currentOffset = 0;
     private boolean isPaginationMode = false;
@@ -148,8 +156,18 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
         View view = inflater.inflate(R.layout.fragment_explorer, container, false);
 
         RecyclerView recyclerView = view.findViewById(R.id.recycler_view_photos);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new PhotoAdapter();
+        recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 1));
+        adapter = new ExplorerPostAdapter(new ExplorerPostAdapter.Listener() {
+            @Override
+            public void onLike(Photo photo) {
+                likeFromExplorer(photo);
+            }
+
+            @Override
+            public void onShare(Photo photo) {
+                shareFromExplorer(photo);
+            }
+        });
         recyclerView.setAdapter(adapter);
 
         swipeRefresh = view.findViewById(R.id.swipe_refresh);
@@ -172,7 +190,7 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
                 if (lm instanceof GridLayoutManager) {
                     lastVisible = ((GridLayoutManager) lm).findLastVisibleItemPosition();
                 } else {
-                    lastVisible = ((LinearLayoutManager) lm).findLastVisibleItemPosition();
+                    lastVisible = adapter.getItemCount() - 1;
                 }
                 if (lastVisible >= adapter.getItemCount() - 4) {
                     loadPage(currentOffset, false);
@@ -181,18 +199,11 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
         });
 
         TextView btnToggle = view.findViewById(R.id.btn_toggle_view);
-        btnToggle.setOnClickListener(v -> {
-            isGridView = !isGridView;
-            if (isGridView) {
-                recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
-                btnToggle.setText("☰ Liste");
-            } else {
-                recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-                btnToggle.setText("⊞ Grille");
-            }
-        });
+        btnToggle.setVisibility(View.GONE);
 
         viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+        sessionManager = new SessionManager(requireContext());
+        adapter.setLikedIds(getLikedPhotoIdSet());
         chipRoot = view;
 
         viewModel.syncPhotosFromFirestore();
@@ -340,6 +351,139 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
         });
     }
 
+    private void likeFromExplorer(Photo photo) {
+        if (photo == null) return;
+        if (sessionManager == null || !sessionManager.isLoggedIn()) {
+            Toast.makeText(getContext(), "Connectez-vous pour aimer un post", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String id = String.valueOf(photo.getId());
+        Set<String> likedIds = getRawLikedIds();
+        boolean liked = likedIds.contains(id);
+        if (liked) likedIds.remove(id);
+        else likedIds.add(id);
+
+        getLikePrefs().edit().putStringSet(getLikeKey(), likedIds).apply();
+        int newLikes = Math.max(0, photo.getLikes() + (liked ? -1 : 1));
+        photo.setLikes(newLikes);
+        viewModel.updateLikes(photo.getId(), newLikes);
+        adapter.setLikedIds(getLikedPhotoIdSet());
+
+        if (!liked) {
+            String author = photo.getAuthor();
+            String liker = sessionManager.getUsername();
+            if (author != null && !author.isEmpty() && liker != null && !author.equalsIgnoreCase(liker)) {
+                String date = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
+                AppNotification notif = new AppNotification();
+                notif.targetUserId = FirebaseRepository.getInstance().stableUserId(author);
+                notif.type = "LIKE";
+                notif.senderUsername = liker;
+                notif.message = liker + " a aimé \"" + photo.getTitle() + "\"";
+                notif.photoId = photo.getId();
+                notif.date = date;
+                viewModel.insertAppNotification(notif);
+                FirebaseRepository.getInstance().saveNotification(author, notif);
+                NotificationUtil.showNotification(requireContext(), "Nouveau like", notif.message);
+            }
+        }
+    }
+
+    private void shareFromExplorer(Photo photo) {
+        if (photo == null) return;
+        if (sessionManager == null || !sessionManager.isLoggedIn()) {
+            Toast.makeText(getContext(), "Connectez-vous pour partager", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String[] options = {"À un groupe", "À un ami", "Externe"};
+        new android.app.AlertDialog.Builder(requireContext())
+                .setTitle("Partager ce post")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) sharePostToGroup(photo);
+                    else if (which == 1) sharePostToFriend(photo);
+                    else sharePostExternal(photo);
+                })
+                .show();
+    }
+
+    private void sharePostToGroup(Photo photo) {
+        FirebaseRepository.getInstance().getMyMemberGroups(sessionManager.getUsername(), groups -> {
+            if (!isAdded()) return;
+            requireActivity().runOnUiThread(() -> {
+                if (groups == null || groups.isEmpty()) {
+                    Toast.makeText(getContext(), "Vous n'appartenez à aucun groupe", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                String[] names = new String[groups.size()];
+                for (int i = 0; i < groups.size(); i++) names[i] = groups.get(i).name;
+                new android.app.AlertDialog.Builder(requireContext())
+                        .setTitle("Choisir un groupe")
+                        .setItems(names, (d, which) -> {
+                            String date = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
+                            GroupMessage msg = new GroupMessage();
+                            msg.groupId = groups.get(which).id;
+                            msg.userId = sessionManager.getUserId();
+                            msg.authorName = sessionManager.getUsername();
+                            msg.message = "📸 " + safe(photo.getTitle()) + " — 📍 " + safe(photo.getLocation());
+                            msg.photoId = photo.getId();
+                            msg.date = date;
+                            viewModel.sendGroupMessage(msg);
+                            FirebaseRepository.getInstance().saveSharedPhotoMessage(
+                                    groups.get(which).name,
+                                    sessionManager.getUsername(),
+                                    msg.message,
+                                    photo.getId(),
+                                    date);
+                            Toast.makeText(getContext(), "Post partagé dans \"" + names[which] + "\"", Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("Annuler", null)
+                        .show();
+            });
+        });
+    }
+
+    private void sharePostToFriend(Photo photo) {
+        FirebaseRepository.getInstance().getFriends(sessionManager.getUsername(), friends -> {
+            if (!isAdded()) return;
+            requireActivity().runOnUiThread(() -> {
+                if (friends == null || friends.isEmpty()) {
+                    Toast.makeText(getContext(), "Vous n'avez pas d'amis", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                String[] names = friends.toArray(new String[0]);
+                new android.app.AlertDialog.Builder(requireContext())
+                        .setTitle("Choisir un ami")
+                        .setItems(names, (d, which) -> {
+                            String target = names[which];
+                            String date = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
+                            String text = "📸 " + safe(photo.getTitle());
+                            FirebaseRepository.getInstance().saveDirectMessage(
+                                    sessionManager.getUsername(), target, text, date, photo.getId(), 0, -1, null);
+
+                            AppNotification notif = new AppNotification();
+                            notif.type = "SHARE_POST";
+                            notif.senderUsername = sessionManager.getUsername();
+                            notif.message = sessionManager.getUsername() + " vous a partagé un post : \"" + safe(photo.getTitle()) + "\"";
+                            notif.photoId = photo.getId();
+                            notif.date = date;
+                            FirebaseRepository.getInstance().saveNotification(target, notif);
+                            Toast.makeText(getContext(), "Post partagé avec " + target, Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("Annuler", null)
+                        .show();
+            });
+        });
+    }
+
+    private void sharePostExternal(Photo photo) {
+        String shareText = safe(photo.getTitle()) + "\n📍 " + safe(photo.getLocation()) + "\nVia Traveling";
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
+        startActivity(Intent.createChooser(shareIntent, "Partager via"));
+    }
+
     private void setupChip(View root, int chipId, @Nullable String category) {
         root.findViewById(chipId).setOnClickListener(v -> {
             setActiveChip(chipId);
@@ -400,6 +544,35 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
 
     private List<Integer> getLikedPhotoIds() {
         return getLikedPhotoIdsStatic(requireContext());
+    }
+
+    private android.content.SharedPreferences getLikePrefs() {
+        return requireContext().getSharedPreferences("likes", android.content.Context.MODE_PRIVATE);
+    }
+
+    private String getLikeKey() {
+        String rawUsername = sessionManager != null ? sessionManager.getUsername() : null;
+        String safeUsername = rawUsername != null ? rawUsername.toLowerCase(Locale.ROOT) : "anonyme";
+        return "liked_ids_" + safeUsername;
+    }
+
+    private Set<String> getRawLikedIds() {
+        return new HashSet<>(getLikePrefs().getStringSet(getLikeKey(), new HashSet<>()));
+    }
+
+    private Set<Integer> getLikedPhotoIdSet() {
+        Set<Integer> ids = new HashSet<>();
+        for (String s : getRawLikedIds()) {
+            try {
+                ids.add(Integer.parseInt(s));
+            } catch (Exception ignored) {
+            }
+        }
+        return ids;
+    }
+
+    private String safe(String value) {
+        return value != null ? value : "";
     }
 
     private void observeSource(LiveData<List<Photo>> newSource) {

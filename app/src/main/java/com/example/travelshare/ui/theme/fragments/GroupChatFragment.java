@@ -656,34 +656,28 @@ public class GroupChatFragment extends Fragment {
             h.tvTitle.setText(displayTitle);
             h.tvLocation.setText(displayLoc);
 
-            com.example.travelshare.data.AppDatabase.databaseWriteExecutor.execute(() -> {
-                com.example.travelshare.data.models.Photo photo =
-                        com.example.travelshare.data.AppDatabase
-                                .getInstance(h.itemView.getContext())
-                                .photoDao().getPhotoById(m.photoId);
-                h.itemView.post(() -> {
-                    if (photo == null) return;
-                    String uri = photo.getImageUri();
-                    if (uri != null && !uri.isEmpty()) {
-                        h.ivImage.setVisibility(View.VISIBLE);
-                        Glide.with(h.ivImage.getContext()).load(android.net.Uri.parse(uri)).centerCrop().into(h.ivImage);
-                    }
-                    h.itemView.setOnClickListener(v -> {
-                        Intent intent = new Intent(v.getContext(), PhotoDetailActivity.class);
-                        intent.putExtra(PhotoDetailActivity.EXTRA_PHOTO_ID,  photo.getId());
-                        intent.putExtra(PhotoDetailActivity.EXTRA_TITLE,     photo.getTitle());
-                        intent.putExtra(PhotoDetailActivity.EXTRA_AUTHOR,    photo.getAuthor());
-                        intent.putExtra(PhotoDetailActivity.EXTRA_DATE,      photo.getDate());
-                        intent.putExtra(PhotoDetailActivity.EXTRA_LOCATION,  photo.getLocation());
-                        intent.putExtra(PhotoDetailActivity.EXTRA_CATEGORY,  photo.getCategory());
-                        intent.putExtra(PhotoDetailActivity.EXTRA_TAGS,      photo.getTags());
-                        intent.putExtra(PhotoDetailActivity.EXTRA_LIKES,     photo.getLikes());
-                        intent.putExtra(PhotoDetailActivity.EXTRA_LAT,       photo.getLatitude());
-                        intent.putExtra(PhotoDetailActivity.EXTRA_LNG,       photo.getLongitude());
-                        intent.putExtra(PhotoDetailActivity.EXTRA_IMAGE_URI, photo.getImageUri());
-                        intent.putExtra(PhotoDetailActivity.EXTRA_VOICE_URI, photo.getVoiceUri());
-                        v.getContext().startActivity(intent);
-                    });
+            FirebaseRepository.getInstance().getPhotoById(m.photoId, photo -> {
+                if (photo == null) return;
+                String uri = photo.getImageUri();
+                if (uri != null && !uri.isEmpty()) {
+                    h.ivImage.setVisibility(View.VISIBLE);
+                    Glide.with(h.ivImage.getContext()).load(android.net.Uri.parse(uri)).centerCrop().into(h.ivImage);
+                }
+                h.itemView.setOnClickListener(v -> {
+                    Intent intent = new Intent(v.getContext(), PhotoDetailActivity.class);
+                    intent.putExtra(PhotoDetailActivity.EXTRA_PHOTO_ID,  photo.getId());
+                    intent.putExtra(PhotoDetailActivity.EXTRA_TITLE,     photo.getTitle());
+                    intent.putExtra(PhotoDetailActivity.EXTRA_AUTHOR,    photo.getAuthor());
+                    intent.putExtra(PhotoDetailActivity.EXTRA_DATE,      photo.getDate());
+                    intent.putExtra(PhotoDetailActivity.EXTRA_LOCATION,  photo.getLocation());
+                    intent.putExtra(PhotoDetailActivity.EXTRA_CATEGORY,  photo.getCategory());
+                    intent.putExtra(PhotoDetailActivity.EXTRA_TAGS,      photo.getTags());
+                    intent.putExtra(PhotoDetailActivity.EXTRA_LIKES,     photo.getLikes());
+                    intent.putExtra(PhotoDetailActivity.EXTRA_LAT,       photo.getLatitude());
+                    intent.putExtra(PhotoDetailActivity.EXTRA_LNG,       photo.getLongitude());
+                    intent.putExtra(PhotoDetailActivity.EXTRA_IMAGE_URI, photo.getImageUri());
+                    intent.putExtra(PhotoDetailActivity.EXTRA_VOICE_URI, photo.getVoiceUri());
+                    v.getContext().startActivity(intent);
                 });
             });
         }

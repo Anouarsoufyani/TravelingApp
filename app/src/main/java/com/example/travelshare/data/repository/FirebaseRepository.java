@@ -10,19 +10,26 @@ import com.example.travelshare.data.models.NotificationPreference;
 import com.example.travelshare.data.models.Photo;
 import com.example.travelshare.data.models.TravelPlan;
 import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.WriteBatch;
 
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class FirebaseRepository {
@@ -39,9 +46,9 @@ public class FirebaseRepository {
         return instance;
     }
 
-    public void savePhoto(Photo photo, long roomId) {
+    public void savePhoto(Photo photo, long photoId) {
         Map<String, Object> data = new HashMap<>();
-        data.put("roomId",     roomId);
+        data.put("roomId",     photoId);
         data.put("title",      photo.getTitle());
         data.put("location",   photo.getLocation());
         data.put("author",     photo.getAuthor());
@@ -52,14 +59,114 @@ public class FirebaseRepository {
         data.put("tags",       photo.getTags());
         data.put("visibility", photo.getVisibility());
         data.put("likes",      0);
+        data.put("groupId",    photo.getGroupId());
         data.put("imageUri",   photo.getImageUri() != null ? photo.getImageUri() : "");
+        data.put("voiceUri",   photo.getVoiceUri() != null ? photo.getVoiceUri() : "");
+        data.put("createdAtMillis", photo.getCreatedAtMillis() > 0 ? photo.getCreatedAtMillis() : System.currentTimeMillis());
         data.put("timestamp",  FieldValue.serverTimestamp());
 
         db.collection("photos")
-                .document(String.valueOf(roomId))
+                .document(String.valueOf(photoId))
                 .set(data)
                 .addOnFailureListener(e ->
                         android.util.Log.w("FirebaseRepository", "savePhoto failed", e));
+    }
+
+    public LiveData<List<Photo>> getAllPhotosLive() {
+        return photosLive(photo -> true, false, 0);
+    }
+
+    public LiveData<List<Photo>> getPublicPhotosLive() {
+        return photosLive(this::isPublicPhoto, false, 0);
+    }
+
+    public LiveData<List<Photo>> searchPhotosLive(String query) {
+        String q = query != null ? query.trim().toLowerCase(Locale.ROOT) : "";
+        return photosLive(photo -> isPublicPhoto(photo) && (
+                contains(photo.getTitle(), q)
+                        || contains(photo.getLocation(), q)
+                        || contains(photo.getAuthor(), q)
+                        || contains(photo.getTags(), q)
+        ), false, 0);
+    }
+
+    public LiveData<List<Photo>> getRandomPublicPhotosLive(int limit) {
+        return photosLive(this::isPublicPhoto, true, limit);
+    }
+
+    public LiveData<List<Photo>> getPhotosByCategoryLive(String category) {
+        String c = category != null ? category.trim().toLowerCase(Locale.ROOT) : "";
+        return photosLive(photo -> isPublicPhoto(photo)
+                && photo.getCategory() != null
+                && photo.getCategory().trim().toLowerCase(Locale.ROOT).equals(c), false, 0);
+    }
+
+    public LiveData<List<Photo>> getPhotosByTagLive(String tag) {
+        String t = tag != null ? tag.trim().toLowerCase(Locale.ROOT) : "";
+        return photosLive(photo -> isPublicPhoto(photo) && contains(photo.getTags(), t), false, 0);
+    }
+
+    public LiveData<List<Photo>> getPhotosByAuthorLive(String author, boolean publicOnly) {
+        String a = author != null ? author.trim().toLowerCase(Locale.ROOT) : "";
+        return photosLive(photo -> (!publicOnly || isPublicPhoto(photo))
+                && photo.getAuthor() != null
+                && photo.getAuthor().trim().toLowerCase(Locale.ROOT).equals(a), false, 0);
+    }
+
+    public LiveData<List<Photo>> getPhotosByIdsLive(List<Integer> ids) {
+        Set<Integer> idSet = new HashSet<>(ids != null ? ids : new ArrayList<>());
+        return photosLive(photo -> idSet.contains(photo.getId()), false, 0);
+    }
+
+    public LiveData<List<Photo>> getPhotosByDateRangeLive(String start, String end) {
+        String s = start != null ? start : "";
+        String e = end != null ? end : "";
+        return photosLive(photo -> isPublicPhoto(photo)
+                && photo.getDate() != null
+                && photo.getDate().compareTo(s) >= 0
+                && photo.getDate().compareTo(e) <= 0, false, 0);
+    }
+
+    public LiveData<List<Photo>> getPhotosByLocationLive(double lat, double lng, double delta) {
+        return photosLive(photo -> photo.getLatitude() != 0
+                && photo.getLongitude() != 0
+                && Math.abs(photo.getLatitude() - lat) <= delta
+                && Math.abs(photo.getLongitude() - lng) <= delta, false, 0);
+    }
+
+    public LiveData<List<Photo>> getPhotosByGroupLive(long groupId) {
+        return photosLive(photo -> photo.getGroupId() == groupId, false, 0);
+    }
+
+    public void loadPublicPhotosPage(int offset, int limit, Consumer<List<Photo>> callback) {
+        db.collection("photos")
+                .get()
+                .addOnSuccessListener(query -> {
+                    List<Photo> photos = new ArrayList<>();
+                    for (DocumentSnapshot doc : query.getDocuments()) {
+                        Photo photo = photoFromDoc(doc);
+                        if (photo != null && isPublicPhoto(photo)) photos.add(photo);
+                    }
+                    sortNewestFirst(photos);
+                    int start = Math.min(Math.max(offset, 0), photos.size());
+                    int end = Math.min(start + Math.max(limit, 0), photos.size());
+                    callback.accept(new ArrayList<>(photos.subList(start, end)));
+                })
+                .addOnFailureListener(e -> {
+                    android.util.Log.w("FirebaseRepository", "loadPublicPhotosPage failed", e);
+                    callback.accept(new ArrayList<>());
+                });
+    }
+
+    public void getPhotoById(long photoId, Consumer<Photo> callback) {
+        db.collection("photos")
+                .document(String.valueOf(photoId))
+                .get()
+                .addOnSuccessListener(doc -> callback.accept(photoFromDoc(doc)))
+                .addOnFailureListener(e -> {
+                    android.util.Log.w("FirebaseRepository", "getPhotoById failed", e);
+                    callback.accept(null);
+                });
     }
 
     public void updateLikes(long photoId, int likes) {
@@ -134,40 +241,125 @@ public class FirebaseRepository {
     }
 
     public void syncPublicPhotosToRoom(AppDatabase localDb, Runnable onDone) {
-        db.collection("photos")
-                .whereEqualTo("visibility", "PUBLIC")
-                .get()
-                .addOnSuccessListener(query -> {
-                    AppDatabase.databaseWriteExecutor.execute(() -> {
-                        for (QueryDocumentSnapshot doc : query) {
-                            Long roomIdL = doc.getLong("roomId");
-                            if (roomIdL == null) continue;
-                            int roomId = roomIdL.intValue();
-                            if (localDb.photoDao().countById(roomId) > 0) continue;
-
-                            String title    = str(doc, "title");
-                            String location = str(doc, "location");
-                            String author   = str(doc, "author");
-                            int likes       = doc.getLong("likes") != null ? doc.getLong("likes").intValue() : 0;
-                            double lat      = doc.getDouble("latitude")  != null ? doc.getDouble("latitude")  : 0;
-                            double lng      = doc.getDouble("longitude") != null ? doc.getDouble("longitude") : 0;
-                            String date     = str(doc, "date");
-                            String category = str(doc, "category");
-                            String tags     = str(doc, "tags");
-
-                            Photo p = new Photo(title, location, author, likes, lat, lng, date, category, tags, "PUBLIC");
-                            p.setId(roomId);
-                            p.setImageUri(str(doc, "imageUri"));
-                            localDb.photoDao().insertPhotoOrIgnore(p);
-                        }
-                        if (onDone != null)
-                            new android.os.Handler(android.os.Looper.getMainLooper()).post(onDone);
-                    });
-                })
-                .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "syncPhotos failed", e));
+        if (onDone != null) onDone.run();
     }
 
-    private String str(QueryDocumentSnapshot doc, String key) {
+    private interface PhotoFilter {
+        boolean accept(Photo photo);
+    }
+
+    private LiveData<List<Photo>> photosLive(PhotoFilter filter, boolean random, int limit) {
+        return new MutableLiveData<List<Photo>>() {
+            private ListenerRegistration registration;
+
+            @Override
+            protected void onActive() {
+                registration = db.collection("photos").addSnapshotListener((query, e) -> {
+                    if (e != null || query == null) {
+                        if (e != null) android.util.Log.w("FirebaseRepository", "photos listener failed", e);
+                        setValue(new ArrayList<>());
+                        return;
+                    }
+                    List<Photo> photos = new ArrayList<>();
+                    for (DocumentSnapshot doc : query.getDocuments()) {
+                        Photo photo = photoFromDoc(doc);
+                        if (photo != null && filter.accept(photo)) photos.add(photo);
+                    }
+                    if (random) Collections.shuffle(photos);
+                    else sortNewestFirst(photos);
+                    if (limit > 0 && photos.size() > limit) {
+                        photos = new ArrayList<>(photos.subList(0, limit));
+                    }
+                    setValue(photos);
+                });
+            }
+
+            @Override
+            protected void onInactive() {
+                if (registration != null) {
+                    registration.remove();
+                    registration = null;
+                }
+            }
+        };
+    }
+
+    private void sortNewestFirst(List<Photo> photos) {
+        Collections.sort(photos, (a, b) -> {
+            int byCreated = Long.compare(b.getCreatedAtMillis(), a.getCreatedAtMillis());
+            return byCreated != 0 ? byCreated : Integer.compare(b.getId(), a.getId());
+        });
+    }
+
+    private boolean isPublicPhoto(Photo photo) {
+        return photo.getVisibility() == null
+                || photo.getVisibility().isEmpty()
+                || "PUBLIC".equalsIgnoreCase(photo.getVisibility());
+    }
+
+    private boolean contains(String value, String query) {
+        if (query == null || query.isEmpty()) return true;
+        return value != null && value.toLowerCase(Locale.ROOT).contains(query);
+    }
+
+    private Photo photoFromDoc(DocumentSnapshot doc) {
+        if (doc == null || !doc.exists()) return null;
+        long rawId = doc.getLong("roomId") != null ? doc.getLong("roomId") : parseLong(doc.getId());
+        int id = rawId > 0 && rawId <= Integer.MAX_VALUE ? (int) rawId : Math.abs(doc.getId().hashCode());
+        int likes = doc.getLong("likes") != null ? doc.getLong("likes").intValue() : 0;
+        double lat = doc.getDouble("latitude") != null ? doc.getDouble("latitude") : 0;
+        double lng = doc.getDouble("longitude") != null ? doc.getDouble("longitude") : 0;
+
+        Photo photo = new Photo(
+                str(doc, "title"),
+                str(doc, "location"),
+                str(doc, "author"),
+                likes,
+                lat,
+                lng,
+                str(doc, "date"),
+                str(doc, "category"),
+                str(doc, "tags"),
+                str(doc, "visibility")
+        );
+        photo.setId(id);
+        photo.setGroupId(doc.getLong("groupId") != null ? doc.getLong("groupId") : -1);
+        photo.setImageUri(str(doc, "imageUri"));
+        photo.setVoiceUri(str(doc, "voiceUri"));
+        photo.setCreatedAtMillis(createdAtMillis(doc));
+        return photo;
+    }
+
+    private long createdAtMillis(DocumentSnapshot doc) {
+        Long explicit = doc.getLong("createdAtMillis");
+        if (explicit != null && explicit > 0) return explicit;
+
+        com.google.firebase.Timestamp timestamp = doc.getTimestamp("timestamp");
+        if (timestamp != null) return timestamp.toDate().getTime();
+
+        String date = str(doc, "date");
+        if (!date.isEmpty()) {
+            String[] formats = {"yyyy-MM-dd HH:mm", "yyyy-MM-dd"};
+            for (String format : formats) {
+                try {
+                    return new SimpleDateFormat(format, Locale.getDefault()).parse(date).getTime();
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        long fromId = parseLong(doc.getId());
+        return fromId > 0 ? fromId : 0;
+    }
+
+    private long parseLong(String value) {
+        try {
+            return Long.parseLong(value);
+        } catch (Exception ignored) {
+            return 0;
+        }
+    }
+
+    private String str(DocumentSnapshot doc, String key) {
         String v = doc.getString(key);
         return v != null ? v : "";
     }

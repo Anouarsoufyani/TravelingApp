@@ -22,6 +22,7 @@ public class Photo {
     private long groupId;
     private String imageUri;
     private String voiceUri;
+    private long createdAtMillis;
 
     public Photo(String title, String location, String author, int likes,
                  double latitude, double longitude, String date, String category,
@@ -82,4 +83,6 @@ public class Photo {
 
     public String getVoiceUri() { return voiceUri; }
     public void setVoiceUri(String voiceUri) { this.voiceUri = voiceUri; }
+    public long getCreatedAtMillis() { return createdAtMillis; }
+    public void setCreatedAtMillis(long createdAtMillis) { this.createdAtMillis = createdAtMillis; }
 }

@@ -61,6 +61,9 @@ public interface PhotoDao {
     @Query("DELETE FROM photos WHERE id = :photoId")
     void deletePhoto(int photoId);
 
+    @Query("DELETE FROM photos")
+    void clearPhotos();
+
     @Query("SELECT * FROM photos WHERE id = :photoId LIMIT 1")
     Photo getPhotoById(int photoId);
 

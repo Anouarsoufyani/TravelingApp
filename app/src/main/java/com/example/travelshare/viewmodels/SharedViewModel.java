@@ -41,10 +41,12 @@ public class SharedViewModel extends AndroidViewModel {
     private final LiveData<List<Photo>> allPhotos;
     private final LiveData<List<Photo>> publicPhotos;
     private final LiveData<List<Group>> allGroups;
+    private final FirebaseRepository firebaseRepository;
 
     public SharedViewModel(@NonNull Application application) {
         super(application);
         AppDatabase db = AppDatabase.getInstance(application);
+        firebaseRepository = FirebaseRepository.getInstance();
         photoDao = db.photoDao();
         commentDao = db.commentDao();
         groupDao = db.groupDao();
@@ -54,87 +56,88 @@ public class SharedViewModel extends AndroidViewModel {
         prefDao = db.notificationPreferenceDao();
         appNotificationDao = db.appNotificationDao();
         userDao = db.userDao();
-        allPhotos = photoDao.getAllPhotos();
-        publicPhotos = photoDao.getPublicPhotos();
+        allPhotos = firebaseRepository.getAllPhotosLive();
+        publicPhotos = firebaseRepository.getPublicPhotosLive();
         allGroups = groupDao.getAllGroups();
+        AppDatabase.databaseWriteExecutor.execute(() -> photoDao.clearPhotos());
     }
 
     public LiveData<List<Photo>> getAllPhotos() { return allPhotos; }
     public LiveData<List<Photo>> getPublicPhotos() { return publicPhotos; }
 
     public void insert(Photo photo) {
-        AppDatabase.databaseWriteExecutor.execute(() -> photoDao.insertPhoto(photo));
+        insertAndGetId(photo, id -> {});
     }
 
     public void insertAndGetId(Photo photo, java.util.function.Consumer<Long> callback) {
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            long id = photoDao.insertPhoto(photo);
-            new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> callback.accept(id));
-        });
+        long now = System.currentTimeMillis();
+        long id = now % Integer.MAX_VALUE;
+        if (id <= 0) id = Math.abs(System.nanoTime() % Integer.MAX_VALUE);
+        photo.setId((int) id);
+        photo.setCreatedAtMillis(now);
+        firebaseRepository.savePhoto(photo, id);
+        callback.accept(id);
     }
 
     public LiveData<List<Photo>> searchPhotos(String query) {
-        return photoDao.searchPhotos(query);
+        return firebaseRepository.searchPhotosLive(query);
     }
 
     public LiveData<List<Photo>> getRandomPhotos(int limit) {
-        return photoDao.getRandomPhotos(limit);
+        return firebaseRepository.getRandomPublicPhotosLive(limit);
     }
 
     public LiveData<List<Photo>> getPhotosByCategory(String category) {
-        return photoDao.getPhotosByCategory(category);
+        return firebaseRepository.getPhotosByCategoryLive(category);
     }
 
     public LiveData<List<Photo>> getPhotosByAuthor(String author) {
-        return photoDao.getPhotosByAuthor(author);
+        return firebaseRepository.getPhotosByAuthorLive(author, false);
     }
 
     public LiveData<List<Photo>> getPublicPhotosByAuthor(String author) {
-        return photoDao.getPublicPhotosByAuthor(author);
+        return firebaseRepository.getPhotosByAuthorLive(author, true);
     }
 
     public LiveData<List<Photo>> getPhotosByIds(List<Integer> ids) {
-        return photoDao.getPhotosByIds(ids);
+        return firebaseRepository.getPhotosByIdsLive(ids);
     }
 
     public LiveData<List<Photo>> getPhotosByDateRange(String start, String end) {
-        return photoDao.getPhotosByDateRange(start, end);
+        return firebaseRepository.getPhotosByDateRangeLive(start, end);
     }
 
     public LiveData<List<Photo>> getPhotosByGroup(long groupId) {
-        return photoDao.getPhotosByGroup(groupId);
+        return firebaseRepository.getPhotosByGroupLive(groupId);
     }
 
     public LiveData<List<Photo>> getPhotosByTag(String tag) {
-        return photoDao.getPhotosByTag(tag);
+        return firebaseRepository.getPhotosByTagLive(tag);
     }
 
     public LiveData<List<Photo>> getPhotosByLocation(double lat, double lng, double radiusKm) {
         double delta = radiusKm / 111.0;
-        return photoDao.getPhotosByLocation(lat, lng, delta);
+        return firebaseRepository.getPhotosByLocationLive(lat, lng, delta);
     }
 
     public void updateLikes(int photoId, int likes) {
-        AppDatabase.databaseWriteExecutor.execute(() -> photoDao.updateLikes(photoId, likes));
+        firebaseRepository.updateLikes(photoId, likes);
     }
 
     public void deletePhoto(int photoId) {
-        AppDatabase.databaseWriteExecutor.execute(() -> photoDao.deletePhoto(photoId));
-        FirebaseRepository.getInstance().deletePhoto(photoId);
+        firebaseRepository.deletePhoto(photoId);
     }
 
     public void updatePhotoTitle(int photoId, String title) {
-        AppDatabase.databaseWriteExecutor.execute(() -> photoDao.updatePhotoTitle(photoId, title));
-        FirebaseRepository.getInstance().updatePhotoTitle(photoId, title);
+        firebaseRepository.updatePhotoTitle(photoId, title);
     }
 
     public void loadMorePublicPhotos(int offset, int limit, java.util.function.Consumer<List<Photo>> callback) {
-        AppDatabase.databaseWriteExecutor.execute(() -> callback.accept(photoDao.getPublicPhotosPage(offset, limit)));
+        firebaseRepository.loadPublicPhotosPage(offset, limit, callback);
     }
 
     public void syncPhotosFromFirestore() {
-        FirebaseRepository.getInstance().syncPublicPhotosToRoom(
-                AppDatabase.getInstance(getApplication()), null);
+        AppDatabase.databaseWriteExecutor.execute(() -> photoDao.clearPhotos());
     }
 
     public void syncGroupsFromFirestore() {
@@ -148,7 +151,7 @@ public class SharedViewModel extends AndroidViewModel {
     }
 
     public void getPhotoById(int photoId, java.util.function.Consumer<Photo> callback) {
-        AppDatabase.databaseWriteExecutor.execute(() -> callback.accept(photoDao.getPhotoById(photoId)));
+        firebaseRepository.getPhotoById(photoId, callback);
     }
 
     public void getUserByLogin(String login, java.util.function.Consumer<User> callback) {

@@ -410,7 +410,6 @@ public class PublishFragment extends Fragment {
                     if (finalGroupId >= 0)        photo.setGroupId(finalGroupId);
                     
                     viewModel.insertAndGetId(photo, roomId -> {
-                        savePhotoToFirestore(photo, roomId);
                         btnPublish.setEnabled(true);
                         Toast.makeText(getContext(), "Post publié !", Toast.LENGTH_SHORT).show();
                         triggerNotificationsForPublish(author, title, location, roomId);
@@ -431,10 +430,6 @@ public class PublishFragment extends Fragment {
                 });
             }
         });
-    }
-
-    private void savePhotoToFirestore(Photo photo, long roomId) {
-        FirebaseRepository.getInstance().savePhoto(photo, roomId);
     }
 
     private void startVoiceRecording(Button btn) {

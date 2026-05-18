@@ -116,7 +116,8 @@ public class ProfileFragment extends Fragment {
                     view.findViewById(R.id.btn_logout);
             btnLogout.setText("Se connecter / S'inscrire");
             btnLogout.setOnClickListener(v -> {
-                Intent intent = new Intent(getActivity(), com.example.travelshare.ui.LoginActivity.class);
+                session.logoutUser();
+                Intent intent = new Intent(getActivity(), com.example.travelshare.ui.AccueilActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
             });
