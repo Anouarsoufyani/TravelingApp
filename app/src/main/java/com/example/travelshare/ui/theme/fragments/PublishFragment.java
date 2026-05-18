@@ -230,7 +230,7 @@ public class PublishFragment extends Fragment {
 
         btnPublish.setOnClickListener(v -> {
             if (sessionManager.getUserId() == -1) {
-                Toast.makeText(getContext(), "Action refusée : Mode Anonyme", Toast.LENGTH_LONG).show();
+                Toast.makeText(getContext(), "Action refusée : mode anonyme", Toast.LENGTH_LONG).show();
                 return;
             }
             
@@ -277,7 +277,7 @@ public class PublishFragment extends Fragment {
                         if (isAdded()) {
                             requireActivity().runOnUiThread(() -> {
                                 btnPublish.setEnabled(true);
-                                Toast.makeText(getContext(), "Erreur upload : " + message, Toast.LENGTH_LONG).show();
+                                Toast.makeText(getContext(), "Erreur d'envoi : " + message, Toast.LENGTH_LONG).show();
                             });
                         }
                     }
@@ -411,7 +411,7 @@ public class PublishFragment extends Fragment {
                     
                     viewModel.insertAndGetId(photo, roomId -> {
                         btnPublish.setEnabled(true);
-                        Toast.makeText(getContext(), "Post publié !", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "Publication publiée !", Toast.LENGTH_SHORT).show();
                         triggerNotificationsForPublish(author, title, location, roomId);
                         
                         // Reset UI
@@ -496,7 +496,7 @@ public class PublishFragment extends Fragment {
         stopMediaPlayer();
         voiceState    = VoiceState.IDLE;
         voiceNotePath = null;
-        if (btn != null) btn.setText("Note Vocale");
+        if (btn != null) btn.setText("Note vocale");
     }
 
     private void releaseRecorder() {

@@ -19,6 +19,6 @@ public interface UserDao {
     @Query("SELECT * FROM users WHERE id = :userId")
     User getUserById(long userId);
 
-@Query("UPDATE users SET avatarUri = :avatarUri, bio = :bio WHERE id = :userId")
-    void updateUserProfile(long userId, String avatarUri, String bio);
+    @Query("UPDATE users SET bio = :bio WHERE id = :userId")
+    void updateUserBio(long userId, String bio);
 }

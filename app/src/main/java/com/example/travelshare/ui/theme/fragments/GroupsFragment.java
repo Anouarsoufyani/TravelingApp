@@ -60,6 +60,7 @@ public class GroupsFragment extends Fragment {
         public String name;
         public String description;
         public String creatorUsername;
+        public String visibility;
         public String targetUsername; // For direct chats
         
         public static Conversation fromGroup(Group g) {
@@ -69,6 +70,7 @@ public class GroupsFragment extends Fragment {
             c.name = g.name;
             c.description = g.description;
             c.creatorUsername = g.creatorUsername;
+            c.visibility = g.visibility;
             return c;
         }
 
@@ -263,7 +265,7 @@ public class GroupsFragment extends Fragment {
                 if (isAdded()) requireActivity().runOnUiThread(() -> adapter.setConversations(visible));
             });
         } else {
-            // Groups to Discover (Public groups)
+            // Groupes à découvrir : publics rejoignables directement, privés sur demande.
             List<Conversation> discoverList = new ArrayList<>();
             for (Group g : firebaseGroups) {
                 if (!query.isEmpty()) {
@@ -411,7 +413,8 @@ public class GroupsFragment extends Fragment {
                     h.tvAction.setText("👑 Admin");
                     h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(R.color.sand, null));
                 }
-                h.tvDesc.setText("Groupe · " + (c.description != null ? c.description : ""));
+                String visibilityLabel = Group.VISIBILITY_PUBLIC.equals(c.visibility) ? "public" : "privé";
+                h.tvDesc.setText("Groupe " + visibilityLabel + " · " + (c.description != null ? c.description : ""));
                 h.itemView.setOnClickListener(v -> openGroupChat(v, c));
             } else {
                 h.tvAction.setVisibility(View.VISIBLE);
@@ -425,7 +428,10 @@ public class GroupsFragment extends Fragment {
 
         private void bindDiscoverGroup(GVH h, Conversation c) {
             h.tvAction.setVisibility(View.VISIBLE);
-            h.tvDesc.setText("Groupe public · " + (c.description != null ? c.description : ""));
+            boolean isPublic = Group.VISIBILITY_PUBLIC.equals(c.visibility);
+            h.tvDesc.setText("Groupe " + (isPublic ? "public" : "privé") + " · "
+                    + (c.description != null ? c.description : ""));
+            h.tvAction.setOnClickListener(null);
             
             boolean isCreator = session.isLoggedIn() && c.creatorUsername != null && c.creatorUsername.equalsIgnoreCase(session.getUsername());
             if (isCreator) {
@@ -440,13 +446,36 @@ public class GroupsFragment extends Fragment {
                 h.tvAction.setText("Membre ✓");
                 h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(R.color.comfort_green, null));
                 h.itemView.setOnClickListener(v -> openGroupChat(v, c));
+            } else if ("PENDING".equals(status)) {
+                h.itemView.setOnClickListener(null);
+                h.tvAction.setText("Demande envoyée");
+                h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(R.color.sheet_muted, null));
             } else {
                 h.itemView.setOnClickListener(null);
-                h.tvAction.setText("Rejoindre →");
+                h.tvAction.setText(isPublic ? "Rejoindre →" : "Demander →");
                 h.tvAction.setTextColor(h.tvAction.getContext().getResources().getColor(R.color.coral, null));
                 h.tvAction.setOnClickListener(v -> {
-                    FirebaseRepository.getInstance().saveGroupMember(c.name, session.getUsername(), "MEMBER");
-                    memberships.put(c.name, "MEMBER");
+                    if (!session.isLoggedIn()) {
+                        Toast.makeText(v.getContext(), "Connectez-vous pour rejoindre un groupe.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (isPublic) {
+                        FirebaseRepository.getInstance().saveGroupMember(c.name, session.getUsername(), "MEMBER");
+                        memberships.put(c.name, "MEMBER");
+                        Toast.makeText(v.getContext(), "Groupe rejoint.", Toast.LENGTH_SHORT).show();
+                    } else {
+                        FirebaseRepository.getInstance().saveGroupMember(c.name, session.getUsername(), "PENDING");
+                        memberships.put(c.name, "PENDING");
+                        AppNotification notif = new AppNotification();
+                        notif.type = "JOIN_REQUEST";
+                        notif.senderUsername = session.getUsername();
+                        notif.message = session.getUsername() + " demande à rejoindre \"" + c.name + "\"";
+                        notif.groupId = c.id;
+                        notif.groupName = c.name;
+                        notif.date = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
+                        FirebaseRepository.getInstance().saveNotification(c.creatorUsername, notif);
+                        Toast.makeText(v.getContext(), "Demande envoyée à l'administrateur.", Toast.LENGTH_SHORT).show();
+                    }
                     notifyDataSetChanged();
                 });
             }

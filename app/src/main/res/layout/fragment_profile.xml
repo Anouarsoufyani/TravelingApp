@@ -57,6 +57,23 @@
                     android:textColor="@color/default_white"
                     android:background="@drawable/bg_pill_solid"
                     android:backgroundTint="@color/coral" />
+
+                <TextView
+                    android:id="@+id/btn_delete_avatar"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="top|end"
+                    android:background="@drawable/bg_pill_solid"
+                    android:backgroundTint="@color/navy"
+                    android:clickable="true"
+                    android:elevation="2dp"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="×"
+                    android:textColor="@color/default_white"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
             </FrameLayout>
 
             <TextView
@@ -92,7 +109,7 @@
 
             <LinearLayout style="@style/StatContainer">
                 <TextView android:id="@+id/tv_stat_likes" style="@style/StatValue" android:text="0" />
-                <TextView style="@style/StatLabel" android:text="LIKES" />
+                <TextView style="@style/StatLabel" android:text="J’AIME" />
             </LinearLayout>
 
             <LinearLayout
@@ -119,7 +136,7 @@
                 android:clickable="true"
                 android:foreground="?attr/selectableItemBackground">
                 <TextView android:id="@+id/tv_stat_followers" style="@style/StatValue" android:text="0" />
-                <TextView style="@style/StatLabel" android:text="FOLLOWERS" />
+                <TextView style="@style/StatLabel" android:text="ABONNÉS" />
             </LinearLayout>
         </LinearLayout>
 
@@ -160,7 +177,7 @@
                     style="@style/Widget.MaterialComponents.Button.TextButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Sauver"
+                    android:text="Enregistrer"
                     android:textColor="@color/coral"
                     android:textSize="12sp" />
             </LinearLayout>
@@ -196,7 +213,7 @@
                 android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false" />
 
-            <!-- Posts / Saved Paths -->
+            <!-- Publications / parcours sauvegardés -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="44dp"
@@ -214,7 +231,7 @@
                     android:background="@drawable/bg_pill_solid"
                     android:backgroundTint="@color/coral"
                     android:gravity="center"
-                    android:text="Posts"
+                    android:text="Publications"
                     android:textColor="@color/default_white"
                     android:textSize="13sp"
                     android:textStyle="bold" />
@@ -238,7 +255,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:paddingVertical="@dimen/space_xl"
-                android:text="Aucun post pour le moment."
+                android:text="Aucune publication pour le moment."
                 android:textColor="@color/sheet_muted"
                 android:visibility="gone" />
 

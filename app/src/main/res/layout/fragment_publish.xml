@@ -117,7 +117,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="4dp"
-                android:text="Nouveau Post" />
+                android:text="Nouvelle publication" />
 
             <TextView
                 style="@style/TextAppearance.Travelshare.BodyMedium"
@@ -196,7 +196,7 @@
                     android:layout_height="56dp"
                     android:layout_weight="1.5"
                     android:background="@drawable/bg_input"
-                    android:hint="Tags (#voyage...)"
+                    android:hint="Étiquettes (#voyage...)"
                     android:inputType="text"
                     android:paddingHorizontal="@dimen/space_md"
                     android:textColor="@color/default_white"
@@ -218,7 +218,7 @@
                     android:layout_height="56dp"
                     android:layout_marginEnd="@dimen/space_xs"
                     android:layout_weight="1"
-                    android:text="Note Vocale"
+                    android:text="Note vocale"
                     android:textAllCaps="false"
                     android:textColor="@color/default_white"
                     app:cornerRadius="@dimen/radius_md"
@@ -231,7 +231,7 @@
                     android:layout_width="0dp"
                     android:layout_height="56dp"
                     android:layout_weight="1"
-                    android:text="🤖 Tags automatiques"
+                    android:text="🤖 Étiquettes automatiques"
                     android:textAllCaps="false"
                     android:textColor="@color/navy"
                     app:backgroundTint="@color/sand"

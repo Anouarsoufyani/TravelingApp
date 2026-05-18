@@ -83,12 +83,12 @@
 
                 <LinearLayout style="@style/StatContainer">
                     <TextView android:id="@+id/tv_post_count" style="@style/StatValue" android:text="0" />
-                    <TextView style="@style/StatLabel" android:text="Posts" />
+                    <TextView style="@style/StatLabel" android:text="Publications" />
                 </LinearLayout>
 
                 <LinearLayout style="@style/StatContainer">
                     <TextView android:id="@+id/tv_follower_count" style="@style/StatValue" android:text="0" />
-                    <TextView style="@style/StatLabel" android:text="Followers" />
+                    <TextView style="@style/StatLabel" android:text="Abonnés" />
                 </LinearLayout>
 
                 <LinearLayout style="@style/StatContainer">
@@ -146,7 +146,7 @@
                     android:layout_width="0dp"
                     android:layout_height="40dp"
                     android:layout_weight="1"
-                    android:text="Message"
+                    android:text="Envoyer un message"
                     android:textAllCaps="false"
                     android:textColor="@color/default_white"
                     app:cornerRadius="@dimen/radius_md"

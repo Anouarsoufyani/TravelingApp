@@ -43,6 +43,7 @@ public class ProfileFragment extends Fragment {
     private ActivityResultLauncher<String> avatarPickerLauncher;
     private String currentAvatarUri = "";
     private ImageView ivAvatar;
+    private TextView btnDeleteAvatar;
     private EditText etBio;
     private SessionManager session;
     private SharedViewModel viewModel;
@@ -57,26 +58,28 @@ public class ProfileFragment extends Fragment {
                 uri -> {
                     if (uri == null || ivAvatar == null) return;
                     
-                    Toast.makeText(getContext(), "Upload de l'avatar...", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Envoi de la photo de profil...", Toast.LENGTH_SHORT).show();
                     com.example.travelshare.utils.CloudinaryHelper.uploadImage(uri, new com.example.travelshare.utils.CloudinaryHelper.UploadListener() {
                         @Override
                         public void onSuccess(String publicUrl) {
+                            if (!isAdded()) return;
                             requireActivity().runOnUiThread(() -> {
-                                currentAvatarUri = publicUrl;
-                                ivAvatar.setVisibility(View.VISIBLE);
-                                Glide.with(ProfileFragment.this).load(publicUrl).centerCrop().into(ivAvatar);
-                                
+                                if (!isAdded()) return;
+                                setAvatar(publicUrl);
                                 String bio = etBio != null ? etBio.getText().toString().trim() : "";
-                                viewModel.updateUserProfile(session.getUserId(), currentAvatarUri, bio);
+                                viewModel.updateUserBio(session.getUserId(), bio);
                                 FirebaseRepository.getInstance().saveUserProfile(session.getUsername(), bio, currentAvatarUri);
-                                Toast.makeText(getContext(), "Avatar mis à jour !", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getContext(), "Photo de profil mise à jour !", Toast.LENGTH_SHORT).show();
                             });
                         }
 
                         @Override
                         public void onError(String message) {
-                            requireActivity().runOnUiThread(() -> 
-                                Toast.makeText(getContext(), "Erreur upload : " + message, Toast.LENGTH_LONG).show());
+                            if (!isAdded()) return;
+                            requireActivity().runOnUiThread(() -> {
+                                if (!isAdded()) return;
+                                Toast.makeText(getContext(), "Erreur d'envoi : " + message, Toast.LENGTH_LONG).show();
+                            });
                         }
                     });
                 }
@@ -98,6 +101,7 @@ public class ProfileFragment extends Fragment {
         TextView tvHandle = view.findViewById(R.id.tv_profile_handle);
         TextView tvAvatar = view.findViewById(R.id.tv_profile_avatar);
         ivAvatar          = view.findViewById(R.id.iv_profile_avatar);
+        btnDeleteAvatar   = view.findViewById(R.id.btn_delete_avatar);
         etBio             = view.findViewById(R.id.et_bio);
 
         boolean isGuest = !session.isLoggedIn();
@@ -112,6 +116,7 @@ public class ProfileFragment extends Fragment {
             view.findViewById(R.id.rv_profile_posts).setVisibility(View.GONE);
             view.findViewById(R.id.rv_profile_paths).setVisibility(View.GONE);
             view.findViewById(R.id.btn_groups).setVisibility(View.GONE);
+            btnDeleteAvatar.setVisibility(View.GONE);
             com.google.android.material.button.MaterialButton btnLogout =
                     view.findViewById(R.id.btn_logout);
             btnLogout.setText("Se connecter / S'inscrire");
@@ -135,11 +140,6 @@ public class ProfileFragment extends Fragment {
                 if (user == null || !isAdded()) return;
                 requireActivity().runOnUiThread(() -> {
                     if (!isAdded()) return;
-                    if (user.avatarUri != null && !user.avatarUri.isEmpty()) {
-                        currentAvatarUri = user.avatarUri;
-                        ivAvatar.setVisibility(View.VISIBLE);
-                        Glide.with(this).load(Uri.parse(user.avatarUri)).centerCrop().into(ivAvatar);
-                    }
                     if (user.bio != null && !user.bio.isEmpty() && etBio != null) {
                         etBio.setText(user.bio);
                     }
@@ -149,14 +149,16 @@ public class ProfileFragment extends Fragment {
             FirebaseRepository.getInstance().getUserProfile(username, doc -> {
                 if (doc == null || !doc.exists() || !isAdded()) return;
                 String firebaseBio = doc.getString("bio");
-                if (firebaseBio != null && !firebaseBio.isEmpty()) {
-                    requireActivity().runOnUiThread(() -> {
-                        if (!isAdded() || etBio == null) return;
+                String firebaseAvatar = doc.getString("avatarUri");
+                requireActivity().runOnUiThread(() -> {
+                    if (!isAdded()) return;
+                    setAvatar(firebaseAvatar);
+                    if (firebaseBio != null && !firebaseBio.isEmpty() && etBio != null) {
                         if (etBio.getText().toString().trim().isEmpty()) {
                             etBio.setText(firebaseBio);
                         }
-                    });
-                }
+                    }
+                });
             });
         }
 
@@ -165,10 +167,15 @@ public class ProfileFragment extends Fragment {
             avatarPickerLauncher.launch("image/*");
         });
 
+        btnDeleteAvatar.setOnClickListener(v -> {
+            if (!session.isLoggedIn() || currentAvatarUri.isEmpty()) return;
+            confirmDeleteAvatar();
+        });
+
         view.findViewById(R.id.btn_save_bio).setOnClickListener(v -> {
             if (!session.isLoggedIn()) return;
             String bio = etBio.getText().toString().trim();
-            viewModel.updateUserProfile(session.getUserId(), currentAvatarUri, bio);
+            viewModel.updateUserBio(session.getUserId(), bio);
             FirebaseRepository.getInstance().saveUserProfile(session.getUsername(), bio, currentAvatarUri);
             Toast.makeText(getContext(), "Profil mis à jour ✓", Toast.LENGTH_SHORT).show();
         });
@@ -248,7 +255,7 @@ public class ProfileFragment extends Fragment {
 
         view.findViewById(R.id.layout_stat_followers).setOnClickListener(v -> {
             if (!session.isLoggedIn()) {
-                Toast.makeText(getContext(), "Connectez-vous pour voir vos followers", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Connectez-vous pour voir vos abonnés", Toast.LENGTH_SHORT).show();
                 return;
             }
             FirebaseRepository.getInstance().getFollowers(session.getUsername(),
@@ -297,6 +304,43 @@ public class ProfileFragment extends Fragment {
         return view;
     }
 
+    private void setAvatar(String avatarUri) {
+        currentAvatarUri = avatarUri != null ? avatarUri.trim() : "";
+        if (ivAvatar == null) return;
+
+        if (currentAvatarUri.isEmpty()) {
+            Glide.with(this).clear(ivAvatar);
+            ivAvatar.setVisibility(View.GONE);
+            if (btnDeleteAvatar != null) btnDeleteAvatar.setVisibility(View.GONE);
+            return;
+        }
+
+        ivAvatar.setVisibility(View.VISIBLE);
+        Glide.with(this).load(currentAvatarUri).centerCrop().into(ivAvatar);
+        if (btnDeleteAvatar != null) {
+            btnDeleteAvatar.setVisibility(session != null && session.isLoggedIn()
+                    ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    private void confirmDeleteAvatar() {
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Supprimer la photo de profil ?")
+                .setMessage("Elle ne sera plus affichée sur votre profil.")
+                .setPositiveButton("Supprimer", (dialog, which) -> deleteAvatar())
+                .setNegativeButton("Annuler", null)
+                .show();
+    }
+
+    private void deleteAvatar() {
+        if (!session.isLoggedIn()) return;
+        String bio = etBio != null ? etBio.getText().toString().trim() : "";
+        setAvatar("");
+        viewModel.updateUserBio(session.getUserId(), bio);
+        FirebaseRepository.getInstance().saveUserProfile(session.getUsername(), bio, "");
+        Toast.makeText(getContext(), "Photo de profil supprimée", Toast.LENGTH_SHORT).show();
+    }
+
     private void selectProfileTab(boolean postsSelected, TextView tabPosts, TextView tabPaths,
                                   RecyclerView rvPosts, RecyclerView rvPaths, TextView tvEmpty,
                                   ProfilePostAdapter postAdapter, ProfilePlanAdapter planAdapter) {
@@ -320,7 +364,7 @@ public class ProfileFragment extends Fragment {
                                     ProfilePlanAdapter planAdapter) {
         boolean postsVisible = rvPosts.getVisibility() == View.VISIBLE;
         int count = postsVisible ? postAdapter.getItemCount() : planAdapter.getItemCount();
-        tvEmpty.setText(postsVisible ? "Aucun post pour le moment." : "Aucun parcours enregistré.");
+        tvEmpty.setText(postsVisible ? "Aucune publication pour le moment." : "Aucun parcours enregistré.");
         tvEmpty.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
     }
 
@@ -518,7 +562,7 @@ public class ProfileFragment extends Fragment {
             h.color.setBackgroundColor(color);
             h.city.setText(plan.city != null ? plan.city : "Parcours");
             h.meta.setText(type + " · " + plan.durationHours + " h · " + plan.budgetEur + " €");
-            h.activities.setText(plan.activities != null ? plan.activities.replace(",", " · ") : "");
+            h.activities.setText(formatActivities(plan.activities));
             h.itemView.setOnClickListener(v -> {
                 if (!fragment.isAdded() || fragment.getActivity() == null) return;
                 fragment.getActivity().getSupportFragmentManager()
@@ -530,6 +574,12 @@ public class ProfileFragment extends Fragment {
         }
 
         @Override public int getItemCount() { return plans.size(); }
+
+        private String formatActivities(String activities) {
+            return activities != null
+                    ? activities.replace("Shopping", "Boutiques").replace(",", " · ")
+                    : "";
+        }
 
         void setPlans(List<TravelPlan> plans) {
             this.plans = plans != null ? plans : new ArrayList<>();

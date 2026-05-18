@@ -143,7 +143,7 @@
                             <CheckBox android:id="@+id/cb_restauration" android:text="🍽 Restauration" android:textColor="@color/default_white" android:buttonTint="@color/coral" android:checked="true" />
                             <CheckBox android:id="@+id/cb_loisirs"      android:text="🎭 Loisirs"      android:textColor="@color/default_white" android:buttonTint="@color/coral" />
                             <CheckBox android:id="@+id/cb_decouverte"   android:text="🌍 Découverte"   android:textColor="@color/default_white" android:buttonTint="@color/coral" android:checked="true" />
-                            <CheckBox android:id="@+id/cb_shopping"     android:text="🛍 Shopping"     android:textColor="@color/default_white" android:buttonTint="@color/coral" />
+                            <CheckBox android:id="@+id/cb_shopping"     android:text="🛍 Boutiques"     android:textColor="@color/default_white" android:buttonTint="@color/coral" />
                         </GridLayout>
 
                         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="4dp">

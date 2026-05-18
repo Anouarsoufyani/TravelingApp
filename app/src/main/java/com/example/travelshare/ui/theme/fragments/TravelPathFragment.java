@@ -291,7 +291,7 @@ public class TravelPathFragment extends Fragment {
             h.tvBudget.setText(p.budgetEur + " €");
             h.tvDuration.setText(p.durationHours + " h");
             h.tvEffort.setText(p.effort);
-            h.tvActivities.setText(p.activities != null ? p.activities.replace(",", " · ") : "");
+            h.tvActivities.setText(formatActivities(p.activities));
 
             h.tvLiked.setOnClickListener(v -> {
                 SessionManager session = new SessionManager(v.getContext());
@@ -327,6 +327,12 @@ public class TravelPathFragment extends Fragment {
         }
 
         @Override public int getItemCount() { return plans.size(); }
+
+        private String formatActivities(String activities) {
+            return activities != null
+                    ? activities.replace("Shopping", "Boutiques").replace(",", " · ")
+                    : "";
+        }
 
         void setPlans(List<TravelPlan> list) {
             this.plans = list != null ? list : new ArrayList<>();

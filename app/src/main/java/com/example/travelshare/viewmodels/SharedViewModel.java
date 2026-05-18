@@ -158,8 +158,8 @@ public class SharedViewModel extends AndroidViewModel {
         AppDatabase.databaseWriteExecutor.execute(() -> callback.accept(userDao.getUserByLogin(login)));
     }
 
-    public void updateUserProfile(long userId, String avatarUri, String bio) {
-        AppDatabase.databaseWriteExecutor.execute(() -> userDao.updateUserProfile(userId, avatarUri, bio));
+    public void updateUserBio(long userId, String bio) {
+        AppDatabase.databaseWriteExecutor.execute(() -> userDao.updateUserBio(userId, bio));
     }
 
     public LiveData<List<Comment>> getCommentsForPhoto(long photoId) {

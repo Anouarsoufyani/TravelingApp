@@ -174,7 +174,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="@dimen/touch_target"
                             android:minWidth="96dp"
-                            android:text="♡ Like"
+                            android:text="♡ J’aime"
                             android:textAllCaps="false"
                             android:textColor="@color/coral"
                             app:backgroundTint="@color/coral_soft"

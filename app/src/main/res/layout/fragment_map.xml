@@ -50,7 +50,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Touchez un pin pour ouvrir le post"
+                    android:text="Touchez un repère pour ouvrir la publication"
                         android:textColor="@color/ink_faint" />
                 </LinearLayout>
 
@@ -68,7 +68,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="4dp"
-                    android:text="POSTS"
+                    android:text="PUBLICATIONS"
                     android:textSize="10sp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

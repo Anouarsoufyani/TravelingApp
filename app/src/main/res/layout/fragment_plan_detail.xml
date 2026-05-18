@@ -246,7 +246,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="@dimen/space_xl"
                 android:layout_marginTop="@dimen/space_md"
-                android:text="Modifier et regénérer"
+                android:text="Modifier et régénérer"
                 android:textAllCaps="false"
                 android:textColor="@color/sheet_muted" />
 

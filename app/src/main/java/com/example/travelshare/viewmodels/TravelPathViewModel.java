@@ -800,7 +800,7 @@ public class TravelPathViewModel extends AndroidViewModel {
                         ? "Marché"
                         : "equilibre".equals(type) ? "Centre commercial"
                         : "Boutiques";
-                s.description = "Shopping à " + city + ".";
+                s.description = "Boutiques à " + city + ".";
                 s.durationMin = (int)(stepDurationMin * 1.1);
 
                 s.costEur = "economique".equals(type) ? (int)(perStepBudget * 0.3)

@@ -105,7 +105,7 @@
             android:paddingHorizontal="16dp"
             android:background="@drawable/bg_input"
 
-            android:hint="Email"
+            android:hint="Adresse e-mail"
             android:inputType="textEmailAddress"
             android:textColor="@color/ink"
             android:textColorHint="@color/ink_faint"

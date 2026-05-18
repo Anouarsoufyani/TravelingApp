@@ -167,17 +167,17 @@ public class PhotoDetailActivity extends AppCompatActivity {
         java.util.Set<String> likedSet = new java.util.HashSet<>(
                 likePrefs.getStringSet(likeKey, new java.util.HashSet<>()));
         isLiked = likedSet.contains(String.valueOf(photoId));
-        btnLike.setText(isLiked ? "♥ Aimé" : "♡ Like");
+        btnLike.setText(isLiked ? "♥ Aimé" : "♡ J’aime");
 
         btnLike.setOnClickListener(v -> {
             if (!sessionManager.isLoggedIn()) {
-                Toast.makeText(this, "Connectez-vous pour aimer un post", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Connectez-vous pour aimer une publication", Toast.LENGTH_SHORT).show();
                 return;
             }
 
             isLiked = !isLiked;
             currentLikes = Math.max(0, currentLikes + (isLiked ? 1 : -1));
-            btnLike.setText(isLiked ? "♥ Aimé" : "♡ Like");
+            btnLike.setText(isLiked ? "♥ Aimé" : "♡ J’aime");
             tvLikesCount.setText(currentLikes + " personnes ont aimé");
             viewModel.updateLikes(photoId, currentLikes);
             FirebaseRepository.getInstance().updateLikes(photoId, currentLikes);
@@ -209,7 +209,7 @@ public class PhotoDetailActivity extends AppCompatActivity {
             }
             String[] options = {"À un groupe", "À un ami", "Externe (Texte)"};
             new android.app.AlertDialog.Builder(this)
-                    .setTitle("Partager ce post…")
+                    .setTitle("Partager cette publication…")
                     .setItems(options, (dialog, which) -> {
                         if (which == 0) shareToGroup(title, location, photoId);
                         else if (which == 1) shareToFriend(title, photoId);
@@ -470,12 +470,12 @@ public class PhotoDetailActivity extends AppCompatActivity {
                             AppNotification notif = new AppNotification();
                             notif.type = "SHARE_POST";
                             notif.senderUsername = sessionManager.getUsername();
-                            notif.message = sessionManager.getUsername() + " vous a partagé un post : \"" + title + "\"";
+                            notif.message = sessionManager.getUsername() + " vous a partagé une publication : \"" + title + "\"";
                             notif.photoId = photoId;
                             notif.date = date;
                             FirebaseRepository.getInstance().saveNotification(target, notif);
                             
-                            Toast.makeText(this, "Post partagé avec " + target, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Publication partagée avec " + target, Toast.LENGTH_SHORT).show();
                         })
                         .setNegativeButton("Annuler", null)
                         .show();

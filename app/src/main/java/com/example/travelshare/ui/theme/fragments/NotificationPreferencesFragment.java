@@ -43,9 +43,10 @@ public class NotificationPreferencesFragment extends Fragment {
                 requireActivity().getSupportFragmentManager().popBackStack());
 
         Spinner spinnerType = view.findViewById(R.id.spinner_pref_type);
-        String[] types = {"AUTEUR", "LIEU", "TAG", "GROUPE"};
+        String[] typeLabels = {"AUTEUR", "LIEU", "ÉTIQUETTE", "GROUPE"};
+        String[] typeValues = {"AUTEUR", "LIEU", "TAG", "GROUPE"};
         ArrayAdapter<String> typeAdapter = new ArrayAdapter<String>(requireContext(),
-                android.R.layout.simple_spinner_item, types) {
+                android.R.layout.simple_spinner_item, typeLabels) {
             @Override
             public android.view.View getView(int position, android.view.View convertView, android.view.ViewGroup parent) {
                 android.widget.TextView tv = (android.widget.TextView) super.getView(position, convertView, parent);
@@ -69,10 +70,10 @@ public class NotificationPreferencesFragment extends Fragment {
         spinnerType.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(android.widget.AdapterView<?> parent, View v, int pos, long id) {
-                switch (types[pos]) {
+                switch (typeValues[pos]) {
                     case "AUTEUR":  etValueHint.setHint("Nom d'auteur (ex: marie)"); break;
                     case "LIEU":    etValueHint.setHint("Lieu (ex: Paris)"); break;
-                    case "TAG":     etValueHint.setHint("Tag (ex: plage)"); break;
+                    case "TAG":     etValueHint.setHint("Étiquette (ex: plage)"); break;
                     case "GROUPE":  etValueHint.setHint("Nom du groupe"); break;
                 }
             }
@@ -98,7 +99,8 @@ public class NotificationPreferencesFragment extends Fragment {
                 Toast.makeText(getContext(), "Entrez une valeur", Toast.LENGTH_SHORT).show();
                 return;
             }
-            String type = (String) spinnerType.getSelectedItem();
+            int selectedIndex = spinnerType.getSelectedItemPosition();
+            String type = typeValues[Math.max(0, selectedIndex)];
             NotificationPreference pref = new NotificationPreference();
             pref.userId = userId;
             pref.type   = type;
@@ -142,7 +144,7 @@ public class NotificationPreferencesFragment extends Fragment {
         @Override
         public void onBindViewHolder(@NonNull PVH h, int position) {
             NotificationPreference p = prefs.get(position);
-            h.tvType.setText(p.type);
+            h.tvType.setText(displayType(p.type));
             h.tvValue.setText(p.value);
             h.btnDelete.setOnClickListener(v -> {
                 viewModel.deletePreference(p);
@@ -151,6 +153,10 @@ public class NotificationPreferencesFragment extends Fragment {
         }
 
         @Override public int getItemCount() { return prefs.size(); }
+
+        private String displayType(String type) {
+            return "TAG".equals(type) ? "ÉTIQUETTE" : type;
+        }
 
         void setPrefs(List<NotificationPreference> list) {
             this.prefs = list != null ? list : new ArrayList<>();

@@ -97,7 +97,7 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
             catTags += catTags.isEmpty() ? p.getTags() : "  ·  " + p.getTags();
         h.tvCatTags.setText(catTags);
 
-        h.tvLikes.setText(p.getLikes() + " likes");
+        h.tvLikes.setText(p.getLikes() + " j’aime");
 
         h.tvAuthor.setOnClickListener(v -> {
             String author = p.getAuthor();

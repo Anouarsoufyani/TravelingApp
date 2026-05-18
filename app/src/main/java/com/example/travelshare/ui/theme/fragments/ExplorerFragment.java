@@ -354,7 +354,7 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
     private void likeFromExplorer(Photo photo) {
         if (photo == null) return;
         if (sessionManager == null || !sessionManager.isLoggedIn()) {
-            Toast.makeText(getContext(), "Connectez-vous pour aimer un post", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Connectez-vous pour aimer une publication", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -398,7 +398,7 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
 
         String[] options = {"À un groupe", "À un ami", "Externe"};
         new android.app.AlertDialog.Builder(requireContext())
-                .setTitle("Partager ce post")
+                .setTitle("Partager cette publication")
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) sharePostToGroup(photo);
                     else if (which == 1) sharePostToFriend(photo);
@@ -435,7 +435,7 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
                                     msg.message,
                                     photo.getId(),
                                     date);
-                            Toast.makeText(getContext(), "Post partagé dans \"" + names[which] + "\"", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), "Publication partagée dans \"" + names[which] + "\"", Toast.LENGTH_SHORT).show();
                         })
                         .setNegativeButton("Annuler", null)
                         .show();
@@ -464,11 +464,11 @@ public class ExplorerFragment extends Fragment implements SensorEventListener {
                             AppNotification notif = new AppNotification();
                             notif.type = "SHARE_POST";
                             notif.senderUsername = sessionManager.getUsername();
-                            notif.message = sessionManager.getUsername() + " vous a partagé un post : \"" + safe(photo.getTitle()) + "\"";
+                            notif.message = sessionManager.getUsername() + " vous a partagé une publication : \"" + safe(photo.getTitle()) + "\"";
                             notif.photoId = photo.getId();
                             notif.date = date;
                             FirebaseRepository.getInstance().saveNotification(target, notif);
-                            Toast.makeText(getContext(), "Post partagé avec " + target, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), "Publication partagée avec " + target, Toast.LENGTH_SHORT).show();
                         })
                         .setNegativeButton("Annuler", null)
                         .show();

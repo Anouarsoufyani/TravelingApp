@@ -70,6 +70,8 @@ public class MainActivity extends AppCompatActivity implements InscriptionFragme
         }
 
         View btnBellContainer = findViewById(R.id.btn_notif_bell);
+        btnBellContainer.setVisibility(session.isLoggedIn() && !"INSCRIPTION".equals(openFragment)
+                ? View.VISIBLE : View.GONE);
 
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
@@ -96,7 +98,7 @@ public class MainActivity extends AppCompatActivity implements InscriptionFragme
                 selectedFragment = new ProfileFragment();
             }
 
-            boolean hideBell = itemId == R.id.nav_groups || itemId == R.id.nav_map;
+            boolean hideBell = isGuest || itemId == R.id.nav_groups || itemId == R.id.nav_map;
             btnBellContainer.setVisibility(hideBell ? View.GONE : View.VISIBLE);
 
             if (selectedFragment != null) {
@@ -109,11 +111,16 @@ public class MainActivity extends AppCompatActivity implements InscriptionFragme
         View badge = findViewById(R.id.notif_badge);
         SharedViewModel viewModel = new ViewModelProvider(this).get(SharedViewModel.class);
         long userId = session.getUserId();
-        viewModel.getUnreadNotificationCount(userId).observe(this, count ->
-                badge.setVisibility(count != null && count > 0 ? View.VISIBLE : View.GONE));
+        if (session.isLoggedIn()) {
+            viewModel.getUnreadNotificationCount(userId).observe(this, count ->
+                    badge.setVisibility(count != null && count > 0 ? View.VISIBLE : View.GONE));
+        }
         startNotificationListener(session);
 
-        btnBellContainer.setOnClickListener(v -> loadFragment(new NotificationsFragment()));
+        btnBellContainer.setOnClickListener(v -> {
+            if (!new SessionManager(this).isLoggedIn()) return;
+            loadFragment(new NotificationsFragment());
+        });
     }
 
     private void startNotificationListener(SessionManager session) {
@@ -167,6 +174,8 @@ public class MainActivity extends AppCompatActivity implements InscriptionFragme
         startNotificationListener(session);
         Toast.makeText(this, "Bienvenue " + username + " !", Toast.LENGTH_SHORT).show();
         bottomNav.setVisibility(View.VISIBLE);
+        View btnBellContainer = findViewById(R.id.btn_notif_bell);
+        if (btnBellContainer != null) btnBellContainer.setVisibility(View.VISIBLE);
         loadFragment(new ExplorerFragment());
     }
 }
