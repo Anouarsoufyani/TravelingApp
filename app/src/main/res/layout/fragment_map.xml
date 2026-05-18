@@ -10,7 +10,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Overlay UI -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -28,18 +27,32 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
+                android:layout_height="64dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingHorizontal="@dimen/space_md">
 
-                <TextView
-                    style="@style/TextAppearance.Travelshare.TitleMedium"
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Carte du monde"
-                    android:textColor="@color/default_white" />
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/TextAppearance.Travelshare.TitleMedium"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Carte des souvenirs"
+                        android:textColor="@color/default_white" />
+
+                    <TextView
+                        style="@style/TextAppearance.Travelshare.LabelSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Touchez un pin pour ouvrir le post"
+                        android:textColor="@color/ink_faint" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/tv_map_count"
@@ -61,19 +74,63 @@
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 
-    <!-- Floating Action Button for TravelPath -->
-    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-        android:id="@+id/fab_map_plan"
-        android:layout_width="wrap_content"
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="24dp"
-        android:layout_marginBottom="96dp"
-        android:text="Planifier"
-        android:textColor="@color/default_white"
-        android:textAllCaps="false"
-        app:icon="@drawable/ic_ms_explore"
-        app:iconTint="@color/default_white"
-        app:backgroundTint="@color/coral" />
+        android:layout_gravity="bottom"
+        android:layout_marginStart="@dimen/space_md"
+        android:layout_marginEnd="@dimen/space_md"
+        android:layout_marginBottom="92dp"
+        app:cardBackgroundColor="@color/overlay_photo_bottom"
+        app:cardCornerRadius="@dimen/radius_lg"
+        app:cardElevation="@dimen/elevation_card"
+        app:strokeColor="@color/border_light"
+        app:strokeWidth="@dimen/stroke_hairline">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="76dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="@dimen/space_md"
+            android:paddingEnd="@dimen/space_sm">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/TextAppearance.Travelshare.TitleMedium"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Créer un itinéraire"
+                    android:textColor="@color/default_white" />
+
+                <TextView
+                    style="@style/TextAppearance.Travelshare.LabelSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="TravelPath depuis la carte"
+                    android:textColor="@color/ink_faint" />
+            </LinearLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/fab_map_plan"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/touch_target"
+                android:minWidth="132dp"
+                android:text="Planifier"
+                android:textAllCaps="false"
+                android:textColor="@color/default_white"
+                app:backgroundTint="@color/coral"
+                app:cornerRadius="@dimen/radius_md"
+                app:icon="@drawable/ic_ms_explore"
+                app:iconGravity="textStart"
+                app:iconTint="@color/default_white" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -17,18 +17,23 @@ import com.example.travelshare.ui.theme.fragments.MapFragment;
 import com.example.travelshare.ui.theme.fragments.NotificationsFragment;
 import com.example.travelshare.ui.theme.fragments.ProfileFragment;
 import com.example.travelshare.ui.theme.fragments.PublishFragment;
+import com.example.travelshare.data.AppDatabase;
+import com.example.travelshare.data.repository.FirebaseRepository;
+import com.example.travelshare.utils.SessionManager;
 import com.example.travelshare.viewmodels.SharedViewModel;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.firebase.firestore.ListenerRegistration;
 
 public class MainActivity extends AppCompatActivity implements InscriptionFragment.OnInscriptionListener {
 
     private BottomNavigationView bottomNav;
+    private ListenerRegistration notifListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        com.example.travelshare.utils.SessionManager session = new com.example.travelshare.utils.SessionManager(this);
+        SessionManager session = new SessionManager(this);
         String openFragment = getIntent().getStringExtra("OPEN_FRAGMENT");
 
         if (!session.hasActiveSession() && !"INSCRIPTION".equals(openFragment)) {
@@ -94,11 +99,31 @@ public class MainActivity extends AppCompatActivity implements InscriptionFragme
 
         View badge = findViewById(R.id.notif_badge);
         SharedViewModel viewModel = new ViewModelProvider(this).get(SharedViewModel.class);
-        long userId = new com.example.travelshare.utils.SessionManager(this).getUserId();
+        long userId = session.getUserId();
         viewModel.getUnreadNotificationCount(userId).observe(this, count ->
                 badge.setVisibility(count != null && count > 0 ? View.VISIBLE : View.GONE));
+        startNotificationListener(session);
 
         btnBellContainer.setOnClickListener(v -> loadFragment(new NotificationsFragment()));
+    }
+
+    private void startNotificationListener(SessionManager session) {
+        if (notifListener != null) {
+            notifListener.remove();
+            notifListener = null;
+        }
+        if (!session.isLoggedIn()) return;
+        notifListener = FirebaseRepository.getInstance().listenToNotifications(
+                session.getUsername(), AppDatabase.getInstance(this), session.getUserId());
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (notifListener != null) {
+            notifListener.remove();
+            notifListener = null;
+        }
     }
 
     @Override
@@ -128,8 +153,9 @@ public class MainActivity extends AppCompatActivity implements InscriptionFragme
 
     @Override
     public void onInscriptionReussie(long newUserId, String username) {
-        new com.example.travelshare.utils.SessionManager(this)
-                .createLoginSession((int) newUserId, username);
+        SessionManager session = new SessionManager(this);
+        session.createLoginSession((int) newUserId, username);
+        startNotificationListener(session);
         Toast.makeText(this, "Bienvenue " + username + " !", Toast.LENGTH_SHORT).show();
         bottomNav.setVisibility(View.VISIBLE);
         loadFragment(new ExplorerFragment());

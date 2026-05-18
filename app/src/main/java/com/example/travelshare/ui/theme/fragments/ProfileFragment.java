@@ -23,14 +23,12 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.travelshare.R;
 import com.example.travelshare.data.models.Group;
-import com.example.travelshare.data.models.NotificationPreference;
 import com.example.travelshare.data.models.Photo;
-import com.example.travelshare.data.models.TravelPlan;
 import com.example.travelshare.data.repository.FirebaseRepository;
 import com.example.travelshare.ui.LoginActivity;
+import com.example.travelshare.ui.UserProfileActivity;
 import com.example.travelshare.utils.SessionManager;
 import com.example.travelshare.viewmodels.SharedViewModel;
-import com.example.travelshare.viewmodels.TravelPathViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +41,7 @@ public class ProfileFragment extends Fragment {
     private EditText etBio;
     private SessionManager session;
     private SharedViewModel viewModel;
-    private TravelPathViewModel pathViewModel;
+    private List<Group> memberGroups = new ArrayList<>();
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -87,7 +85,6 @@ public class ProfileFragment extends Fragment {
 
         session = new SessionManager(requireContext());
         viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
-        pathViewModel = new ViewModelProvider(this).get(TravelPathViewModel.class);
 
         TextView tvName   = view.findViewById(R.id.tv_profile_name);
         TextView tvHandle = view.findViewById(R.id.tv_profile_handle);
@@ -147,6 +144,8 @@ public class ProfileFragment extends Fragment {
         TextView tvStatPhotos = view.findViewById(R.id.tv_stat_photos);
         TextView tvStatLikes  = view.findViewById(R.id.tv_stat_likes);
         TextView tvStatGroups = view.findViewById(R.id.tv_stat_groups);
+        TextView tvStatFollowing = view.findViewById(R.id.tv_stat_following);
+        TextView tvStatFollowers = view.findViewById(R.id.tv_stat_followers);
 
         viewModel.getAllPhotos().observe(getViewLifecycleOwner(), photos -> {
             if (photos == null) return;
@@ -161,50 +160,61 @@ public class ProfileFragment extends Fragment {
             tvStatLikes.setText(String.valueOf(myLikes));
         });
 
-        // Saved Plans
-        RecyclerView rvSavedPlans = view.findViewById(R.id.rv_saved_plans);
-        rvSavedPlans.setLayoutManager(new LinearLayoutManager(getContext()));
-        TravelPathFragment.PlanAdapter plansAdapter = new TravelPathFragment.PlanAdapter(pathViewModel, this);
-        rvSavedPlans.setAdapter(plansAdapter);
         if (session.isLoggedIn()) {
-            pathViewModel.getSavedPlansForUser(session.getUserId())
-                    .observe(getViewLifecycleOwner(), plansAdapter::setPlans);
+            FirebaseRepository.getInstance().getFollowing(session.getUsername(), following -> {
+                List<String> safeList = following != null ? following : new ArrayList<>();
+                if (!isAdded()) return;
+                requireActivity().runOnUiThread(() ->
+                        tvStatFollowing.setText(String.valueOf(safeList.size())));
+            });
+            FirebaseRepository.getInstance().getFollowers(session.getUsername(), followers -> {
+                List<String> safeList = followers != null ? followers : new ArrayList<>();
+                if (!isAdded()) return;
+                requireActivity().runOnUiThread(() ->
+                        tvStatFollowers.setText(String.valueOf(safeList.size())));
+            });
         }
+
+        view.findViewById(R.id.layout_stat_following).setOnClickListener(v -> {
+            if (!session.isLoggedIn()) {
+                Toast.makeText(getContext(), "Connectez-vous pour voir vos suivis", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            FirebaseRepository.getInstance().getFollowing(session.getUsername(),
+                    users -> showUserList("Utilisateurs suivis", users));
+        });
+
+        view.findViewById(R.id.layout_stat_followers).setOnClickListener(v -> {
+            if (!session.isLoggedIn()) {
+                Toast.makeText(getContext(), "Connectez-vous pour voir vos followers", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            FirebaseRepository.getInstance().getFollowers(session.getUsername(),
+                    users -> showUserList("Followers", users));
+        });
 
         RecyclerView rvGroups = view.findViewById(R.id.rv_profile_groups);
         rvGroups.setLayoutManager(new LinearLayoutManager(getContext()));
         ProfileGroupAdapter groupAdapter = new ProfileGroupAdapter();
         rvGroups.setAdapter(groupAdapter);
         if (session.isLoggedIn()) {
-            viewModel.getGroupsForUser(session.getUserId()).observe(getViewLifecycleOwner(), groups -> {
-                tvStatGroups.setText(groups != null ? String.valueOf(groups.size()) : "0");
-                groupAdapter.setGroups(groups);
+            FirebaseRepository.getInstance().getMyMemberGroups(session.getUsername(), groups -> {
+                List<Group> safeGroups = groups != null ? groups : new ArrayList<>();
+                if (!isAdded()) return;
+                requireActivity().runOnUiThread(() -> {
+                    memberGroups = safeGroups;
+                    tvStatGroups.setText(String.valueOf(memberGroups.size()));
+                    groupAdapter.setGroups(memberGroups);
+                });
             });
         }
 
-        TextView tvAlertsPreview = view.findViewById(R.id.tv_alerts_preview);
-        if (session.isLoggedIn()) {
-            viewModel.getPreferencesForUser(session.getUserId())
-                    .observe(getViewLifecycleOwner(), prefs -> {
-                        if (prefs == null || prefs.isEmpty()) {
-                            tvAlertsPreview.setText("Aucune alerte configurée.");
-                        } else {
-                            StringBuilder sb = new StringBuilder();
-                            for (NotificationPreference p : prefs) {
-                                sb.append("• ").append(p.type).append(" : ").append(p.value).append("\n");
-                            }
-                            tvAlertsPreview.setText(sb.toString().trim());
-                        }
-                    });
-        }
-
-        view.findViewById(R.id.layout_alerts_preview).setOnClickListener(v -> {
-            if (getActivity() != null)
-                getActivity().getSupportFragmentManager()
-                        .beginTransaction()
-                        .replace(R.id.fragment_container, new NotificationPreferencesFragment())
-                        .addToBackStack(null)
-                        .commit();
+        view.findViewById(R.id.layout_stat_groups).setOnClickListener(v -> {
+            if (!session.isLoggedIn()) {
+                Toast.makeText(getContext(), "Connectez-vous pour voir vos groupes", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            showGroupList("Groupes", memberGroups);
         });
 
         view.findViewById(R.id.btn_groups).setOnClickListener(v ->
@@ -223,6 +233,57 @@ public class ProfileFragment extends Fragment {
         });
 
         return view;
+    }
+
+    private void showUserList(String title, List<String> users) {
+        if (!isAdded()) return;
+        requireActivity().runOnUiThread(() -> {
+            if (!isAdded()) return;
+            if (users == null || users.isEmpty()) {
+                Toast.makeText(getContext(), "Aucun utilisateur à afficher", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            String[] names = users.toArray(new String[0]);
+            new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    .setTitle(title)
+                    .setItems(names, (dialog, which) -> {
+                        Intent intent = new Intent(requireContext(), UserProfileActivity.class);
+                        intent.putExtra(UserProfileActivity.EXTRA_USERNAME, names[which]);
+                        startActivity(intent);
+                    })
+                    .setNegativeButton("Fermer", null)
+                    .show();
+        });
+    }
+
+    private void showGroupList(String title, List<Group> groups) {
+        if (!isAdded()) return;
+        requireActivity().runOnUiThread(() -> {
+            if (!isAdded()) return;
+            if (groups == null || groups.isEmpty()) {
+                Toast.makeText(getContext(), "Aucun groupe à afficher", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            String[] names = new String[groups.size()];
+            for (int i = 0; i < groups.size(); i++) {
+                names[i] = groups.get(i).name;
+            }
+            new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    .setTitle(title)
+                    .setItems(names, (dialog, which) -> {
+                        Group group = groups.get(which);
+                        requireActivity().getSupportFragmentManager()
+                                .beginTransaction()
+                                .replace(R.id.fragment_container, GroupChatFragment.newInstance(
+                                        group.id, group.name, group.creatorId, group.creatorUsername))
+                                .addToBackStack(null)
+                                .commit();
+                    })
+                    .setNegativeButton("Fermer", null)
+                    .show();
+        });
     }
 
     static class ProfileGroupAdapter extends RecyclerView.Adapter<ProfileGroupAdapter.GVH> {

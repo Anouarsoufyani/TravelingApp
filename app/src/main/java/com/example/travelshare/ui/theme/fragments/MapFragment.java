@@ -1,6 +1,7 @@
 package com.example.travelshare.ui.theme.fragments;
 
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,6 +10,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -28,6 +30,7 @@ import java.util.List;
 public class MapFragment extends Fragment {
 
     private MapView mapView;
+    private Drawable postPinIcon;
 
     @Nullable
     @Override
@@ -39,13 +42,16 @@ public class MapFragment extends Fragment {
         mapView = view.findViewById(R.id.map_view);
         mapView.setTileSource(TileSourceFactory.MAPNIK);
         mapView.setMultiTouchControls(true);
+        mapView.setBuiltInZoomControls(false);
 
         mapView.getController().setZoom(5.5);
         mapView.getController().setCenter(new GeoPoint(46.5, 2.5));
+        postPinIcon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_map_pin_post);
 
         TextView tvCount = view.findViewById(R.id.tv_map_count);
 
         SharedViewModel viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+        viewModel.syncPhotosFromFirestore();
         viewModel.getAllPhotos().observe(getViewLifecycleOwner(), photos -> {
             addMarkers(photos);
             if (photos != null) {
@@ -77,6 +83,8 @@ public class MapFragment extends Fragment {
             marker.setTitle(photo.getTitle());
             marker.setSnippet("📍 " + photo.getLocation() + "  •  " + photo.getAuthor());
             marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+            if (postPinIcon != null) marker.setIcon(postPinIcon);
+            marker.setInfoWindow(null);
 
             marker.setOnMarkerClickListener((m, mv) -> {
                 Intent intent = new Intent(requireContext(), PhotoDetailActivity.class);

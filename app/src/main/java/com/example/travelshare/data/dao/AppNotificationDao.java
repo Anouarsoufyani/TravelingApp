@@ -17,7 +17,7 @@ public interface AppNotificationDao {
     @Query("SELECT COUNT(*) FROM app_notifications WHERE targetUserId = :userId AND type = :type AND message = :message")
     int countByContent(long userId, String type, String message);
 
-    @Query("SELECT * FROM app_notifications WHERE targetUserId = :userId ORDER BY id DESC")
+    @Query("SELECT * FROM app_notifications WHERE targetUserId = :userId ORDER BY date DESC, id DESC")
     LiveData<List<AppNotification>> getForUser(long userId);
 
     @Query("UPDATE app_notifications SET isRead = 1 WHERE id = :id")

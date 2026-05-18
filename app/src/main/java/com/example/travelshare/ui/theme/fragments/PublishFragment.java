@@ -1,7 +1,10 @@
 package com.example.travelshare.ui.theme.fragments;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.net.Uri;
@@ -29,6 +32,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.io.IOException;
 import java.io.File;
 
 import com.bumptech.glide.Glide;
@@ -39,9 +43,9 @@ import com.google.mlkit.vision.label.ImageLabeling;
 import com.google.mlkit.vision.label.defaults.ImageLabelerOptions;
 
 import com.example.travelshare.R;
+import com.example.travelshare.data.models.AppNotification;
 import com.example.travelshare.data.models.Group;
 import com.example.travelshare.data.models.Photo;
-import com.example.travelshare.utils.NotificationUtil;
 import com.example.travelshare.utils.SessionManager;
 import com.example.travelshare.viewmodels.SharedViewModel;
 import com.example.travelshare.data.repository.FirebaseRepository;
@@ -357,9 +361,21 @@ public class PublishFragment extends Fragment {
                                   String savedVoicePath, long finalGroupId, Button btnPublish, Button btnVoice, View view) {
         
         Toast.makeText(getContext(), "Géolocalisation du lieu...", Toast.LENGTH_SHORT).show();
+        Context appContext = requireContext().getApplicationContext();
 
         com.example.travelshare.data.AppDatabase.databaseWriteExecutor.execute(() -> {
-            double[] coords = geocodeLocation(location);
+            double[] coords = geocodeLocation(appContext, location);
+            if (coords == null) {
+                if (isAdded()) {
+                    requireActivity().runOnUiThread(() -> {
+                        btnPublish.setEnabled(true);
+                        Toast.makeText(getContext(),
+                                "Lieu introuvable. Précisez la ville ou l'adresse.",
+                                Toast.LENGTH_LONG).show();
+                    });
+                }
+                return;
+            }
 
             if (approxChecked) {
                 coords[0] = Math.round(coords[0] * 10.0) / 10.0;
@@ -379,7 +395,7 @@ public class PublishFragment extends Fragment {
                         savePhotoToFirestore(photo, roomId);
                         btnPublish.setEnabled(true);
                         Toast.makeText(getContext(), "Post publié !", Toast.LENGTH_SHORT).show();
-                        triggerNotificationsForPublish(author, location, category, tags);
+                        triggerNotificationsForPublish(author, title, location, roomId);
                         
                         // Reset UI
                         selectedUris.clear();
@@ -531,12 +547,38 @@ public class PublishFragment extends Fragment {
         return sb;
     }
 
-    private double[] geocodeLocation(String locationName) {
-        return new double[]{48.8566, 2.3522}; // Paris default
+    private double[] geocodeLocation(Context context, String locationName) {
+        if (locationName == null || locationName.trim().isEmpty()) return null;
+        if (!Geocoder.isPresent()) return null;
+
+        try {
+            Geocoder geocoder = new Geocoder(context, Locale.getDefault());
+            List<Address> addresses = geocoder.getFromLocationName(locationName.trim(), 1);
+            if (addresses == null || addresses.isEmpty()) return null;
+
+            Address address = addresses.get(0);
+            return new double[]{address.getLatitude(), address.getLongitude()};
+        } catch (IOException | IllegalArgumentException e) {
+            return null;
+        }
     }
 
-    private void triggerNotificationsForPublish(String author, String location, String category, String tags) {
-        NotificationUtil.showNotification(requireContext(), "Nouveau post", 
-                author + " a partagé un souvenir à " + location);
+    private void triggerNotificationsForPublish(String author, String title, String location, long photoId) {
+        FirebaseRepository.getInstance().getFollowers(author, followers -> {
+            if (followers == null || followers.isEmpty()) return;
+
+            String date = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
+            for (String follower : followers) {
+                if (follower == null || follower.equalsIgnoreCase(author)) continue;
+
+                AppNotification notif = new AppNotification();
+                notif.type = "FOLLOW_POST";
+                notif.senderUsername = author;
+                notif.message = author + " a publié \"" + title + "\" à " + location;
+                notif.photoId = (int) photoId;
+                notif.date = date;
+                FirebaseRepository.getInstance().saveNotification(follower, notif);
+            }
+        });
     }
 }

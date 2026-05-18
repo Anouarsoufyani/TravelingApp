@@ -17,21 +17,17 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.travelshare.R;
-import com.example.travelshare.data.AppDatabase;
 import com.example.travelshare.data.models.AppNotification;
 import com.example.travelshare.data.models.Group;
 import com.example.travelshare.data.repository.FirebaseRepository;
 import com.example.travelshare.ui.PhotoDetailActivity;
 import com.example.travelshare.utils.SessionManager;
 import com.example.travelshare.viewmodels.SharedViewModel;
-import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class NotificationsFragment extends Fragment {
-
-    private ListenerRegistration notifListener;
 
     @Nullable
     @Override
@@ -50,21 +46,26 @@ public class NotificationsFragment extends Fragment {
 
         viewModel.getAppNotificationsForUser(userId).observe(getViewLifecycleOwner(), adapter::setNotifs);
 
-        view.findViewById(R.id.btn_clear_notifs).setOnClickListener(v ->
-                viewModel.clearNotificationsForUser(userId));
-
-        if (session.isLoggedIn()) {
-            notifListener = FirebaseRepository.getInstance().listenToNotifications(
-                    session.getUsername(), AppDatabase.getInstance(requireContext()), userId);
-        }
+        view.findViewById(R.id.btn_clear_notifs).setOnClickListener(v -> {
+            if (!session.isLoggedIn()) {
+                viewModel.clearNotificationsForUser(userId);
+                return;
+            }
+            FirebaseRepository.getInstance().clearNotificationsForUser(session.getUsername(), success -> {
+                if (!isAdded()) return;
+                requireActivity().runOnUiThread(() -> {
+                    if (success) {
+                        viewModel.clearNotificationsForUser(userId);
+                    } else {
+                        Toast.makeText(getContext(),
+                                "Impossible d'effacer les notifications en ligne.",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+            });
+        });
 
         return view;
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        if (notifListener != null) { notifListener.remove(); notifListener = null; }
     }
 
     static class NotifAdapter extends RecyclerView.Adapter<NotifAdapter.NVH> {
@@ -108,6 +109,7 @@ public class NotificationsFragment extends Fragment {
                 case "JOIN_ACCEPTED": h.tvIcon.setText("✅"); break;
                 case "GROUP_INVITE":  h.tvIcon.setText("✉️"); break;
                 case "FOLLOW":        h.tvIcon.setText("👤"); break;
+                case "FOLLOW_POST":   h.tvIcon.setText("📸"); break;
                 case "SHARE_POST":    h.tvIcon.setText("📸"); break;
                 case "SHARE_PATH":    h.tvIcon.setText("🗺️"); break;
                 default:              h.tvIcon.setText("🔔"); break;
@@ -120,6 +122,7 @@ public class NotificationsFragment extends Fragment {
                 viewModel.markNotificationRead(n.id);
 
                 switch (n.type != null ? n.type : "") {
+                    case "FOLLOW_POST":
                     case "SHARE_POST":
                         if (n.photoId > 0) {
                             openPostDetail(v, n.photoId);

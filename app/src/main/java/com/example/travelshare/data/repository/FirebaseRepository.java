@@ -13,6 +13,7 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -251,6 +252,7 @@ public class FirebaseRepository {
         db.collection("groups")
                 .document(sanitize(name))
                 .set(data)
+                .addOnSuccessListener(unused -> saveGroupMember(name, creatorUsername, "MEMBER"))
                 .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "saveGroup failed", e));
     }
 
@@ -300,13 +302,20 @@ public class FirebaseRepository {
                                 Group group = groupFromDoc(doc);
                                 allGroups.put(group.name, group);
                             }
-                            List<Group> result = new ArrayList<>();
+
+                            Map<String, Group> result = new LinkedHashMap<>();
                             for (QueryDocumentSnapshot memberDoc : members) {
                                 String groupName = memberDoc.getString("groupName");
                                 Group group = allGroups.get(groupName);
-                                if (group != null) result.add(group);
+                                if (group != null) result.put(group.name, group);
                             }
-                            callback.accept(result);
+                            for (Group group : allGroups.values()) {
+                                if (group.creatorUsername != null
+                                        && group.creatorUsername.equalsIgnoreCase(username)) {
+                                    result.put(group.name, group);
+                                }
+                            }
+                            callback.accept(new ArrayList<>(result.values()));
                         })
                         .addOnFailureListener(e -> callback.accept(new ArrayList<>())))
                 .addOnFailureListener(e -> callback.accept(new ArrayList<>()));
@@ -689,6 +698,38 @@ public class FirebaseRepository {
         db.collection("notifications")
                 .add(data)
                 .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "saveNotification failed", e));
+    }
+
+    public void clearNotificationsForUser(String username, Consumer<Boolean> callback) {
+        clearNotificationsPage(username, callback);
+    }
+
+    private void clearNotificationsPage(String username, Consumer<Boolean> callback) {
+        db.collection("notifications")
+                .whereEqualTo("targetUsername", username)
+                .limit(450)
+                .get()
+                .addOnSuccessListener(query -> {
+                    if (query.isEmpty()) {
+                        callback.accept(true);
+                        return;
+                    }
+
+                    WriteBatch batch = db.batch();
+                    for (QueryDocumentSnapshot doc : query) {
+                        batch.delete(doc.getReference());
+                    }
+                    batch.commit()
+                            .addOnSuccessListener(unused -> clearNotificationsPage(username, callback))
+                            .addOnFailureListener(e -> {
+                                android.util.Log.w("FirebaseRepository", "clearNotificationsForUser failed", e);
+                                callback.accept(false);
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    android.util.Log.w("FirebaseRepository", "clearNotificationsForUser failed", e);
+                    callback.accept(false);
+                });
     }
 
     public ListenerRegistration listenToNotifications(String username, AppDatabase localDb, long localUserId) {

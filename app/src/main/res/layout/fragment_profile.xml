@@ -95,9 +95,31 @@
                 <TextView style="@style/StatLabel" android:text="LIKES" />
             </LinearLayout>
 
-            <LinearLayout style="@style/StatContainer">
+            <LinearLayout
+                android:id="@+id/layout_stat_groups"
+                style="@style/StatContainer"
+                android:clickable="true"
+                android:foreground="?attr/selectableItemBackground">
                 <TextView android:id="@+id/tv_stat_groups" style="@style/StatValue" android:text="0" />
                 <TextView style="@style/StatLabel" android:text="GROUPES" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layout_stat_following"
+                style="@style/StatContainer"
+                android:clickable="true"
+                android:foreground="?attr/selectableItemBackground">
+                <TextView android:id="@+id/tv_stat_following" style="@style/StatValue" android:text="0" />
+                <TextView style="@style/StatLabel" android:text="SUIVIS" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layout_stat_followers"
+                style="@style/StatContainer"
+                android:clickable="true"
+                android:foreground="?attr/selectableItemBackground">
+                <TextView android:id="@+id/tv_stat_followers" style="@style/StatValue" android:text="0" />
+                <TextView style="@style/StatLabel" android:text="FOLLOWERS" />
             </LinearLayout>
         </LinearLayout>
 
@@ -143,21 +165,6 @@
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <!-- Saved Paths Section -->
-            <TextView
-                style="@style/StatLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="MES PARCOURS SAUVEGARDÉS"
-                android:layout_marginTop="@dimen/space_xl"
-                android:layout_marginBottom="@dimen/space_md" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rv_saved_plans"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false" />
-
             <!-- Groups Section -->
             <LinearLayout
                 android:layout_width="match_parent"
@@ -188,50 +195,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false" />
-
-            <!-- Alerts Section -->
-            <TextView
-                style="@style/StatLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ALERTES VOYAGE"
-                android:layout_marginTop="@dimen/space_xl"
-                android:layout_marginBottom="@dimen/space_md" />
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/layout_alerts_preview"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardBackgroundColor="@color/surface_card"
-                app:cardCornerRadius="@dimen/radius_md"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/border_light"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="@dimen/space_md">
-
-                    <TextView
-                        android:id="@+id/tv_alerts_preview"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Aucune alerte configurée."
-                        android:textColor="@color/sheet_muted"
-                        android:textSize="13sp"
-                        android:layout_marginBottom="8dp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="+ Configurer"
-                        android:textColor="@color/coral"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
             <!-- Logout -->
             <com.google.android.material.button.MaterialButton
