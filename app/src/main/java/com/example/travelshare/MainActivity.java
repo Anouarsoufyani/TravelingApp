@@ -29,7 +29,9 @@ public class MainActivity extends AppCompatActivity implements InscriptionFragme
         super.onCreate(savedInstanceState);
         
         com.example.travelshare.utils.SessionManager session = new com.example.travelshare.utils.SessionManager(this);
-        if (!session.isLoggedIn()) {
+        String openFragment = getIntent().getStringExtra("OPEN_FRAGMENT");
+
+        if (!session.hasActiveSession() && !"INSCRIPTION".equals(openFragment)) {
             Intent intent = new Intent(this, com.example.travelshare.ui.LoginActivity.class);
             startActivity(intent);
             finish();
@@ -44,7 +46,6 @@ public class MainActivity extends AppCompatActivity implements InscriptionFragme
         org.osmdroid.config.Configuration.getInstance().setOsmdroidTileCache(
                 new java.io.File(getCacheDir(), "osmdroid_tiles"));
 
-        String openFragment = getIntent().getStringExtra("OPEN_FRAGMENT");
         boolean openTravelPath = getIntent().getBooleanExtra("OPEN_TRAVELPATH", false);
         String travelPathCity  = getIntent().getStringExtra("TRAVELPATH_CITY");
 

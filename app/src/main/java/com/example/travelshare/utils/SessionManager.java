@@ -8,6 +8,7 @@ public class SessionManager {
     private static final String PREF_NAME = "TravelShareSession";
     private static final String KEY_USERNAME = "username";
     private static final String KEY_USER_ID  = "userId";
+    private static final String KEY_ANONYMOUS = "anonymous";
 
     private final SharedPreferences pref;
     private final SharedPreferences.Editor editor;
@@ -22,6 +23,14 @@ public class SessionManager {
     public void createLoginSession(int userId, String username) {
         editor.putInt(KEY_USER_ID, userId);
         editor.putString(KEY_USERNAME, username);
+        editor.putBoolean(KEY_ANONYMOUS, false);
+        editor.apply();
+    }
+
+    public void createAnonymousSession() {
+        editor.putInt(KEY_USER_ID, -1);
+        editor.putString(KEY_USERNAME, "Anonyme");
+        editor.putBoolean(KEY_ANONYMOUS, true);
         editor.apply();
     }
 
@@ -33,6 +42,14 @@ public class SessionManager {
 
     public boolean isLoggedIn() {
         return mAuth.getCurrentUser() != null;
+    }
+
+    public boolean hasActiveSession() {
+        return isLoggedIn() || pref.getBoolean(KEY_ANONYMOUS, false);
+    }
+
+    public boolean isAnonymous() {
+        return pref.getBoolean(KEY_ANONYMOUS, false);
     }
 
     public String getUsername() {

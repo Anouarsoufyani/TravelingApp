@@ -31,7 +31,7 @@ public class LoginActivity extends AppCompatActivity {
         mAuth          = FirebaseAuth.getInstance();
         sessionManager = new SessionManager(this);
 
-        if (mAuth.getCurrentUser() != null && sessionManager.getUserId() != -1) {
+        if (sessionManager.hasActiveSession()) {
             goToMain();
             return;
         }
@@ -57,7 +57,7 @@ public class LoginActivity extends AppCompatActivity {
 
         btnAnonymous.setOnClickListener(v -> {
             mAuth.signOut();
-            sessionManager.logoutUser();
+            sessionManager.createAnonymousSession();
             goToMain();
         });
     }
