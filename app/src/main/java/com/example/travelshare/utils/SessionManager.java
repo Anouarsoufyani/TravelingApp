@@ -41,7 +41,9 @@ public class SessionManager {
     }
 
     public boolean isLoggedIn() {
-        return mAuth.getCurrentUser() != null && !pref.getBoolean(KEY_ANONYMOUS, false);
+        if (mAuth.getCurrentUser() == null) return false;
+        if (mAuth.getCurrentUser().isAnonymous()) return false;
+        return !pref.getBoolean(KEY_ANONYMOUS, false);
     }
 
     public boolean hasActiveSession() {

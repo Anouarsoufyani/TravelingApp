@@ -182,15 +182,20 @@ public class PublishFragment extends Fragment {
         switchVisibility.setOnCheckedChangeListener((btn, checked) ->
                 layoutGroupSelector.setVisibility(checked ? View.VISIBLE : View.GONE));
 
-        viewModel.getGroupsForUser(sessionManager.getUserId()).observe(getViewLifecycleOwner(), groups -> {
-            groupList = groups;
-            List<String> names = new ArrayList<>();
-            for (Group g : groups) names.add(g.name);
-            ArrayAdapter<String> gAdapter = new ArrayAdapter<>(requireContext(),
-                    android.R.layout.simple_spinner_item, names);
-            gAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-            spinnerGroups.setAdapter(gAdapter);
-        });
+        com.example.travelshare.data.repository.FirebaseRepository.getInstance()
+                .getMyMemberGroups(sessionManager.getUsername(), groups -> {
+                    if (!isAdded() || getActivity() == null) return;
+                    getActivity().runOnUiThread(() -> {
+                        if (!isAdded()) return;
+                        groupList = groups != null ? groups : new ArrayList<>();
+                        List<String> names = new ArrayList<>();
+                        for (Group g : groupList) names.add(g.name);
+                        ArrayAdapter<String> gAdapter = new ArrayAdapter<>(requireContext(),
+                                android.R.layout.simple_spinner_item, names);
+                        gAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                        spinnerGroups.setAdapter(gAdapter);
+                    });
+                });
 
         btnNewGroup.setOnClickListener(v ->
                 requireActivity().getSupportFragmentManager().beginTransaction()

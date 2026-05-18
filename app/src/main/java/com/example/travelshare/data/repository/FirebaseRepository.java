@@ -557,6 +557,8 @@ public class FirebaseRepository {
                             String visibility = doc.getString("visibility");
                             g.visibility = Group.VISIBILITY_PUBLIC.equals(visibility)
                                     ? Group.VISIBILITY_PUBLIC : Group.VISIBILITY_PRIVATE;
+                            Long gid = doc.getLong("groupId");
+                            g.id = gid != null ? gid : stableGroupId(name);
                             localDb.groupDao().insertGroupOrIgnore(g);
                         }
                         if (onDone != null)
@@ -564,6 +566,19 @@ public class FirebaseRepository {
                     });
                 })
                 .addOnFailureListener(e -> android.util.Log.w("FirebaseRepository", "syncGroups failed", e));
+    }
+
+    public void getGroupByStableId(long groupId, java.util.function.Consumer<com.example.travelshare.data.models.Group> callback) {
+        db.collection("groups")
+                .whereEqualTo("groupId", groupId)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(query -> {
+                    if (query == null || query.isEmpty()) { callback.accept(null); return; }
+                    QueryDocumentSnapshot doc = (QueryDocumentSnapshot) query.getDocuments().get(0);
+                    callback.accept(groupFromDoc(doc));
+                })
+                .addOnFailureListener(e -> callback.accept(null));
     }
 
     public void saveGroupMember(String groupName, String username, String status) {

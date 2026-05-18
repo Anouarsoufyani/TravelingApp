@@ -29,7 +29,7 @@ public interface AppNotificationDao {
     @Query("SELECT COUNT(*) FROM app_notifications WHERE targetUserId = :userId AND isRead = 0")
     LiveData<Integer> getUnreadCount(long userId);
 
-    @Query("SELECT COUNT(*) FROM app_notifications WHERE targetUserId = :userId AND groupId = :groupId AND type = 'GROUP_MESSAGE' AND isRead = 0")
+    @Query("SELECT COUNT(*)gi FROM app_notifications WHERE targetUserId = :userId AND groupId = :groupId AND type = 'GROUP_MESSAGE' AND isRead = 0")
     LiveData<Integer> getUnreadCountForGroup(long userId, long groupId);
 
     @Query("UPDATE app_notifications SET isRead = 1 WHERE targetUserId = :userId AND groupId = :groupId")

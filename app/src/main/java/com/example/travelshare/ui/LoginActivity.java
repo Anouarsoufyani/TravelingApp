@@ -31,7 +31,7 @@ public class LoginActivity extends AppCompatActivity {
         mAuth          = FirebaseAuth.getInstance();
         sessionManager = new SessionManager(this);
 
-        if (sessionManager.hasActiveSession()) {
+        if (sessionManager.isLoggedIn()) {
             goToMain();
             return;
         }
@@ -56,9 +56,16 @@ public class LoginActivity extends AppCompatActivity {
         });
 
         btnAnonymous.setOnClickListener(v -> {
-            mAuth.signOut();
-            sessionManager.createAnonymousSession();
-            goToMain();
+            mAuth.signInAnonymously()
+                    .addOnSuccessListener(r -> {
+                        sessionManager.createAnonymousSession();
+                        goToMain();
+                    })
+                    .addOnFailureListener(e -> {
+                        // Si signInAnonymously échoue (pas de réseau), on continue quand même
+                        sessionManager.createAnonymousSession();
+                        goToMain();
+                    });
         });
     }
 

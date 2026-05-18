@@ -249,7 +249,18 @@ public class SharedViewModel extends AndroidViewModel {
     }
 
     public void getGroupById(long groupId, java.util.function.Consumer<Group> callback) {
-        AppDatabase.databaseWriteExecutor.execute(() -> callback.accept(groupDao.getGroupById(groupId)));
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            Group g = groupDao.getGroupById(groupId);
+            if (g != null) { callback.accept(g); return; }
+            // Fallback : chercher dans Firestore par groupId
+            firebaseRepository.getGroupByStableId(groupId, firestoreGroup -> {
+                if (firestoreGroup != null) {
+                    AppDatabase.databaseWriteExecutor.execute(() ->
+                            groupDao.insertGroupOrIgnore(firestoreGroup));
+                }
+                callback.accept(firestoreGroup);
+            });
+        });
     }
 
     public void insertReport(Report report) {
